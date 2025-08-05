@@ -1,2 +1,3 @@
-pos-backend/node_modules
-pos-backend/.env
+server-pos-api/node_modules
+server-pos-api/.env
+*.log
