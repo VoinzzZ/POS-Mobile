@@ -31,7 +31,7 @@ app.get('/', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
-app.use('*', (req, res) => {
+app.use((req, res) => {
     res.json({
         success: false,
         message: `Route ${req.originalUrl} not found`
