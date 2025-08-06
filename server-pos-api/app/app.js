@@ -45,3 +45,5 @@ app.use((error, req, res, next) => {
         ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
     });
 });
+
+module.exports = app;
