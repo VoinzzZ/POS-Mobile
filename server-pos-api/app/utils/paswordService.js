@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const { isValidElement } = require('react');
 
 class PasswordService {
     // Hash Password
@@ -49,6 +50,21 @@ class PasswordService {
         return {
             isValid: errors.length === 0,
             errors
+        };
+    }
+
+    // Validate confrim password
+    static validateConfrimPassword(password, confirmPassword) {
+        if(password !== confirmPassword) {
+            return {
+                isValid: false,
+                error: 'Password does not match'
+            };
+        }
+
+        return {
+            isValid: true,
+            error: null
         };
     }
 }
