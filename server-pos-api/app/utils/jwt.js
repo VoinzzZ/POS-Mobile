@@ -39,6 +39,18 @@ class JWTService {
         }
     }
 
+    // Verify refresh token
+    static verifyRefreshToken(token) {
+        try {
+            return jwt.verify(token, process.env.JWT_SECRET, {
+                issuer: 'pos-system',
+                audience: 'pos-users'
+            })
+        } catch (error) {
+            throw new Error(`Refresh Token Verification failed: ${error.message}`);
+        }
+    }
+
     // Decode Token (without verification)
     static decodeToken(token) {
         return jwt.decode(token);
@@ -47,7 +59,7 @@ class JWTService {
     // Generated Token Pair (Access + Refresh)
     static generateTokenPair(payLoad) {
         return {
-            accesToken: this.generateAccessToken(payLoad),
+            accessToken: this.generateAccessToken(payLoad),
             refreshToken: this.generateRefreshToken(payLoad)
         };
     }

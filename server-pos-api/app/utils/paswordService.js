@@ -1,5 +1,4 @@
 const bcrypt = require('bcryptjs');
-const { isValidElement } = require('react');
 
 class PasswordService {
     // Hash Password
