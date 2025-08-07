@@ -22,6 +22,8 @@ model User {
   // Auth fields
   isVerified            Boolean   @default(false)
   verificationToken     String?
+  verificationExpires   DateTime?
+  emailVerifiedAt       DateTime?
   resetPasswordToken    String?
   resetPasswordExpires  DateTime?
 

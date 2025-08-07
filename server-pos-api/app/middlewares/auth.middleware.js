@@ -1,4 +1,4 @@
-const JWTService = require('../utils/jwt');
+const JWTService = require('../utils/jwtService');
 
 class AuthMiddleware {
     // Verify Access Token from cookies
