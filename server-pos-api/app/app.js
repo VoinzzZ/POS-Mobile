@@ -3,6 +3,7 @@ const cookieparser = require('cookie-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const authroutes = require('./routes/auth.routes')
 
 const app = express();
 
@@ -45,5 +46,8 @@ app.use((error, req, res, next) => {
         ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
     });
 });
+
+//routes
+app.use('/api/auth', authroutes);
 
 module.exports = app;
