@@ -1,45 +1,48 @@
 const JWTService = require('../utils/jwtService');
 
 class AuthMiddleware {
+    // Set data user request
+    static #setUser(req, decoded) {
+        req.user = {
+            userId: decoded.userId,
+            email : decoded.email,
+            role: decoded.role,
+            name : decoded.name,
+        };
+    }
+
     // Verify Access Token from cookies
     static verifyToken(req, res, next) {
         try {
             // Get Access token token from cookies
-            if(!token) {
-                const authHeader = req.header.authorization;
-                const headerExtraction = JWTService.extractTokenFromHeader(authHeader);
+            let token = req.cookies?.accessToken;
 
-                if(!headerExtraction) {
+            if(!token) {
+                const authHeader = req.headers.authorization;
+                if(!authHeader || !authHeader.startsWith('Bearer')) {
                     return res.status(401).json({
                         success: false,
-                        message: 'Access Token Is required',
+                        message: 'Access Token is Required',
                         error: 'MISSING_TOKEN'
                     });
                 }
-
-                token = headerExtraction.token;
+                token = authHeader.split(' ')[1];
             }
 
             // Verify Token
-            const verification = JWTService.verifyToken(token);
+            const decoded = JWTService.verifyToken(token);
 
-            if(!verification.isValid) {
-                return res.status(401).json({
-                    success: false,
-                    message: verification.error,
-                    error: 'INVALID_TOKEN'
-                });
-            }
-
-            req.user = {
-                userId: verification.decoded.userId,
-                email : verification.decoded.email,
-                role: verification.decoded.role,
-                name : verification.decoded.name,
-            };
+            AuthMiddleware.#setUser(req, decoded);
 
             next();
         } catch (error) {
+            if(error.name === 'TokenExpiredError' || error.name === 'jsonWebTokenError') {
+                return res.status(401).json({
+                    success: false,
+                    message: error.message,
+                    error: 'INVALID_OR_EXPIRED_TOKEN'
+                });
+            }
             return res.status(500).json({
                 success: false,
                 message: 'authenticate verification failed',
@@ -94,7 +97,7 @@ class AuthMiddleware {
     }
 
     // Verify Refresh Token
-    static varifyRefreshToken(req, res, next) {
+    static verifyRefreshToken(req, res, next) {
         try {
             const refreshToken = req.cookies?.refreshToken;
 
@@ -106,22 +109,9 @@ class AuthMiddleware {
                 });
             }
 
-            const verification = JWTService.verifyRefreshToken(refreshToken);
+            const decoded = JWTService.verifyRefreshToken(refreshToken);
 
-            if(!verification.isValid) {
-                return res.status(401).json({
-                    success: false,
-                    message: verification.error,
-                    error: 'INVALID_REFRESH_TOKEN'
-                });
-            }
-
-            req.user = {
-                userId: verification.decoded.userId,
-                email : verification.decoded.email,
-                role: verification.decoded.role,
-                name : verification.decoded.name,
-            }
+            AuthMiddleware.#setUser(req, decoded);
 
             next();
         } catch (error) {
