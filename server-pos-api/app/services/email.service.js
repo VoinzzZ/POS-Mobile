@@ -28,7 +28,7 @@ class EmailService {
                 to,
                 subject,
                 html,
-                ...(text & {text})
+                ...(text ? {text} : {})
             };
 
             const result = await this.transporter.sendMail(mailOptions);
