@@ -23,7 +23,7 @@ class EmailService {
             const mailOptions = {
                 from: {
                     name: process.env.APP_NAME,
-                    addess: process.env.FROM_EMAIL
+                    address: process.env.FROM_EMAIL
                 },
                 to,
                 subject,
