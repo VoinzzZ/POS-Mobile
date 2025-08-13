@@ -1,4 +1,7 @@
 const MailConfig = require("../config/mail.config");
+const verifyEmailTemplate = require('../templates/verify.email.template');
+const wellcomeTemplate = require('../templates/wellcome.template');
+const resetPasswordTemplate = require('../templates/riset.password.template');
 
 class EmailService {
     constructor() {
@@ -39,6 +42,7 @@ class EmailService {
                 message: 'Email sent successfully'
             };
         } catch (error) {
+            console.error('nodemailer error: ', error);
             return {
                 success: false,
                 error: error.message,

@@ -84,7 +84,7 @@ class AuthController {
 
             // Send verification email
             const emailService = new EmailService();
-            const verificationURL = `${process.env.FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
+            const verificationURL = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${verificationToken}`;
             
             await emailService.sendVerificationEmail(email, name, verificationURL);
 
@@ -395,7 +395,7 @@ class AuthController {
 
             // Send verification email
             const emailService = new EmailService();
-            const verificationURL = `${process.env.FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
+            const verificationURL = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${verificationToken}`;
             
             await emailService.sendVerificationEmail(email, user.name, verificationURL);
 
