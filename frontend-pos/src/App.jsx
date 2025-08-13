@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import LoginPage from "./views/Login/LoginPage"
-import RegistrationPage from "./views/Registration/RegistratiomPage"
+import RegistrationPage from "./views/Registration/RegistrationPage"
 
 export default function App() {
   return (
