@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "ZEN POS",
+    "slug": "ZEN POS",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "clientmobile",
+    "icon": "./assets/icons/ZEN.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
