@@ -9,7 +9,7 @@ type Props = {
   placeholder?: string;
 };
 
-export default function InputPassword({ label = "Password", value, onChangeText, placeholder = "Password" }: Props) {
+export default function PasswordInput({ label = "Password", value, onChangeText, placeholder = "Password" }: Props) {
   const [show, setShow] = useState(false);
   return (
     <View style={styles.container}>
@@ -33,6 +33,6 @@ export default function InputPassword({ label = "Password", value, onChangeText,
 const styles = StyleSheet.create({
   container: { marginBottom: 16 },
   label: { color: "#fff", fontWeight: "600", marginBottom: 6 },
-  wrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 10, paddingHorizontal: 12 },
+  wrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 5, paddingHorizontal: 12 },
   input: { flex: 1, paddingVertical: 12, fontSize: 14, color: "#333" }
 });
