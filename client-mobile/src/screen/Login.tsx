@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import BgImage from "../../assets/imgs/Background.png";
 import PasswordInput from "../components/PasswordInput";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -41,7 +41,9 @@ export default function LoginScreen() {
         <PasswordInput value={password} onChangeText={setPassword}/>
         
         <Pressable
-          onPress={() => {}}
+          onPress={() => {
+            router.push("/(auth)/forgotPasdword")
+          }}
           style={{ alignSelf: "flex-end"}}
         >
           <Text style={styles.forgot}>Forgot Passord?</Text>

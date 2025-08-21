@@ -31,7 +31,7 @@ export default function PasswordInput({ label = "Password", value, onChangeText,
 }
 
 const styles = StyleSheet.create({
-  container: { marginBottom: 16 },
+  container: { marginBottom: 8 },
   label: { color: "#fff", fontWeight: "600", marginBottom: 6 },
   wrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 5, paddingHorizontal: 12 },
   input: { flex: 1, paddingVertical: 12, fontSize: 14, color: "#333" }
