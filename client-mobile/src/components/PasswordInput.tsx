@@ -21,6 +21,7 @@ export default function PasswordInput({ label = "Password", value, onChangeText,
           secureTextEntry={!show}
           value={value}
           onChangeText={onChangeText}
+          placeholderTextColor={"#999"}
         />
         <TouchableOpacity onPress={() => setShow(s => !s)} hitSlop={10}>
           {show ? <EyeOff size={20} /> : <Eye size={20} />}
