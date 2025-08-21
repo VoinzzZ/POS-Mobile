@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import BgImage from "../../assets/imgs/Background.png";
 import PasswordInput from "../components/PasswordInput";
-import { router } from "expo-router";
+import { Link } from "expo-router";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -56,11 +56,9 @@ export default function LoginScreen() {
       <View style={{ alignItems: "center", marginTop: 24 }}>
         <Text style={styles.footer}>
           Belum Punya Akun?{" "}
-          <TouchableOpacity
-          onPress={() => router.push("/(auth)/(registration)/FirstRegistScreen")}
-          >
+          <Link href={"/(auth)/(registration)/FirstRegistScreen"}>
             <Text style={styles.link}>Daftar Sekarang</Text>
-          </TouchableOpacity>
+          </Link>
         </Text>
       </View>
     </ImageBackground>
@@ -80,7 +78,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#fff",
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "800",
     lineHeight: 34,
     marginBottom: 28,
@@ -104,7 +102,7 @@ const styles = StyleSheet.create({
   btn: {
     backgroundColor: "#fff",
     borderRadius: 999,
-    paddingVertical: 14,
+    paddingVertical: 13,
     marginTop: 22
   },
   btnText: {
