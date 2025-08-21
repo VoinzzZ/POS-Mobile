@@ -36,6 +36,7 @@ export default function LoginScreen() {
           autoCapitalize="none"
           value={email}
           onChangeText={setEmail}
+          placeholderTextColor={"#999"}
         />
 
         <PasswordInput value={password} onChangeText={setPassword}/>
