@@ -13,6 +13,7 @@ import { Link } from "expo-router";
 export default function FirstRegistration() {
     const [name, setName] = useState("");
     const [pin, setPin] =  useState("");
+    
     return (
         <ImageBackground
         source={BgImage}
