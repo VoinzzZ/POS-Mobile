@@ -57,7 +57,7 @@ export default function LoginScreen() {
         <Text style={styles.footer}>
           Belum Punya Akun?{" "}
           <Link href={"/(auth)/(registration)/FirstRegistScreen"}>
-            <Text style={styles.link}>Daftar Sekarang</Text>
+            <Text style={styles.link}>Daftar Sekarang!</Text>
           </Link>
         </Text>
       </View>

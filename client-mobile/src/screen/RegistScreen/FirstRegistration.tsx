@@ -7,13 +7,13 @@ import {
     TouchableOpacity,
 } from "react-native";
 import BgImage from "../../../assets/imgs/Background.png";
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link } from "expo-router";
 
 export default function FirstRegistration() {
     const [name, setName] = useState("");
     const [pin, setPin] =  useState("");
-    
+
     return (
         <ImageBackground
         source={BgImage}
