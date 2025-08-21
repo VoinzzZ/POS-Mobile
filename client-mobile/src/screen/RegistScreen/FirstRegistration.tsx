@@ -51,8 +51,8 @@ export default function FirstRegistration() {
             <View style={{ alignItems: "center", marginTop: 24 }}>
                 <Text style={styles.footer}>
                     Sudah Punya Akun?{" "}
-                    <Link href={"/(auth)/login"}>
-                    <Text style={styles.link}>Masuk Sekarang!</Text>
+                    <Link href={"/(auth)/login"} style={styles.link}>
+                        Masuk Sekarang!
                     </Link>
                 </Text>
             </View>

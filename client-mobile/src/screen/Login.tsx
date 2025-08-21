@@ -58,8 +58,8 @@ export default function LoginScreen() {
       <View style={{ alignItems: "center", marginTop: 24 }}>
         <Text style={styles.footer}>
           Belum Punya Akun?{" "}
-          <Link href={"/(auth)/(registration)/FirstRegistScreen"}>
-            <Text style={styles.link}>Daftar Sekarang!</Text>
+          <Link href={"/(auth)/(registration)/FirstRegistScreen"} style={styles.link}>
+            Daftar Sekarang!
           </Link>
         </Text>
       </View>
