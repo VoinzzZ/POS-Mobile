@@ -33,6 +33,7 @@ export default function FirstRegistration() {
                     autoCapitalize="none"
                     value={name}
                     onChangeText={setName}
+                    placeholderTextColor={"#999"}
                 />
 
                 <Text style={styles.label}>Pin</Text>
@@ -41,6 +42,7 @@ export default function FirstRegistration() {
                     placeholder="Regitration Pin"
                     value={pin}
                     onChangeText={setPin}
+                    placeholderTextColor={"#999"}
                 />
 
                 <TouchableOpacity style={styles.btn}>
