@@ -41,6 +41,13 @@ export default function VerifiedEmail() {
                 </View>
 
                 <Text style={styles.label}>Verification Code</Text>
+                <TextInput
+                style={styles.codeInput}
+                placeholder="Verification Code"
+                placeholderTextColor={"#999"}
+                value={code}
+                onChangeText={setCode}
+                />
             </View>
 
         </ImageBackground>
@@ -100,5 +107,13 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginBottom: 16
+    },
+    codeInput: {
+        backgroundColor: "#fff",
+        borderRadius: 5,
+        height: 40,
+        paddingHorizontal: 12,
+        textAlignVertical: "center",
+        
     }
 })

@@ -129,7 +129,6 @@ const styles = StyleSheet.create({
         height: 40,
         paddingHorizontal: 12,
         marginBottom: 16,
-        marginRight: 12,
         textAlignVertical: "center",
         width: 395,
     },
