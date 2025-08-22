@@ -43,7 +43,7 @@ export default function LoginScreen() {
         
         <Pressable
           onPress={() => {
-            router.push("/(auth)/forgotPasdword")
+            router.push("/(auth)/forgotPasdwordScreen")
           }}
           style={{ alignSelf: "flex-end"}}
         >

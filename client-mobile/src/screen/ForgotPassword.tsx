@@ -10,7 +10,7 @@ import BgImg from "../../assets/imgs/Background.png";
 import { useState } from "react";
 import { Link } from 'expo-router';
 
-export default function ForgotPasswordScreen() {
+export default function ForgotPassword() {
     const [email, setEmail] = useState("");
     const [code, setCode] = useState("");
     
@@ -93,14 +93,14 @@ const styles = StyleSheet.create({
     },
     row: {
         flexDirection: "row",
-        alignItems: "center", 
+        alignItems: "center",
+        marginBlock: 16,
     },
     textInput: {
         backgroundColor: "#fff",
         borderRadius: 4,
-        height: 44,
+        height: 40,
         paddingHorizontal: 12,
-        marginBottom: 16,
         width: 295,
         marginRight: 12,
         textAlignVertical: "center", 
@@ -108,12 +108,11 @@ const styles = StyleSheet.create({
     codeBtn: {
         backgroundColor: "#fff",
         borderRadius: 4,
-        height: 44,
+        height: 40,
         width: 87,
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: 16,
     },
     codeText: {
         color: "#A45EE5",
@@ -127,7 +126,7 @@ const styles = StyleSheet.create({
     codeInput: {
         backgroundColor: "#fff",
         borderRadius: 4,
-        height: 44,
+        height: 40,
         paddingHorizontal: 12,
         marginBottom: 16,
         marginRight: 12,
