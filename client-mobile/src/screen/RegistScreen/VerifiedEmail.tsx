@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import BgImg from "../../../assets/imgs/Background.png"
 import { useState } from "react";
+import { Link } from "expo-router";
 
 export default function VerifiedEmail() {
     const [email, setEmail] = useState("");
@@ -48,6 +49,19 @@ export default function VerifiedEmail() {
                 value={code}
                 onChangeText={setCode}
                 />
+
+                <TouchableOpacity style={styles.btn}>
+                    <Text style={styles.btntext}>LANJUT</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View style={{ alignItems: "center", marginTop: 24 }}>
+                <Text style={styles.footer}>
+                    Sudah Punya Akun?{" "}
+                    <Link href={"/(auth)/login"} style={styles.link}>
+                        Masuk Sekarng!
+                    </Link>
+                </Text>
             </View>
 
         </ImageBackground>
@@ -114,6 +128,29 @@ const styles = StyleSheet.create({
         height: 40,
         paddingHorizontal: 12,
         textAlignVertical: "center",
-        
+        width: 395,
+        marginBottom: 16,
+    },
+    btn: {
+        backgroundColor: "#fff",
+        borderRadius: 999,
+        marginTop: 20,
+        paddingVertical: 13,
+
+    },
+    btntext: {
+        color: "#A45EE5",
+        fontWeight: "900",
+        textAlign: "center",
+        letterSpacing: 0.5
+    },
+    footer: {
+        color: "#111",
+        fontWeight: "700",
+        marginBottom: 15,
+    },
+    link: {
+        color: "#A45EE5",
+        textDecorationLine: "underline"
     }
 })
