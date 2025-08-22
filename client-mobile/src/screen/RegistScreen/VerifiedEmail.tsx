@@ -55,7 +55,7 @@ export default function VerifiedEmail() {
                 </TouchableOpacity>
             </View>
 
-            <View style={{ alignItems: "center", marginTop: 24 }}>
+            <View style={{ alignItems: "center", marginTop: 24, }}>
                 <Text style={styles.footer}>
                     Sudah Punya Akun?{" "}
                     <Link href={"/(auth)/login"} style={styles.link}>
