@@ -13,6 +13,7 @@ import { Link } from 'expo-router';
 export default function ForgotPasswordScreen() {
     const [email, setEmail] = useState("");
     const [code, setCode] = useState("");
+    
     return (
         <ImageBackground
         source={BgImg}
