@@ -51,7 +51,7 @@ export default function ForgotPasswordScreen() {
                 />
 
                 <TouchableOpacity style={styles.btn}>
-                    <Text style={styles.btnText}>MASUK</Text>
+                    <Text style={styles.btnText}>LANJUT</Text>
                 </TouchableOpacity>
             </View>
 
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
         height: 44,
         paddingHorizontal: 12,
         marginBottom: 16,
-        width: 280,
+        width: 295,
         marginRight: 12,
         textAlignVertical: "center", 
     },
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         marginRight: 12,
         textAlignVertical: "center",
-        width: 380
+        width: 395,
     },
     btn: {
         backgroundColor: "#fff",
