@@ -131,6 +131,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         marginRight: 12,
         textAlignVertical: "center",
+        width: 380
     },
     btn: {
         backgroundColor: "#fff",
