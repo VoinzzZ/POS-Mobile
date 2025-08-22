@@ -6,7 +6,7 @@ import {
     TextInput,
     TouchableOpacity,
 } from "react-native";
-import BgImg from "../../assets/imgs/Background.png"
+import BgImg from "../../assets/imgs/Background.png";
 import { useState } from "react";
 import { Link } from 'expo-router';
 
