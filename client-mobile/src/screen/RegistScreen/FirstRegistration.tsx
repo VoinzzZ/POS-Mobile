@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import BgImage from "../../../assets/imgs/Background.png";
 import React, { useState } from "react";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 
 export default function FirstRegistration() {
     const [name, setName] = useState("");
@@ -45,7 +45,12 @@ export default function FirstRegistration() {
                     placeholderTextColor={"#999"}
                 />
 
-                <TouchableOpacity style={styles.btn}>
+                <TouchableOpacity
+                    style={styles.btn}
+                    onPress={() => {
+                        router.push("/(auth)/(registration)/VerifEmailScreen")
+                    }}
+                >
                     <Text style={styles.btnText}>LANJUT</Text>
                 </TouchableOpacity>
             </View>
