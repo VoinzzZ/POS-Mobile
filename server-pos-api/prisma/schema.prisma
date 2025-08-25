@@ -13,24 +13,22 @@ enum role {
 }
 
 model User {
-  id                    Int       @id @default(autoincrement())
-  name                  String    
-  email                 String    @unique
-  password              String
-  role                  role      @default(Cashier)
+  id        Int     @id @default(autoincrement())
+  name      String
+  email     String? @unique
+  password  String?
+  role      role    @default(Cashier)
 
-  // Auth fields
-  isVerified            Boolean   @default(false)
-  verificationToken     String?
-  verificationExpires   DateTime?
-  emailVerifiedAt       DateTime?
-  resetPasswordToken    String?
-  resetPasswordExpires  DateTime?
+  isVerified           Boolean   @default(false)
+  verificationToken    String?
+  verificationExpires  DateTime?
+  emailVerifiedAt      DateTime?
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
 
-  // Relations
   registrationPin       RegistrationPin[]
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model RegistrationPin {
