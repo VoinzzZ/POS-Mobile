@@ -4,11 +4,18 @@ const AuthMiddleware = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
-// Public routes
-router.post('/register', AuthController.register);
+// Public routes (multi-step register)
+router.post('/register', AuthController.register);             
+router.post('/send-email-code', AuthController.sendEmailCode); 
+router.post('/verify-email-code', AuthController.verifyEmailCode); 
+router.post('/set-password', AuthController.setPassword);
+
+// Auth routes
 router.post('/login', AuthController.login);
 router.post('/forgot-password', AuthController.forgotPassword);
 router.post('/reset-password', AuthController.resetPassword);
+
+// Email verification 
 router.get('/verify-email', AuthController.verifyEmail);
 router.post('/resend-verification', AuthController.resendVerification);
 

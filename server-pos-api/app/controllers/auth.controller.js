@@ -8,11 +8,199 @@ const crypto = require('crypto');
 class AuthController {
     // Register new user
     static async register(req, res) {
-        try {
-            const { name, email, password, confirmPassword, role } = req.body;
+    try {
+        const { name, pin, role } = req.body;
 
-            // Input validation
-            if (!name || !email || !password || !confirmPassword) {
+        // Input validation
+        if (!name || !pin) {
+            return res.status(400).json({
+                success: false,
+                message: 'Name and PIN are required',
+                error: 'MISSING_FIELDS'
+            });
+        }
+
+        // Cek PIN valid & belum expired
+        const regPin = await prisma.registrationPin.findFirst({
+            where: {
+                code: pin,
+                used: false,
+                expiresAt: {
+                    gt: new Date()
+                }
+            }
+        });
+
+        if (!regPin) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired registration PIN',
+                error: 'INVALID_PIN'
+            });
+        }
+
+        // Buat user baru (tanpa email & password dulu)
+        const newUser = await prisma.user.create({
+            data: {
+                name,
+                role: role || 'Cashier',
+                isVerified: false, // nanti berubah setelah email OTP valid
+            }
+        });
+
+        // Tandai PIN sudah dipakai
+        await prisma.registrationPin.update({
+            where: { id: regPin.id },
+            data: {
+                used: true,
+                usedAt: new Date()
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'User created. Please continue with email verification.',
+            data: {
+                userId: newUser.id,
+                name: newUser.name,
+                role: newUser.role,
+                isVerified: newUser.isVerified
+            }
+        });
+
+    } catch (error) {
+        console.error('Register error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Registration failed',
+            error: 'REGISTRATION_ERROR',
+            ...(process.env.NODE_ENV === 'development' && { details: error.message })
+        });
+    }
+    }
+
+    // Kirim kode verifikasi email
+    static async sendEmailCode(req, res) {
+        try {
+            const { userId, email } = req.body;
+
+            if (!userId || !email) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User ID and email are required',
+                    error: 'MISSING_FIELDS'
+                });
+            }
+
+            // Cek user ada
+            const user = await prisma.user.findUnique({ where: { id: userId } });
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found',
+                    error: 'USER_NOT_FOUND'
+                });
+            }
+
+            // Generate OTP (6 digit)
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
+
+            // Simpan di table EmailVerification
+            await prisma.emailVerification.create({
+                data: {
+                    email,
+                    code,
+                    expiresAt
+                }
+            });
+
+            // Kirim email
+            const emailService = new EmailService();
+            await emailService.sendOTPEmail(email, code);
+
+            res.status(200).json({
+                success: true,
+                message: 'Verification code sent to email. Code valid for 5 minutes.'
+            });
+
+        } catch (error) {
+            console.error('Send email code error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to send email code',
+                error: 'SEND_EMAIL_CODE_ERROR'
+            });
+        }
+    }
+
+    // Verifikasi kode email
+    static async verifyEmailCode(req, res) {
+        try {
+            const { userId, email, code } = req.body;
+
+            if (!userId || !email || !code) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User ID, email, and code are required',
+                    error: 'MISSING_FIELDS'
+                });
+            }
+
+            // Cari OTP
+            const verification = await prisma.emailVerification.findFirst({
+                where: {
+                    email,
+                    code,
+                    expiresAt: { gt: new Date() },
+                    verified: false
+                }
+            });
+
+            if (!verification) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid or expired verification code',
+                    error: 'INVALID_CODE'
+                });
+            }
+
+            // Update user dengan email
+            await prisma.user.update({
+                where: { id: userId },
+                data: { email }
+            });
+
+            // Tandai OTP sudah diverifikasi
+            await prisma.emailVerification.update({
+                where: { id: verification.id },
+                data: {
+                    verified: true,
+                    verifiedAt: new Date()
+                }
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Email verified successfully'
+            });
+
+        } catch (error) {
+            console.error('Verify email code error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to verify email code',
+                error: 'VERIFY_EMAIL_CODE_ERROR'
+            });
+        }
+    }
+
+    // Set password (final step)
+    static async setPassword(req, res) {
+        try {
+            const { userId, newPassword, confirmPassword } = req.body;
+
+            if (!userId || !newPassword || !confirmPassword) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required',
@@ -20,17 +208,8 @@ class AuthController {
                 });
             }
 
-            // Validate email format
-            if (!validator.isEmail(email)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid email format',
-                    error: 'INVALID_EMAIL'
-                });
-            }
-
-            // Validate password strength
-            const passwordValidation = PasswordService.validatePassword(password);
+            // Validate password
+            const passwordValidation = PasswordService.validatePassword(newPassword);
             if (!passwordValidation.isValid) {
                 return res.status(400).json({
                     success: false,
@@ -40,73 +219,38 @@ class AuthController {
                 });
             }
 
-            // Validate confirm password
-            const confirmPasswordValidation = PasswordService.validateConfrimPassword(password, confirmPassword);
-            if (!confirmPasswordValidation.isValid) {
+            if (newPassword !== confirmPassword) {
                 return res.status(400).json({
                     success: false,
-                    message: confirmPasswordValidation.error,
+                    message: 'Passwords do not match',
                     error: 'PASSWORD_MISMATCH'
                 });
             }
 
-            // Check if user already exists
-            const existingUser = await prisma.user.findUnique({
-                where: { email }
-            });
-
-            if (existingUser) {
-                return res.status(409).json({
-                    success: false,
-                    message: 'User with this email already exists',
-                    error: 'USER_EXISTS'
-                });
-            }
-
             // Hash password
-            const hashedPassword = await PasswordService.hashPassword(password);
+            const hashedPassword = await PasswordService.hashPassword(newPassword);
 
-            // Generate verification token
-            const verificationToken = crypto.randomBytes(32).toString('hex');
-            const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-            // Create user
-            const newUser = await prisma.user.create({
+            // Update user
+            await prisma.user.update({
+                where: { id: userId },
                 data: {
-                    name,
-                    email,
                     password: hashedPassword,
-                    role: role || 'Cashier',
-                    verificationToken,
-                    verificationExpires
+                    isVerified: true,
+                    emailVerifiedAt: new Date()
                 }
             });
 
-            // Send verification email
-            const emailService = new EmailService();
-            const verificationURL = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${verificationToken}`;
-            
-            await emailService.sendVerificationEmail(email, name, verificationURL);
-
-            res.status(201).json({
+            res.status(200).json({
                 success: true,
-                message: 'User registered successfully. Please check your email for verification link.',
-                data: {
-                    userId: newUser.id,
-                    name: newUser.name,
-                    email: newUser.email,
-                    role: newUser.role,
-                    isVerified: newUser.isVerified
-                }
+                message: 'Password set successfully. Registration completed.'
             });
 
         } catch (error) {
-            console.error('Register error:', error);
+            console.error('Set password error:', error);
             res.status(500).json({
                 success: false,
-                message: 'Registration failed',
-                error: 'REGISTRATION_ERROR',
-                ...(process.env.NODE_ENV === 'development' && { details: error.message })
+                message: 'Failed to set password',
+                error: 'SET_PASSWORD_ERROR'
             });
         }
     }
