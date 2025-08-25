@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const authroutes = require('./routes/auth.routes');
 
+const adminRoutes = require('./routes/admin.routes');
+
 const app = express();
 
 app.use(helmet());
@@ -37,6 +39,7 @@ app.get('/', (req, res) => {
 
 // routes
 app.use('/api/auth', authroutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 handler
 app.use((req, res) => {
