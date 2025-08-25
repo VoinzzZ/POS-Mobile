@@ -13,6 +13,7 @@ import PasswordInput from "../components/PasswordInput";
 export default function ChangePassword() {
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
+    
     return (
         <ImageBackground
         source={BgImg}
@@ -29,6 +30,8 @@ export default function ChangePassword() {
                     <PasswordInput 
                     value={password} 
                     onChangeText={setPassword}
+                    placeholder="New Password"
+                    label="New Password"
                     />
                 </View>
                 <View style={styles.confirm}>

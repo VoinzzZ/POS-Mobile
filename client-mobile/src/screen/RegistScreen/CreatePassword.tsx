@@ -13,6 +13,7 @@ import PasswordInput from "../../components/PasswordInput";
 export default function CreatePassword() {
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
+    
     return (
         <ImageBackground
         source={BgImg}
