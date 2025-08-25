@@ -22,7 +22,7 @@ export default function ChangePassword() {
             <View style={styles.content}>
 
                 <Text style={styles.title}>
-                    Buat{"\n"}Kata Sandi{"\n"}Untuk Akun Anda
+                    Buat{"\n"}Kata Sandi Baru{"\n"}Untuk Akun Anda
                 </Text>
 
                 <View style={styles.password}>
