@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import BgImg from "../../../assets/imgs/Background.png"
 import { useState } from "react";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 
 export default function VerifiedEmail() {
     const [email, setEmail] = useState("");
@@ -50,7 +50,7 @@ export default function VerifiedEmail() {
                 onChangeText={setCode}
                 />
 
-                <TouchableOpacity style={styles.btn}>
+                <TouchableOpacity style={styles.btn} onPress={() => router.push("/(auth)/(registration)/PasswordScreen")}>
                     <Text style={styles.btntext}>LANJUT</Text>
                 </TouchableOpacity>
             </View>
