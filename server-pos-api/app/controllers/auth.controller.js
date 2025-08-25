@@ -80,14 +80,14 @@ class AuthController {
     }
 
     // Kirim kode verifikasi email
-    static async sendEmailCode(req, res) {
+    static async sendEmailOTP(req, res) {
         try {
-            const { userId, email } = req.body;
+            const { userId, email, name } = req.body;
 
-            if (!userId || !email) {
+            if (!userId || !email || !name) {
                 return res.status(400).json({
                     success: false,
-                    message: 'User ID and email are required',
+                    message: 'User ID, name, and email are required',
                     error: 'MISSING_FIELDS'
                 });
             }
@@ -102,41 +102,43 @@ class AuthController {
                 });
             }
 
-            // Generate OTP (6 digit)
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            // Generate OTP 6 digit
+            const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
             const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
-            // Simpan di table EmailVerification
+            // Simpan OTP di table EmailVerification
             await prisma.emailVerification.create({
                 data: {
+                    userId,
                     email,
-                    code,
-                    expiresAt
+                    code: otpCode,
+                    expiresAt,
+                    verified: false
                 }
             });
 
-            // Kirim email
+            // Kirim email OTP
             const emailService = new EmailService();
-            await emailService.sendOTPEmail(email, code);
+            await emailService.sendOTPEmail(email, name, otpCode);
 
             res.status(200).json({
                 success: true,
-                message: 'Verification code sent to email. Code valid for 5 minutes.'
+                message: 'OTP sent to email. Code valid for 5 minutes.'
             });
 
         } catch (error) {
-            console.error('Send email code error:', error);
+            console.error('Send email OTP error:', error);
             res.status(500).json({
                 success: false,
-                message: 'Failed to send email code',
-                error: 'SEND_EMAIL_CODE_ERROR',
+                message: 'Failed to send OTP email',
+                error: 'SEND_EMAIL_OTP_ERROR',
                 details: error.message
             });
         }
     }
 
     // Verifikasi kode email
-    static async verifyEmailCode(req, res) {
+    static async verifyEmailOTP(req, res) {
         try {
             const { userId, email, code } = req.body;
 
@@ -148,9 +150,10 @@ class AuthController {
                 });
             }
 
-            // Cari OTP
+            // Cari OTP valid
             const verification = await prisma.emailVerification.findFirst({
                 where: {
+                    userId,
                     email,
                     code,
                     expiresAt: { gt: new Date() },
@@ -161,18 +164,20 @@ class AuthController {
             if (!verification) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Invalid or expired verification code',
-                    error: 'INVALID_CODE'
+                    message: 'Invalid or expired OTP',
+                    error: 'INVALID_OTP'
                 });
             }
 
-            // Update user dengan email
+            // Update user email jika perlu
             await prisma.user.update({
                 where: { id: userId },
-                data: { email }
+                data: {
+                    email
+                }
             });
 
-            // Tandai OTP sudah diverifikasi
+            // Tandai OTP diverifikasi
             await prisma.emailVerification.update({
                 where: { id: verification.id },
                 data: {
@@ -187,11 +192,12 @@ class AuthController {
             });
 
         } catch (error) {
-            console.error('Verify email code error:', error);
+            console.error('Verify email OTP error:', error);
             res.status(500).json({
                 success: false,
-                message: 'Failed to verify email code',
-                error: 'VERIFY_EMAIL_CODE_ERROR'
+                message: 'Failed to verify OTP',
+                error: 'VERIFY_EMAIL_OTP_ERROR',
+                details: error.message
             });
         }
     }
