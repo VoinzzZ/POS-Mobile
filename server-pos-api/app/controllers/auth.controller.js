@@ -44,7 +44,7 @@ class AuthController {
             data: {
                 name,
                 role: role || 'Cashier',
-                isVerified: false, // nanti berubah setelah email OTP valid
+                isVerified: false,
             }
         });
 
@@ -129,7 +129,8 @@ class AuthController {
             res.status(500).json({
                 success: false,
                 message: 'Failed to send email code',
-                error: 'SEND_EMAIL_CODE_ERROR'
+                error: 'SEND_EMAIL_CODE_ERROR',
+                details: error.message
             });
         }
     }

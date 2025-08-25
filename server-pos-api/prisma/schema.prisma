@@ -13,11 +13,11 @@ enum role {
 }
 
 model User {
-  id        Int     @id @default(autoincrement())
-  name      String
-  email     String? @unique
-  password  String?
-  role      role    @default(Cashier)
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String? @unique
+  password String?
+  role     role    @default(Cashier)
 
   isVerified           Boolean   @default(false)
   verificationToken    String?
@@ -26,31 +26,34 @@ model User {
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
 
-  registrationPin       RegistrationPin[]
+  registrationPin    RegistrationPin[]
+  emailVerifications EmailVerification[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model RegistrationPin {
-  id          Int         @id @default(autoincrement())
-  code        String      @unique
-  expiresAt   DateTime
-  used        Boolean     @default(false)
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
 
-  createdBy   User        @relation(fields: [createdById], references: [id])
+  createdBy   User @relation(fields: [createdById], references: [id])
   createdById Int
 
-  createdAt   DateTime    @default(now())
-  usedAt      DateTime? 
+  createdAt DateTime  @default(now())
+  usedAt    DateTime?
 }
 
 model EmailVerification {
-  id          Int        @id @default(autoincrement())
-  email       String
-  code        String
-  expiresAt   DateTime
-  verified    Boolean
-
-  createdAt   DateTime  @default(now())
-  verifiedAt  DateTime?
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id])
+  email      String
+  code       String
+  expiresAt  DateTime
+  verified   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  verifiedAt DateTime?
 }
