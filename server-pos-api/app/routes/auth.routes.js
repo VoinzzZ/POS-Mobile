@@ -6,18 +6,12 @@ const router = express.Router();
 
 // Public routes (multi-step register)
 router.post('/register', AuthController.register);             
-router.post('/send-email-code', AuthController.sendEmailCode); 
-router.post('/verify-email-code', AuthController.verifyEmailCode); 
+router.post('/send-email-code', AuthController.sendEmailOTP); 
+router.post('/verify-email-code', AuthController.verifyEmailOTP); 
 router.post('/set-password', AuthController.setPassword);
 
 // Auth routes
 router.post('/login', AuthController.login);
-router.post('/forgot-password', AuthController.forgotPassword);
-router.post('/reset-password', AuthController.resetPassword);
-
-// Email verification 
-router.get('/verify-email', AuthController.verifyEmail);
-router.post('/resend-verification', AuthController.resendVerification);
 
 // Protected routes
 router.post('/logout', AuthMiddleware.verifyToken, AuthController.logout);
