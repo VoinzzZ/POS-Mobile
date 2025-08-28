@@ -1,4 +1,5 @@
 const prisma = require('../config/mysql.db');
+import PasswordInput from './../../../client-mobile/src/components/PasswordInput';
 const PasswordService = require('../utils/passwordService');
 const JWTService = require('../utils/jwtService');
 const EmailService = require('../services/email.service');
@@ -446,7 +447,6 @@ class AuthController {
     // Get current user profile
     static async getProfile(req, res) {
         try {
-            // User data is set by verifyToken middleware
             const { userId } = req.user;
 
             const user = await prisma.user.findUnique({
