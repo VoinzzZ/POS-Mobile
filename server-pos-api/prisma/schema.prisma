@@ -19,18 +19,17 @@ model User {
   password String?
   role     role    @default(Cashier)
 
-  isVerified           Boolean   @default(false)
-  verificationToken    String?
-  verificationExpires  DateTime?
-  emailVerifiedAt      DateTime?
-  resetPasswordToken   String?
-  resetPasswordExpires DateTime?
+  isVerified      Boolean   @default(false)
+  emailVerifiedAt DateTime?
 
   registrationPin    RegistrationPin[]
   emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([email])
 }
 
 model RegistrationPin {
@@ -56,4 +55,19 @@ model EmailVerification {
   verified   Boolean   @default(false)
   createdAt  DateTime  @default(now())
   verifiedAt DateTime?
+
+  @@index([code, expiresAt])
+}
+
+model PasswordReset {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String
+  expiresAt DateTime
+  used      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([tokenHash, expiresAt])
 }
