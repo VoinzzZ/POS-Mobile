@@ -62,12 +62,12 @@ model EmailVerification {
 model PasswordReset {
   id        Int       @id @default(autoincrement())
   userId    Int
-  tokenHash String
+  code      String
   expiresAt DateTime
   used      Boolean   @default(false)
   createdAt DateTime  @default(now())
 
   user      User      @relation(fields: [userId], references: [id])
 
-  @@index([tokenHash, expiresAt])
+  @@index([code, expiresAt])
 }

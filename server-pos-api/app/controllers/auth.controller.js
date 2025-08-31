@@ -1,10 +1,8 @@
 const prisma = require('../config/mysql.db');
-import PasswordInput from './../../../client-mobile/src/components/PasswordInput';
 const PasswordService = require('../utils/passwordService');
 const JWTService = require('../utils/jwtService');
 const EmailService = require('../services/email.service');
 const validator = require('validator');
-const crypto = require('crypto');
 
 class AuthController {
     // Register new user
