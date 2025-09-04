@@ -442,6 +442,98 @@ class AuthController {
         }
     }
 
+    // Send forgot password otp
+    static async sendForgotPasswordOtp(req, res) {
+        try {
+            const { email } = req.body;
+
+            if ( email) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email is required',
+                    error: 'MISSING_EMAIL'
+                });
+            }
+
+            if (!validator.isEmail(email)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid email format',
+                    error: 'INVALID_EMAIL'
+                });
+            }
+
+            const user = await prisma.user.findUnique({
+                where: { email: email.toLowerCase() }
+            });
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No account found with this email address',
+                    error: 'USER_NOT_FOUND'
+                });
+            }
+
+            if (!user.isVerified) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Please complete your regisration first',
+                    error: 'USER_NOT_VERIFIED'
+                });
+            }
+
+            await prisma.passwordReset.deleteMany({
+                where: {
+                    userId: user.id,
+                    used: false
+                }
+            });
+
+            const otpCode = Math.floor(100000 + Math.random() * 900000).toLocaleString();
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10menit
+
+
+            // Simpan otp ke db
+            await prisma.passwordReet.create({
+                data: {
+                    userId: user.id,
+                    code: otpCode,
+                    expiresAt,
+                    used: false
+                } 
+            });
+
+            const emailService = new EmailService();
+            const result = await emailService.sendForgotPasswordOtp(email, otpCode, user.name);
+
+            if (!result.success) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Failed to send reset code to email',
+                    error: 'EMAIL_SEND_FAILED'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Password reset code sent to your email. Code valid for 10 minutes.',
+                data: {
+                    email: email
+                }
+            });
+
+        } catch (error) {
+            console.error('Send forgot password OTP error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to send reset code',
+                error: 'SEND_FORGOT_PASSWORD_OTP_ERROR',
+                ...(process.env.NODE_ENV === 'development' && { details: error.message })
+            });
+        }
+    }
+
     // Get current user profile
     static async getProfile(req, res) {
         try {
