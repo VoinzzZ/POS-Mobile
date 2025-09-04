@@ -63,6 +63,13 @@ class JWTService {
             refreshToken: this.generateRefreshToken(payLoad)
         };
     }
+
+    // Generate riset token
+    async generateRisetToken(payload) {
+        return jwt.sign(payload, process.env.JWT_SECRET, {
+            expiresIn: '5m' // 5 menit
+        });
+    }
 }
 
 module.exports = JWTService;
