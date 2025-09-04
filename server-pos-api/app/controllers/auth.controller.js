@@ -534,6 +534,86 @@ class AuthController {
         }
     }
 
+    // Verify Forgot Password OTP
+    static async verifyForgotPasswordOTP(req, res) {
+        try {
+            const { email, otpCode } = req.body;
+
+            if (!email || !otpCode) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email and verification code are required',
+                    error: 'MISSING_FIELDS'
+                });
+            }
+
+            // Validate email format
+            if (!validator.isEmail(email)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid email format',
+                    error: 'INVALID_EMAIL'
+                });
+            }
+
+            // Cari user
+            const user = await prisma.user.findUnique({
+                where: { email: email.toLowerCase() }
+            });
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No account found with this email address',
+                    error: 'USER_NOT_FOUND'
+                });
+            }
+
+            // Cari OTP yang valid
+            const passwordReset = await prisma.passwordReset.findFirst({
+                where: {
+                    userId: user.id,
+                    code: otpCode,
+                    expiresAt: { gt: new Date() },
+                    used: false
+                }
+            });
+
+            if (!passwordReset) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid or expired verification code',
+                    error: 'INVALID_OTP'
+                });
+            }
+
+            // Generate reset token untuk step selanjutnya
+            const resetToken = JWTService.generateResetToken({
+                userId: user.id,
+                email: user.email,
+                resetId: passwordReset.id
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Verification code confirmed. You can now set your new password.',
+                data: {
+                    resetToken: resetToken,
+                    email: user.email
+                }
+            });
+
+        } catch (error) {
+            console.error('Verify forgot password OTP error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to verify code',
+                error: 'VERIFY_FORGOT_PASSWORD_OTP_ERROR',
+                ...(process.env.NODE_ENV === 'development' && { details: error.message })
+            });
+        }
+    }
+
     // Get current user profile
     static async getProfile(req, res) {
         try {
