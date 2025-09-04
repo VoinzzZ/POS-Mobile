@@ -65,7 +65,7 @@ class JWTService {
     }
 
     // Generate riset token
-    async generateRisetToken(payload) {
+    static generateRisetToken(payload) {
         return jwt.sign(payload, process.env.JWT_SECRET, {
             expiresIn: '5m' // 5 menit
         });
