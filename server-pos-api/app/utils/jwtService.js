@@ -70,6 +70,15 @@ class JWTService {
             expiresIn: '5m' // 5 menit
         });
     }
+
+    // Verify riset password
+    static verifyRisetToken(token) {
+        try {
+            return jwt.verify(token, process.env.JWT_SECRET);
+        } catch (error) {
+            throw new Error('Invalid or expired riset token');
+        }
+    }
 }
 
 module.exports = JWTService;
