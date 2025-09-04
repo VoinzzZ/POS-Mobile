@@ -614,6 +614,119 @@ class AuthController {
         }
     }
 
+    // Reset Password (Set New Password)
+    static async resetPassword(req, res) {
+        try {
+            const { resetToken, newPassword, confirmPassword } = req.body;
+
+            if (!resetToken || !newPassword || !confirmPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'All fields are required',
+                    error: 'MISSING_FIELDS'
+                });
+            }
+
+            // Verify reset token
+            let tokenData;
+            try {
+                tokenData = JWTService.verifyResetToken(resetToken);
+            } catch (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid or expired reset token',
+                    error: 'INVALID_RESET_TOKEN'
+                });
+            }
+
+            // Validate password
+            const passwordValidation = PasswordService.validatePassword(newPassword);
+            if (!passwordValidation.isValid) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Password validation failed',
+                    error: 'WEAK_PASSWORD',
+                    details: passwordValidation.errors
+                });
+            }
+
+            // Validate confirm password
+            const confirmPasswordValidation = PasswordService.validateConfrimPassword(newPassword, confirmPassword);
+            if (!confirmPasswordValidation.isValid) {
+                return res.status(400).json({
+                    success: false,
+                    message: confirmPasswordValidation.error,
+                    error: 'PASSWORD_MISMATCH'
+                });
+            }
+
+            // Cek apakah reset token masih valid di database
+            const passwordReset = await prisma.passwordReset.findFirst({
+                where: {
+                    id: tokenData.resetId,
+                    userId: tokenData.userId,
+                    expiresAt: { gt: new Date() },
+                    used: false
+                }
+            });
+
+            if (!passwordReset) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Reset session has expired. Please request a new reset code.',
+                    error: 'RESET_SESSION_EXPIRED'
+                });
+            }
+
+            // Hash password baru
+            const hashedPassword = await PasswordService.hashPassword(newPassword);
+
+            // Update password user
+            await prisma.user.update({
+                where: { id: tokenData.userId },
+                data: { 
+                    password: hashedPassword,
+                    updatedAt: new Date()
+                }
+            });
+
+            // Tandai reset token sudah digunakan
+            await prisma.passwordReset.update({
+                where: { id: passwordReset.id },
+                data: { 
+                    used: true,
+                    updatedAt: new Date()
+                }
+            });
+
+            // Hapus semua reset token lain untuk user ini (untuk keamanan)
+            await prisma.passwordReset.deleteMany({
+                where: {
+                    userId: tokenData.userId,
+                    used: false,
+                    id: { not: passwordReset.id }
+                }
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Password has been reset successfully. You can now login with your new password.',
+                data: {
+                    email: tokenData.email
+                }
+            });
+
+        } catch (error) {
+            console.error('Reset password error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to reset password',
+                error: 'RESET_PASSWORD_ERROR',
+                ...(process.env.NODE_ENV === 'development' && { details: error.message })
+            });
+        }
+    }
+
     // Get current user profile
     static async getProfile(req, res) {
         try {
