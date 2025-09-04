@@ -1,5 +1,6 @@
 const MailConfig = require("../config/mail.config");
 const otpTemplate = require("../templates/sendOtpEmail");
+const forgotPasswordOtpTemplate = require("../templates/forgotPasswordOtpTemplate")
 
 class EmailService {
     constructor() {
@@ -40,12 +41,20 @@ class EmailService {
         }
     }
 
-    // Method khusus OTP
     async sendOtpEmail(to, otpCode) {
         return this.sendEmail({
             to,
             subject: "Kode OTP Verifikasi Email",
             html: otpTemplate(otpCode)
+        });
+    }
+
+    //otp send forgot password
+    async sendForgotPasswordOtp(to, otpCode, userName) {
+        return this.sendEmail({
+            to,
+            subject: "Reset Password - Kode Verifikasi",
+            html: forgotPasswordOtpTemplate(otpCode, userName)
         });
     }
 
