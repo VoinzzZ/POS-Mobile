@@ -1,82 +1,136 @@
 const jwt = require('jsonwebtoken');
+const { AuthenticationError } = require('./errors');
+const crypto = require("crypto");
 
 class JWTService {
-    // Generate Token (15minutes)
-    static generateAccessToken(payLoad) {
+    static #tokenSettings = {
+        access: {
+            expiresIn: '15m',
+            type: 'access'
+        },
+        refresh: {
+            expiresIn: '7d',
+            type: 'refresh'
+        },
+        reset: {
+            expiresIn: '10m',
+            type: 'reset'
+        }
+    };
+
+    static #defaultOptions = {
+        issuer: 'pos-mobile-api',
+        audience: 'pos-mobile-client'
+    };
+
+    static #generateToken(payload, type) {
+        const settings = this.#tokenSettings[type];
+        if (!settings) {
+            throw new Error(`Invalid token type: ${type}`);
+        }
+
+        const tokenPayload = {
+            ...payload,
+            type: settings.type
+        };
+
         return jwt.sign(
-            payLoad,
+            tokenPayload,
             process.env.JWT_SECRET,
             {
-                expiresIn: process.env.JWT_ACCESS_EXPIRES_IN,
-                issuer: 'pos-system',
-                audience: 'pos-users'
+                ...this.#defaultOptions,
+                expiresIn: settings.expiresIn,
+                jwtid: this.#generateTokenId()
             }
         );
     }
 
-    // Generate Refresh Token (7days)
-    static generateRefreshToken(payLoad) {
-        return jwt.sign(
-            payLoad,
-            process.env.JWT_SECRET,
-            {
-                expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
-                issuer: 'pos-system',
-                audience: 'pos-users'
-            }
-        );
+    static #generateTokenId() {
+        return crypto.randomBytes(32).toString('hex');
     }
 
-    // Verify Token
+    static #verifyToken(token, type) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET, this.#defaultOptions);
+            
+            if (decoded.type !== type) {
+                throw new AuthenticationError('Invalid token type');
+            }
+
+            return decoded;
+        } catch (error) {
+            if (error.name === 'TokenExpiredError') {
+                throw new AuthenticationError(`${type} token has expired`);
+            }
+            if (error.name === 'JsonWebTokenError') {
+                throw new AuthenticationError(`Invalid ${type} token`);
+            }
+            throw error;
+        }
+    }
+
+    // Generate Access Token
+    static generateAccessToken(payload) {
+        return this.#generateToken(payload, 'access');
+    }
+
+    // Generate Refresh Token
+    static generateRefreshToken(payload) {
+        return this.#generateToken(payload, 'refresh');
+    }
+
+    // Generate Reset Token
+    static generateResetToken(payload) {
+        return this.#generateToken(payload, 'reset');
+    }
+
+    // Verify Access Token
     static verifyToken(token) {
-        try {
-            return jwt.verify(token, process.env.JWT_SECRET, {
-                issuer: 'pos-system',
-                audience: 'pos-users'
-            });
-        } catch (error) {
-            throw new Error(`Token Verification failed: ${error.message}`);
-        }
+        return this.#verifyToken(token, 'access');
     }
 
-    // Verify refresh token
+    // Verify Refresh Token
     static verifyRefreshToken(token) {
-        try {
-            return jwt.verify(token, process.env.JWT_SECRET, {
-                issuer: 'pos-system',
-                audience: 'pos-users'
-            })
-        } catch (error) {
-            throw new Error(`Refresh Token Verification failed: ${error.message}`);
-        }
+        return this.#verifyToken(token, 'refresh');
     }
 
-    // Decode Token (without verification)
-    static decodeToken(token) {
-        return jwt.decode(token);
+    // Verify Reset Token
+    static verifyResetToken(token) {
+        return this.#verifyToken(token, 'reset');
     }
 
-    // Generated Token Pair (Access + Refresh)
-    static generateTokenPair(payLoad) {
+    // Generate Token Pair
+    static generateTokenPair(payload) {
+        const accessToken = this.generateAccessToken(payload);
+        const refreshToken = this.generateRefreshToken(payload);
+
         return {
-            accessToken: this.generateAccessToken(payLoad),
-            refreshToken: this.generateRefreshToken(payLoad)
+            accessToken,
+            refreshToken,
+            tokenType: 'Bearer',
+            expiresIn: 900, // 15 minutes in seconds
+            refreshExpiresIn: 604800 // 7 days in seconds
         };
     }
 
-    // Generate riset token
-    static generateRisetToken(payload) {
-        return jwt.sign(payload, process.env.JWT_SECRET, {
-            expiresIn: '5m' // 5 menit
-        });
-    }
-
-    // Verify riset password
-    static verifyRisetToken(token) {
+    // Extract token info (without verification)
+    static getTokenInfo(token) {
         try {
-            return jwt.verify(token, process.env.JWT_SECRET);
+            const decoded = jwt.decode(token, { complete: true });
+            if (!decoded) {
+                throw new AuthenticationError('Invalid token format');
+            }
+
+            return {
+                type: decoded.payload.type,
+                expiresAt: new Date(decoded.payload.exp * 1000),
+                issuer: decoded.payload.iss,
+                audience: decoded.payload.aud,
+                issuedAt: new Date(decoded.payload.iat * 1000),
+                tokenId: decoded.payload.jti
+            };
         } catch (error) {
-            throw new Error('Invalid or expired riset token');
+            throw new AuthenticationError('Failed to decode token');
         }
     }
 }
