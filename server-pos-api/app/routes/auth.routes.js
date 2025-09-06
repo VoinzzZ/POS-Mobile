@@ -4,19 +4,23 @@ const AuthMiddleware = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
+// instance
+const authController = new AuthController();
+const authMiddleware = new AuthMiddleware();
+
 // Public routes (multi-step register)
-router.post('/register', AuthController.register);             
-router.post('/send-email-code', AuthController.sendEmailOTP); 
-router.post('/verify-email-code', AuthController.verifyEmailOTP); 
-router.post('/set-password', AuthController.setPassword);
+router.post('/register', authController.register);             
+router.post('/send-email-code', authController.sendEmailOTP); 
+router.post('/verify-email-code', authController.verifyEmailOTP); 
+router.post('/set-password', authController.setPassword);
 
 // Auth routes
-router.post('/login', AuthController.login);
+router.post('/login', authController.login);
 
 // Protected routes
-router.post('/logout', AuthMiddleware.verifyToken, AuthController.logout);
-router.post('/refresh-token', AuthMiddleware.verifyRefreshToken, AuthController.refreshToken);
-router.get('/profile', AuthMiddleware.verifyToken, AuthController.getProfile);
-router.post('/change-password', AuthMiddleware.verifyToken, AuthController.changePassword);
+router.post('/logout', AuthMiddleware.verifyToken, authController.logout);
+router.post('/refresh-token', AuthMiddleware.verifyRefreshToken, authController.refreshToken);
+router.get('/profile', AuthMiddleware.verifyToken, authController.getProfile);
+router.post('/change-password', AuthMiddleware.verifyToken, authController.changePassword);
 
 module.exports = router;

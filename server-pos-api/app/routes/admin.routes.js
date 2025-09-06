@@ -4,6 +4,9 @@ const AdminController = require('../controllers/admin.controller');
 
 const router = express.Router();
 
-router.post('/generate-pin', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, AdminController.generatePin)
+// instance
+const adminController = new AdminController();
+
+router.post('/generate-pin', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin,  adminController.generatePin)
 
 module.exports = router;
