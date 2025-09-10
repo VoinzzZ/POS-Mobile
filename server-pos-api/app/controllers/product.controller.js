@@ -27,6 +27,24 @@ class ProductController extends BaseController {
 
         return this.sendSuccess(res, { statusCode: 201, message: 'Product created successfully', data: newProduct });
     });
+
+    // PUT update product
+    updateProduct = this.asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const { name, brand, type, price, stock, imageUrl } = req.body;
+
+        const updatedProduct = await this.prisma.$transaction(async (tx) => {
+            const existingProduct = await tx.product.findUnique({ where: { id: parseInt(id) } });
+            if (!existingProduct) throw new ValidationError('Product not found');
+
+            return await tx.product.update({
+                where: { id: parseInt(id) },
+                data: { name, brand, type, price, stock, imageUrl }
+            });
+        });
+
+        return this.sendSuccess(res, { message: 'Product updated successfully', data: updatedProduct });
+    });
     
 }
 
