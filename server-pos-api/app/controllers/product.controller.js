@@ -6,6 +6,12 @@ class ProductController extends BaseController {
         super();
         this.prisma = new PrismaClient();
     }
+
+    // GET all products
+    getAllProducts = this.asyncHandler(async (req, res) => {
+        const products = await this.prisma.product.findMany();
+        return this.sendSuccess(res, { message: 'Products fetched successfully', data: products });
+    });
     
 }
 
