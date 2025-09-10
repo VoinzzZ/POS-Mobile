@@ -56,6 +56,7 @@ app.get('/health', (req, res) => {
 // Routes with versioning
 app.use(`/api/${API_VERSION}/auth`, require('./routes/auth.routes'));
 app.use(`/api/${API_VERSION}/admin`, require('./routes/admin.routes'));
+app.use(`/api/${API_VERSION}/product`, require('./routes/product.route'));
 
 // API Documentation redirect
 app.get('/docs', (req, res) => {
