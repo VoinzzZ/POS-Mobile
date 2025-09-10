@@ -71,3 +71,17 @@ model PasswordReset {
 
   @@index([code, expiresAt])
 }
+
+model Product {
+  id        Int       @id @default(autoincrement())
+  name      String
+  type      String?
+  brand     String?
+  price     Float
+  stock     Int       @default(0)
+  imageUrl  String?   
+  createdAt DateTime  @default(now())
+  updateAt  DateTime  @updatedAt
+
+  @@index([name, brand, type])
+}
