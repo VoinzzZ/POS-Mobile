@@ -11,7 +11,7 @@ const authController = new AuthController();
 // Public routes (multi-step register)
 router.post('/register', authLimiter, speedLimiter, authController.register);             
 router.post('/send-email-code', authLimiter, speedLimiter, authController.sendEmailOTP); 
-router.post('/verify-email-code', authLimiter, speedLimiter,    authController.verifyEmailOTP); 
+router.post('/verify-email-code', authLimiter, speedLimiter, authController.verifyEmailOTP); 
 router.post('/set-password', authController.setPassword);
 
 // Auth routes
