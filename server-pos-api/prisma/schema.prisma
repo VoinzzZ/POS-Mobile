@@ -43,6 +43,9 @@ model RegistrationPin {
 
   createdAt DateTime  @default(now())
   usedAt    DateTime?
+
+  revokedById Int? 
+  revokedAt   DateTime?
 }
 
 model EmailVerification {
