@@ -1,5 +1,7 @@
-const prisma = require('../prisma/client');
+const { PrismaClient } = require('@prisma/client');
 const { ValidationError } = require('../utils/errors');
+
+const prisma = new PrismaClient();
 
 class ProductService {
     async createProduct(data) {
