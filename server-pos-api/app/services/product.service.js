@@ -5,6 +5,11 @@ class ProductService {
     async createProduct(data) {
         return prisma.product.create({ data });
     }
+
+    async getAllProducts() {
+        return prisma.product.findMany();
+    }
+
     
 }
 
