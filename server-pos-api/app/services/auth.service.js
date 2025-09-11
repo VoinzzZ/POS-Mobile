@@ -199,6 +199,32 @@ class AuthService {
         };
     }
 
+    async sendForgotPasswordOtp(email) {
+        const validatedEmail = this.validateEmail(email);
+
+        const user = await this.findUserByEmail(validatedEmail);
+        if (!user) throw new NotFoundError('No account found with this email address');
+        if (!user.isVerified) throw new ValidationError('Please complete your registration first');
+
+        const otpCode = this.generateOTP();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        await this.prisma.$transaction(async (tx) => {
+            await tx.passwordReset.deleteMany({
+                where: { userId: user.id, used: false }
+            });
+
+            await tx.passwordReset.create({
+                data: { userId: user.id, code: otpCode, expiresAt, used: false }
+            });
+        });
+
+        const result = await this.emailService.sendForgotPasswordOtp(validatedEmail, otpCode, user.name);
+        if (!result.success) throw new Error('Failed to send reset code to email');
+
+        return { email: validatedEmail, message: 'Password reset code sent. Valid for 10 minutes.' };
+    }
+
 }
 
 module.exports = AuthService;
