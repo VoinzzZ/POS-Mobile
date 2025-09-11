@@ -152,52 +152,52 @@ class AuthService {
     }
 
     async login({ email, password }) {
-    if (!validator.isEmail(email)) {
-        throw new ValidationError('Invalid email format', 400, 'INVALID_EMAIL');
-    }
-
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) {
-        throw new ValidationError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
-    }
-
-    const isPasswordValid = await PasswordService.comparePassword(password, user.password);
-    if (!isPasswordValid) {
-        throw new ValidationError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
-    }
-
-    if (!user.isVerified) {
-        throw new ValidationError('Please verify your email before logging in', 403, 'EMAIL_NOT_VERIFIED');
-    }
-
-    const tokenPayload = {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-        name: user.name
-    };
-
-    const { accessToken, refreshToken } = JWTService.generateTokenPair(tokenPayload);
-
-    return {
-        message: 'Login successful',
-        data: {
-            user: {
-                userId: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                isVerified: user.isVerified
-            },
-            tokens: {
-                accessToken,
-                refreshToken,
-                expiresIn: 900,       // 15 minutes
-                refreshExpiresIn: 604800 // 7 days
-            }
+        if (!validator.isEmail(email)) {
+            throw new ValidationError('Invalid email format', 400, 'INVALID_EMAIL');
         }
-    };
-}
+
+        const user = await this.prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            throw new ValidationError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+        }
+
+        const isPasswordValid = await PasswordService.comparePassword(password, user.password);
+        if (!isPasswordValid) {
+            throw new ValidationError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+        }
+
+        if (!user.isVerified) {
+            throw new ValidationError('Please verify your email before logging in', 403, 'EMAIL_NOT_VERIFIED');
+        }
+
+        const tokenPayload = {
+            userId: user.id,
+            email: user.email,
+            role: user.role,
+            name: user.name
+        };
+
+        const { accessToken, refreshToken } = JWTService.generateTokenPair(tokenPayload);
+
+        return {
+            message: 'Login successful',
+            data: {
+                user: {
+                    userId: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    isVerified: user.isVerified
+                },
+                tokens: {
+                    accessToken,
+                    refreshToken,
+                    expiresIn: 900,       // 15 minutes
+                    refreshExpiresIn: 604800 // 7 days
+                }
+            }
+        };
+    }
 
 }
 
