@@ -28,22 +28,41 @@ class ProductController extends BaseController {
         return this.sendSuccess(res, { statusCode: 201, message: 'Product created successfully', data: newProduct });
     });
 
-    // PUT update product
-    updateProduct = this.asyncHandler(async (req, res) => {
-        const { id } = req.params;
-        const { name, brand, type, price, stock, imageUrl } = req.body;
+   updateProduct = this.asyncHandler(async (req, res) => {
+    const productId = parseInt(req.params.id);
+    if (isNaN(productId)) throw new ValidationError('Invalid product ID');
 
-        const updatedProduct = await this.prisma.$transaction(async (tx) => {
+    const { name, brand, type, price, stock, imageUrl } = req.body;
+    this.validateRequiredFields(req.body, ['name', 'brand', 'type', 'price', 'stock']);
+
+    const updatedProduct = await this.prisma.$transaction(async (tx) => {
+        const existingProduct = await tx.product.findUnique({ where: { id: productId } });
+        if (!existingProduct) throw new ValidationError('Product not found');
+
+        const dataToUpdate = { name, brand, type, price, stock, imageUrl };
+
+        return await tx.product.update({
+            where: { id: productId },
+            data: dataToUpdate
+        });
+    });
+
+    return this.sendSuccess(res, { message: 'Product updated successfully', data: updatedProduct });
+});
+
+
+    // DELETE product
+    deleteProduct = this.asyncHandler(async (req, res) => {
+        const { id } = req.params;
+
+        await this.prisma.$transaction(async (tx) => {
             const existingProduct = await tx.product.findUnique({ where: { id: parseInt(id) } });
             if (!existingProduct) throw new ValidationError('Product not found');
 
-            return await tx.product.update({
-                where: { id: parseInt(id) },
-                data: { name, brand, type, price, stock, imageUrl }
-            });
+            await tx.product.delete({ where: { id: parseInt(id) } });
         });
 
-        return this.sendSuccess(res, { message: 'Product updated successfully', data: updatedProduct });
+        return this.sendSuccess(res, { message: 'Product deleted successfully' });
     });
     
 }
