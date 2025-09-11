@@ -225,6 +225,32 @@ class AuthService {
         return { email: validatedEmail, message: 'Password reset code sent. Valid for 10 minutes.' };
     }
 
+    async verifyForgotPasswordOTP(email, otpCode) {
+    const validatedEmail = this.validateEmail(email);
+
+    const user = await this.findUserByEmail(validatedEmail);
+    if (!user) throw new NotFoundError('No account found with this email address');
+
+    const passwordReset = await this.prisma.passwordReset.findFirst({
+        where: {
+            userId: user.id,
+            code: otpCode,
+            expiresAt: { gt: new Date() },
+            used: false
+        }
+    });
+
+    if (!passwordReset) throw new ValidationError('Invalid or expired verification code');
+
+    const resetToken = JWTService.generateResetToken({
+        userId: user.id,
+        email: user.email,
+        resetId: passwordReset.id
+    });
+
+    return { resetToken, email: user.email, message: 'Verification code confirmed. You can now set your new password.' };
+}
+
 }
 
 module.exports = AuthService;
