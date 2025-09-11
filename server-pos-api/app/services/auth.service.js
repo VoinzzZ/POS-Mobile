@@ -251,6 +251,105 @@ class AuthService {
         return { resetToken, email: user.email, message: 'Verification code confirmed. You can now set your new password.' };
     }
 
+    async resetPassword(resetToken, newPassword, confirmPassword) {
+        let tokenData;
+        try {
+            tokenData = JWTService.verifyResetToken(resetToken);
+        } catch (error) {
+            throw new ValidationError('Invalid or expired reset token');
+        }
+
+        const passwordValidation = PasswordService.validatePassword(newPassword);
+        if (!passwordValidation.isValid) {
+            throw new ValidationError('Password validation failed', passwordValidation.errors);
+        }
+
+        if (newPassword !== confirmPassword) {
+            throw new ValidationError('Passwords do not match');
+        }
+
+        const passwordReset = await this.prisma.passwordReset.findFirst({
+            where: {
+                id: tokenData.resetId,
+                userId: tokenData.userId,
+                expiresAt: { gt: new Date() },
+                used: false
+            }
+        });
+
+        if (!passwordReset) {
+            throw new ValidationError('Reset session has expired. Please request a new reset code.');
+        }
+
+        const hashedPassword = await PasswordService.hashPassword(newPassword);
+
+        await this.prisma.$transaction(async (tx) => {
+            await tx.user.update({
+                where: { id: tokenData.userId },
+                data: { password: hashedPassword, updatedAt: new Date() }
+            });
+
+            await tx.passwordReset.update({
+                where: { id: passwordReset.id },
+                data: { used: true, updatedAt: new Date() }
+            });
+
+            await tx.passwordReset.deleteMany({
+                where: {
+                    userId: tokenData.userId,
+                    used: false,
+                    id: { not: passwordReset.id }
+                }
+            });
+        });
+
+        return { message: 'Password has been reset successfully. You can now login with your new password.', email: tokenData.email };
+    }
+
+    async changePassword(userId, currentPassword, newPassword, confirmPassword) {
+        const user = await this.findUserById(userId);
+
+        // Verifikasi password saat ini
+        const isCurrentPasswordValid = await PasswordService.comparePassword(currentPassword, user.password);
+        if (!isCurrentPasswordValid) {
+            throw new ValidationError('Current password is incorrect');
+        }
+
+        // Validasi password baru
+        const passwordValidation = PasswordService.validatePassword(newPassword);
+        if (!passwordValidation.isValid) {
+            throw new ValidationError('Password validation failed', passwordValidation.errors);
+        }
+
+        if (newPassword !== confirmPassword) {
+            throw new ValidationError('Passwords do not match');
+        }
+
+        // Hash dan update password
+        const hashedPassword = await PasswordService.hashPassword(newPassword);
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword }
+        });
+
+        return { message: 'Password changed successfully' };
+    }
+
+    async getProfile(userId) {
+        const user = await this.findUserById(userId);
+
+        return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            isVerified: user.isVerified,
+            emailVerifiedAt: user.emailVerifiedAt,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+        };
+    }
+
 }
 
 module.exports = AuthService;
