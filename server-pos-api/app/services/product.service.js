@@ -16,6 +16,14 @@ class ProductService {
         return product;
     }
 
+    async updateProduct(id, data) {
+        await this.getProductById(id); // cek dulu ada atau nggak
+        return prisma.product.update({
+            where: { id },
+            data
+        });
+    }
+
     
 }
 
