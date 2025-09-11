@@ -90,15 +90,16 @@ class AdminService {
 
     // Revoke a PIN
     async revokePin(pinId, adminId) {
+        const id = parseInt(pinId, 10);
         const pin = await this.prisma.registrationPin.findUnique({
-            where: { id: pinId }
+            where: { id: parseInt(pinId, 10) }
         });
 
         if (!pin) throw new NotFoundError('Registration PIN not found');
         if (pin.used) throw new ValidationError('Cannot revoke already used PIN');
 
         await this.prisma.registrationPin.update({
-            where: { id: pinId },
+            where: { id: parseInt(pinId, 10) },
             data: {
                 expiresAt: new Date(),
                 revokedById: adminId,
