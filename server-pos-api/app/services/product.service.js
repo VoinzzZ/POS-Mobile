@@ -17,14 +17,17 @@ class ProductService {
     }
 
     async updateProduct(id, data) {
-        await this.getProductById(id); // cek dulu ada atau nggak
+        await this.getProductById(id);
         return prisma.product.update({
             where: { id },
             data
         });
     }
 
-    
+    async deleteProduct(id) {
+        await this.getProductById(id);
+        return prisma.product.delete({ where: { id } });
+    }
 }
 
 module.exports = new ProductService();
