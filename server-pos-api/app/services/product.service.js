@@ -10,6 +10,12 @@ class ProductService {
         return prisma.product.findMany();
     }
 
+    async getProductById(id) {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new ValidationError('Product not found');
+        return product;
+    }
+
     
 }
 
