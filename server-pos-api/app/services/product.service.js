@@ -13,7 +13,7 @@ class ProductService {
     }
 
     async getProductById(id) {
-        const product = await prisma.product.findUnique({ where: { id } });
+        const product = await prisma.product.findUnique({ where: { id: parseInt(id) } });
         if (!product) throw new ValidationError('Product not found');
         return product;
     }
@@ -21,14 +21,14 @@ class ProductService {
     async updateProduct(id, data) {
         await this.getProductById(id);
         return prisma.product.update({
-            where: { id },
+            where: { id: parseInt(id) },
             data
         });
     }
 
     async deleteProduct(id) {
         await this.getProductById(id);
-        return prisma.product.delete({ where: { id } });
+        return prisma.product.delete({ where: { id: parseInt(id) } });
     }
 }
 
