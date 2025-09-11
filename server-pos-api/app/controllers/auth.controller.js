@@ -1,5 +1,4 @@
 const BaseController = require('./base.controller');
-const PasswordService = require('../utils/passwordService');
 const JWTService = require('../utils/jwtService');
 const EmailService = require('../services/email.service');
 const AuthService = require('../services/auth.service');
