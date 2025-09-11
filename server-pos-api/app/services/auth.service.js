@@ -2,6 +2,8 @@ const prisma = require('../config/mysql.db');
 const { ValidationError, NotFoundError } = require('../utils/errors');
 const validator = require('validator');
 const EmailService = require('./email.service');
+const PasswordService = require('../utils/passwordService');
+const JWTService = require('../utils/jwtService');
 
 class AuthService {
     constructor() {
@@ -124,6 +126,30 @@ class AuthService {
 
         return { message: 'Email verified successfully' };
     }
+
+    async setPassword({ userId, newPassword, confirmPassword }) {
+    const passwordValidation = PasswordService.validatePassword(newPassword);
+    if (!passwordValidation.isValid) {
+        throw new ValidationError('Password validation failed', 400, 'WEAK_PASSWORD', passwordValidation.errors);
+    }
+
+    if (newPassword !== confirmPassword) {
+        throw new ValidationError('Passwords do not match', 400, 'PASSWORD_MISMATCH');
+    }
+
+    const hashedPassword = await PasswordService.hashPassword(newPassword);
+
+    await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+            password: hashedPassword,
+            isVerified: true,
+            emailVerifiedAt: new Date()
+        }
+    });
+
+    return { message: 'Password set successfully. Registration completed.' };
+}
 
 }
 
