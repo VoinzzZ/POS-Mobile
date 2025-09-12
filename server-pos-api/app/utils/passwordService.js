@@ -52,20 +52,16 @@ class PasswordService {
         };
     }
 
-    // Validate confrim password
-    static validateConfrimPassword(password, confirmPassword) {
+    static validateConfirmPassword(password, confirmPassword) {
         if(password !== confirmPassword) {
             return {
                 isValid: false,
-                error: 'Password does not match'
+                errors: ['Passwords do not match'] // bikin array biar konsisten
             };
         }
-
-        return {
-            isValid: true,
-            error: null
-        };
+        return { isValid: true, errors: [] };
     }
+
 }
 
 module.exports = PasswordService;
