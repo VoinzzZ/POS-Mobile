@@ -127,19 +127,9 @@ class AuthService {
         return { message: 'Email verified successfully' };
     }
 
-    async setPassword({ userId, newPassword, confirmPassword }) {
-        const passwordValidation = PasswordService.validatePassword(newPassword);
-        if (!passwordValidation.isValid) {
-            throw new ValidationError('Password validation failed', 400, 'WEAK_PASSWORD', passwordValidation.errors);
-        }
-
-        if (newPassword !== confirmPassword) {
-            throw new ValidationError('Passwords do not match', 400, 'PASSWORD_MISMATCH');
-        }
-
-        const hashedPassword = await PasswordService.hashPassword(newPassword);
-
-        await this.prisma.user.update({
+    // Update password di DB
+    async updatePassword(userId, hashedPassword) {
+        return await prisma.user.update({
             where: { id: userId },
             data: {
                 password: hashedPassword,
@@ -147,9 +137,44 @@ class AuthService {
                 emailVerifiedAt: new Date()
             }
         });
-
-        return { message: 'Password set successfully. Registration completed.' };
     }
+
+    // Set password + validasi
+    async setPassword({ userId, newPassword, confirmPassword }) {
+        // Validasi strength password
+        const passwordValidation = PasswordService.validatePassword(newPassword);
+        if (!passwordValidation.isValid) {
+            return {
+                success: false,
+                message: 'Password validation failed',
+                error: 'WEAK_PASSWORD',
+                details: passwordValidation.errors
+            };
+        }
+
+        // Validasi confirm password
+        const confirmValidation = PasswordService.validateConfirmPassword(newPassword, confirmPassword);
+        if (!confirmValidation.isValid) {
+            return {
+                success: false,
+                message: 'Passwords do not match',
+                error: 'PASSWORD_MISMATCH',
+                details: confirmValidation.errors
+            };
+        }
+
+        // Hash password
+        const hashedPassword = await PasswordService.hashPassword(newPassword);
+
+        // Update DB
+        await this.updatePassword(userId, hashedPassword);
+
+        return {
+            success: true,
+            message: 'Password set successfully. Registration completed.'
+        };
+    }
+
 
     async login({ email, password }) {
         if (!validator.isEmail(email)) {
