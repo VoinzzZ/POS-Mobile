@@ -3,12 +3,11 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const { apiLimiter } = require('./middlewares/rateLimiter');
-const { requestLogger, errorLogger } = require('./middlewares/logger');
-const errorHandler = require('./middlewares/errorHandler');
+const { requestLogger, errorLogger } = require('./middlewares/logger')
+const routes = require('./routes/index.routes');
 
 const app = express();
 
-// Security middleware
 app.use(helmet({
     contentSecurityPolicy: process.env.NODE_ENV === 'production',
     crossOriginEmbedderPolicy: process.env.NODE_ENV === 'production',
@@ -20,30 +19,24 @@ app.use(helmet({
     xssFilter: true
 }));
 
-// CORS configuration for mobile clients
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS ? 
-        process.env.ALLOWED_ORIGINS.split(',') : 
-        '*',
+    origin: process.env.ALLOWED_ORIGINS 
+        ? process.env.ALLOWED_ORIGINS.split(',') 
+        : '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['X-Total-Count', 'X-Rate-Limit-Remaining'],
-    maxAge: 600 // 10 minutes
+    maxAge: 600
 }));
 
-// General middleware
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// API versioning and rate limiting
 const API_VERSION = 'v1';
 app.use(`/api/${API_VERSION}`, apiLimiter);
-
-// Logging
 app.use(requestLogger);
 
-// Health check
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
@@ -53,17 +46,13 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Routes with versioning
-app.use(`/api/${API_VERSION}/auth`, require('./routes/auth.routes'));
-app.use(`/api/${API_VERSION}/admin`, require('./routes/admin.routes'));
-app.use(`/api/${API_VERSION}/product`, require('./routes/product.route'));
+// 🔥 Ganti banyak require() jadi satu baris
+app.use(`/api/${API_VERSION}`, routes);
 
-// API Documentation redirect
 app.get('/docs', (req, res) => {
     res.redirect(process.env.API_DOCS_URL || '/api-docs');
 });
 
-// 404 handler
 app.use((req, res) => {
     res.status(404).json({
         success: false,
@@ -73,9 +62,6 @@ app.use((req, res) => {
     });
 });
 
-// Error handling
 app.use(errorLogger);
-app.use(errorHandler);
 
-// Export app
 module.exports = app;
