@@ -73,8 +73,8 @@ function generateTokenPair(payload) {
     accessToken,
     refreshToken,
     tokenType: 'Bearer',
-    expiresIn: 900, // 15 minutes in seconds
-    refreshExpiresIn: 604800 // 7 days in seconds
+    expiresIn: 900,
+    refreshExpiresIn: 604800
   };
 }
 
