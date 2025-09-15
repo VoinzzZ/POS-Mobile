@@ -1,85 +1,63 @@
-const { PrismaClient } = require('@prisma/client');
-const { ValidationError, NotFoundError } = require('../utils/errors');
+const prisma = require('../config/mysql.db');
 
-const prisma = new PrismaClient();
+async function createProduct(data) {
+  // Validate Category
+  if (data.categoryId) {
+    const category = await prisma.category.findUnique({ where: { id: data.categoryId } });
+    if (!category) throw new Error('Category does not exist');
+  }
 
-class ProductService {
-    async createProduct(data) {
-        // Validate Category
-        if (data.categoryId) {
-            const category = await prisma.category.findUnique({
-                where: { id: data.categoryId }
-            });
-            if (!category) throw new ValidationError('Category does not exist');
-        }
+  // Validate Brand
+  if (data.brandId) {
+    const brand = await prisma.brand.findUnique({ where: { id: data.brandId } });
+    if (!brand) throw new Error('Brand does not exist');
+  }
 
-        // Validate Brand
-        if (data.brandId) {
-            const brand = await prisma.brand.findUnique({
-                where: { id: data.brandId }
-            });
-            if (!brand) throw new ValidationError('Brand does not exist');
-        }
-
-        return prisma.product.create({
-            data
-        });
-    }
-
-    async getAllProducts() {
-        return prisma.product.findMany({
-            include: {
-                category: true,
-                brand: true
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
-        });
-    }
-
-    async getProductById(id) {
-        const product = await prisma.product.findUnique({
-            where: { id: parseInt(id) },
-            include: {
-                category: true,
-                brand: true
-            }
-        });
-
-        if (!product) throw new NotFoundError('Product not found');
-        return product;
-    }
-
-    async updateProduct(id, data) {
-        await this.getProductById(id);
-
-        if (data.categoryId) {
-            const category = await prisma.category.findUnique({
-                where: { id: data.categoryId }
-            });
-            if (!category) throw new ValidationError('Category does not exist');
-        }
-
-        if (data.brandId) {
-            const brand = await prisma.brand.findUnique({
-                where: { id: data.brandId }
-            });
-            if (!brand) throw new ValidationError('Brand does not exist');
-        }
-
-        return prisma.product.update({
-            where: { id: parseInt(id) },
-            data
-        });
-    }
-
-    async deleteProduct(id) {
-        await this.getProductById(id);
-        return prisma.product.delete({
-            where: { id: parseInt(id) }
-        });
-    }
+  return prisma.product.create({ data });
 }
 
-module.exports = new ProductService();
+async function getAllProducts() {
+  return prisma.product.findMany({
+    include: { category: true, brand: true },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+async function getProductById(id) {
+  const product = await prisma.product.findUnique({
+    where: { id: parseInt(id, 10) },
+    include: { category: true, brand: true },
+  });
+
+  if (!product) throw new Error('Product not found');
+  return product;
+}
+
+async function updateProduct(id, data) {
+  await getProductById(id);
+
+  if (data.categoryId) {
+    const category = await prisma.category.findUnique({ where: { id: data.categoryId } });
+    if (!category) throw new Error('Category does not exist');
+  }
+
+  if (data.brandId) {
+    const brand = await prisma.brand.findUnique({ where: { id: data.brandId } });
+    if (!brand) throw new Error('Brand does not exist');
+  }
+
+  return prisma.product.update({ where: { id: parseInt(id, 10) }, data });
+}
+
+async function deleteProduct(id) {
+  await getProductById(id);
+  return prisma.product.delete({ where: { id: parseInt(id, 10) } });
+}
+
+module.exports = {
+  createProduct,
+  getAllProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct,
+};

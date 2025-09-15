@@ -4,14 +4,13 @@ const AuthMiddleware = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
-const Product = new ProductController();
+// Admin routes
+router.post('/', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, ProductController.addProduct);
+router.put('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, ProductController.updateProduct);
+router.delete('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, ProductController.deleteProduct);
 
-//admin
-router.post('/', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, Product.addProduct);
-router.put('/update-product/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, Product.updateProduct);
-router.delete('/delete-product/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, Product.deleteProduct);
-
-//default
-router.get('/', AuthMiddleware.verifyToken, Product.getAllProducts);
+// Public / default routes
+router.get('/', AuthMiddleware.verifyToken, ProductController.getAllProducts);
+router.get('/:id', AuthMiddleware.verifyToken, ProductController.getProductById);
 
 module.exports = router;
