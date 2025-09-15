@@ -1,14 +1,8 @@
-const ProductService = require('../services/product.service');
+const productService = require('../services/product.service');
 
-async function addProduct(req, res) {
+async function createProduct(req, res) {
   try {
-    const { name, price, stock } = req.body;
-    if (!name || !price || !stock) {
-      throw new Error('Missing required fields: name, price, stock');
-    }
-
-    const product = await ProductService.createProduct(req.body);
-
+    const product = await productService.createProduct(req.body);
     return res.status(201).json({
       success: true,
       message: 'Product created successfully',
@@ -17,98 +11,86 @@ async function addProduct(req, res) {
   } catch (error) {
     return res.status(400).json({
       success: false,
-      status: 'fail',
-      message: error.message || 'Internal Server Error',
-      error: 'BAD_REQUEST',
-      details: error.stack
+      message: error.message || 'Failed to create product',
+      error: 'CREATE_PRODUCT_ERROR'
     });
   }
 }
 
 async function getAllProducts(req, res) {
   try {
-    const products = await ProductService.getAllProducts();
-
-    return res.json({
+    const products = await productService.getAllProducts();
+    return res.status(200).json({
       success: true,
-      message: 'Products retrieved successfully',
       data: products
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      status: 'error',
-      message: error.message || 'Internal Server Error',
-      error: 'INTERNAL_SERVER_ERROR',
-      details: error.stack
+      message: error.message || 'Failed to fetch products',
+      error: 'GET_PRODUCTS_ERROR'
     });
   }
 }
 
 async function getProductById(req, res) {
   try {
-    const { id } = req.params;
-    const product = await ProductService.getProductById(id);
-
-    return res.json({
+    const product = await productService.getProductById(req.params.id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+        error: 'NOT_FOUND'
+      });
+    }
+    return res.status(200).json({
       success: true,
-      message: 'Product retrieved successfully',
       data: product
     });
   } catch (error) {
-    return res.status(404).json({
+    return res.status(500).json({
       success: false,
-      status: 'fail',
-      message: error.message || 'Internal Server Error',
-      error: 'NOT_FOUND',
-      details: error.stack
+      message: error.message || 'Failed to fetch product',
+      error: 'GET_PRODUCT_ERROR'
     });
   }
 }
 
 async function updateProduct(req, res) {
   try {
-    const { id } = req.params;
-    const updated = await ProductService.updateProduct(id, req.body);
-
-    return res.json({
+    const product = await productService.updateProduct(req.params.id, req.body);
+    return res.status(200).json({
       success: true,
       message: 'Product updated successfully',
-      data: updated
+      data: product
     });
   } catch (error) {
     return res.status(400).json({
       success: false,
-      status: 'fail',
-      message: error.message || 'Internal Server Error',
-      error: 'BAD_REQUEST',
-      details: error.stack
+      message: error.message || 'Failed to update product',
+      error: 'UPDATE_PRODUCT_ERROR'
     });
   }
 }
 
 async function deleteProduct(req, res) {
   try {
-    const { id } = req.params;
-    await ProductService.deleteProduct(id);
-
-    return res.json({
+    await productService.deleteProduct(req.params.id);
+    return res.status(200).json({
       success: true,
       message: 'Product deleted successfully'
     });
   } catch (error) {
     return res.status(400).json({
       success: false,
-      status: 'fail',
-      message: error.message || 'Internal Server Error',
-      error: 'BAD_REQUEST',
-      details: error.stack
+      message: error.message || 'Failed to delete product',
+      error: 'DELETE_PRODUCT_ERROR'
     });
   }
 }
 
 module.exports = {
-  addProduct,
+  createProduct,
   getAllProducts,
   getProductById,
   updateProduct,

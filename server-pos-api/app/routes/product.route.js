@@ -1,16 +1,13 @@
 const express = require('express');
-const ProductController = require('../controllers/product.controller');
 const AuthMiddleware = require('../middlewares/auth.middleware');
+const productController = require('../controllers/product.controller');
 
 const router = express.Router();
 
-// Admin routes
-router.post('/', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, ProductController.addProduct);
-router.put('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, ProductController.updateProduct);
-router.delete('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, ProductController.deleteProduct);
-
-// Public / default routes
-router.get('/', AuthMiddleware.verifyToken, ProductController.getAllProducts);
-router.get('/:id', AuthMiddleware.verifyToken, ProductController.getProductById);
+router.get('/', AuthMiddleware.verifyToken, AuthMiddleware.requireCashierOrAdmin, productController.getAllProducts);
+router.get('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireCashierOrAdmin, productController.getProductById);
+router.post('/', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, productController.createProduct);
+router.put('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, productController.updateProduct);
+router.delete('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, productController.deleteProduct);
 
 module.exports = router;

@@ -1,57 +1,56 @@
 const prisma = require('../config/mysql.db');
 
 async function createProduct(data) {
-  // Validate Category
-  if (data.categoryId) {
-    const category = await prisma.category.findUnique({ where: { id: data.categoryId } });
-    if (!category) throw new Error('Category does not exist');
-  }
-
-  // Validate Brand
-  if (data.brandId) {
-    const brand = await prisma.brand.findUnique({ where: { id: data.brandId } });
-    if (!brand) throw new Error('Brand does not exist');
-  }
-
-  return prisma.product.create({ data });
+  return prisma.product.create({
+    data: {
+      name: data.name,
+      price: data.price,
+      stock: data.stock ?? 0,
+      imageUrl: data.imageUrl ?? null,
+      brandId: data.brandId || null,       
+      categoryId: data.categoryId || null, 
+    },
+    include: {
+      brand: true,
+      category: true,
+    }
+  });
 }
 
 async function getAllProducts() {
   return prisma.product.findMany({
     include: { category: true, brand: true },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: 'desc' }
   });
 }
 
 async function getProductById(id) {
-  const product = await prisma.product.findUnique({
-    where: { id: parseInt(id, 10) },
-    include: { category: true, brand: true },
+  return prisma.product.findUnique({
+    where: { id: Number(id) },
+    include: { category: true, brand: true }
   });
-
-  if (!product) throw new Error('Product not found');
-  return product;
 }
 
 async function updateProduct(id, data) {
-  await getProductById(id);
-
-  if (data.categoryId) {
-    const category = await prisma.category.findUnique({ where: { id: data.categoryId } });
-    if (!category) throw new Error('Category does not exist');
-  }
-
-  if (data.brandId) {
-    const brand = await prisma.brand.findUnique({ where: { id: data.brandId } });
-    if (!brand) throw new Error('Brand does not exist');
-  }
-
-  return prisma.product.update({ where: { id: parseInt(id, 10) }, data });
+  return prisma.product.update({
+    where: { id: Number(id) },
+    data: {
+      name: data.name,
+      price: data.price,
+      stock: data.stock ?? 0,
+      imageUrl: data.imageUrl ?? null,
+      brandId: data.brandId ?? null,       
+      categoryId: data.categoryId ?? null,
+    },
+    include: {
+      brand: true,
+      category: true,
+    }
+  });
 }
 
 async function deleteProduct(id) {
-  await getProductById(id);
-  return prisma.product.delete({ where: { id: parseInt(id, 10) } });
+  return prisma.product.delete({ where: { id: Number(id) } });
 }
 
 module.exports = {
@@ -59,5 +58,5 @@ module.exports = {
   getAllProducts,
   getProductById,
   updateProduct,
-  deleteProduct,
+  deleteProduct
 };
