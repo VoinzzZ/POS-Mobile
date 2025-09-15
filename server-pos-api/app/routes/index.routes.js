@@ -11,7 +11,7 @@ const router = express.Router();
 router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
 router.use('/product', productRoutes);
-router.use('./brand', brandRoutes);
-router.use('./category', categoryRoutes);
+router.use('/brand', brandRoutes);
+router.use('/category', categoryRoutes);
 
 module.exports = router;
