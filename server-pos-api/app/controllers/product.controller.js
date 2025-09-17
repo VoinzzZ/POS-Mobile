@@ -19,7 +19,8 @@ async function createProduct(req, res) {
 
 async function getAllProducts(req, res) {
   try {
-    const products = await productService.getAllProducts();
+    const { search, categoryId, brandId } = req.query;
+    const products = await productService.getAllProducts({ search, categoryId, brandId });
     return res.status(200).json({
       success: true,
       data: products

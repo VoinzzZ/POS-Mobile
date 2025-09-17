@@ -17,8 +17,25 @@ async function createProduct(data) {
   });
 }
 
-async function getAllProducts() {
+async function getAllProducts(filters = {} ) {
+  const { search, categoryId, brandId } = filters;
+
+  const safeCategoryId = categoryId && !isNaN(Number(categoryId)) ? Number(categoryId) : undefined;
+  const safeBrandId = brandId && !isNaN(Number(brandId)) ? Number(brandId) : undefined;
+ 
   return prisma.product.findMany({
+    where: {
+      AND: [
+        search? {
+          name: {
+            contains: search,
+          },
+        }
+        : {},
+        safeCategoryId ? { categoryId: safeCategoryId }: {},
+        safeBrandId ? { brandId: safeBrandId } : {},
+      ],
+    },
     include: { category: true, brand: true },
     orderBy: { createdAt: 'desc' }
   });
