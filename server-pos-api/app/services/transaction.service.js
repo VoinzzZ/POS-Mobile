@@ -1,10 +1,10 @@
 const prisma = require("../config/mysql.db");
 
-async function createTransaction(payload) {
-  const { cashierId, items } = payload;
+async function createTransaction(payload, cashierId) {
+  const { items } = payload;
 
-  if (!cashierId || !items || !Array.isArray(items) || items.length === 0) {
-    throw new Error("cashierId dan items wajib diisi");
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    throw new Error("Items required");
   }
 
   return await prisma.$transaction(async (tx) => {
@@ -14,15 +14,15 @@ async function createTransaction(payload) {
     });
 
     if (products.length !== productIds.length) {
-      throw new Error("Ada produk yang tidak ditemukan");
+      throw new Error("Product not found");
     }
 
     let total = 0;
     const transactionItemsData = items.map((item) => {
       const product = products.find(p => p.id === item.productId);
-      if (!product) throw new Error(`Produk ${item.productId} tidak ditemukan`);
+      if (!product) throw new Error(`Product ${item.productId} not found`);
       if (product.stock < item.quantity) {
-        throw new Error(`Stok produk ${product.name} tidak cukup`);
+        throw new Error(`Stock product ${product.name} not enough`);
       }
 
       const subtotal = product.price * item.quantity;
@@ -39,12 +39,13 @@ async function createTransaction(payload) {
     const transaction = await tx.transaction.create({
       data: {
         cashierId,
-        total
+        total,
+        status: 'DRAFT'
       }
     });
 
     await tx.transactionItem.createMany({
-      data: transactionItemsData.map((item) => ({
+      data: transactionItemsData.map(item => ({
         ...item,
         transactionId: transaction.id
       }))
@@ -67,18 +68,14 @@ async function createTransaction(payload) {
 }
 
 async function getAllTransactions({ startDate, endDate, cashierId, page = 1, limit = 10 }) {
-  const where = {};
+  const today = new Date();
+  const start = startDate ? new Date(startDate) : new Date(today.setHours(0,0,0,0));
+  const end = endDate ? new Date(endDate) : new Date(today.setHours(23,59,59,999));
 
-  if (startDate && endDate) {
-    where.createdAt = {
-      gte: new Date(startDate),
-      lte: new Date(endDate),
-    };
-  }
-
-  if (cashierId) {
-    where.cashierId = Number(cashierId);
-  }
+  const where = {
+    createdAt: { gte: start, lte: end },
+    ...(cashierId && { cashierId: Number(cashierId) })
+  };
 
   const skip = (page - 1) * limit;
 
@@ -86,14 +83,11 @@ async function getAllTransactions({ startDate, endDate, cashierId, page = 1, lim
     prisma.transaction.findMany({
       where,
       include: {
-        items: {
-          include: { product: true }
-        },
-        cashier: true,
+        items: { include: { product: true } }
       },
       orderBy: { createdAt: 'desc' },
       skip,
-      take: limit,
+      take: limit
     }),
     prisma.transaction.count({ where })
   ]);
@@ -104,13 +98,70 @@ async function getAllTransactions({ startDate, endDate, cashierId, page = 1, lim
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit)
     }
   };
 }
 
+async function getTransactionDetail(transactionId) {
+  const transaction = await prisma.transaction.findUnique({
+    where: { id: Number(transactionId) },
+    include: {
+      items: { include: { product: true } }
+    }
+  });
+
+  if (!transaction) throw new Error('Transaction not found');
+  return transaction;
+}
+
+
+async function getTransactionDetail(transactionId) {
+  const transaction = await prisma.transaction.findUnique({
+    where: { id: Number(transactionId) },
+    include: {
+      items: { include: { product: true } },
+      cashier: true
+    }
+  });
+
+  if (!transaction) throw new Error('Transaction not found');
+  return transaction;
+}
+
+async function deleteTransaction(transactionId, cashierId) {
+  const transaction = await prisma.transaction.findUnique({
+    where: { id: Number(transactionId) },
+    include: { items: true }
+  });
+
+  if (!transaction) throw new Error('Transaction not found');
+  if (transaction.cashierId !== cashierId) throw new Error('Not authorized');
+  if (transaction.status !== 'DRAFT') throw new Error('Cannot delete locked transaction');
+
+  const today = new Date();
+  const start = new Date(today.setHours(0,0,0,0));
+  const end = new Date(today.setHours(23,59,59,999));
+  if (transaction.createdAt < start || transaction.createdAt > end) {
+    throw new Error('Can only delete today\'s transaction');
+  }
+
+  // kembalikan stok
+  await Promise.all(transaction.items.map(item =>
+    prisma.product.update({
+      where: { id: item.productId },
+      data: { stock: { increment: item.quantity } }
+    })
+  ));
+
+  await prisma.transaction.delete({ where: { id: Number(transactionId) } });
+
+  return { message: 'Transaction deleted successfully' };
+}
 
 module.exports = {
   createTransaction,
-  getAllTransactions
+  getAllTransactions,
+  getTransactionDetail,
+  deleteTransaction
 };
