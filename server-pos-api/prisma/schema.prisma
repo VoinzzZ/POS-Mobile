@@ -7,30 +7,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum role {
-  Cashier
-  Admin
+enum Role {
+  ADMIN
+  CASHIER
+}
+
+enum TransactionStatus {
+  DRAFT
+  LOCKED
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  name     String
-  email    String?  @unique
-  password String?
-  role     role    @default(Cashier)
+  id           Int       @id @default(autoincrement())
+  userName     String    @unique
+  email        String    @unique
+  password     String?   
+  isVerified   Boolean   @default(false)
 
-  isVerified      Boolean   @default(false)
-  emailVerifiedAt DateTime?
+  role         Role      @default(CASHIER)
 
   registrationPins   RegistrationPin[]
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
-  transactions       Transaction[]
+  transactions       Transaction[]        @relation("CashierTransactions")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([email])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model RegistrationPin {
@@ -113,11 +115,6 @@ model Product {
   @@index([name])
 }
 
-enum TransactionStatus {
-  DRAFT
-  LOCKED
-}
-
 model Transaction {
   id        Int               @id @default(autoincrement())
   cashierId Int
@@ -125,7 +122,8 @@ model Transaction {
   status    TransactionStatus @default(DRAFT)
   createdAt DateTime          @default(now())
 
-  cashier   User              @relation(fields: [cashierId], references: [id])
+  // 🔗 Relasi ke User (Cashier)
+  cashier   User              @relation("CashierTransactions", fields: [cashierId], references: [id])
   items     TransactionItem[] 
 
   @@index([cashierId])
