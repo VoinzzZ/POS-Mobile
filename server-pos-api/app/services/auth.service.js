@@ -6,90 +6,156 @@ const JWTService = require('../utils/jwtService.js');
 
 const emailService = new EmailService();
 
-async function register({ name, pin, role }) {
+async function register({ userName, email, pin, role = "CASHIER" }) {
+  if (!userName || !email || !pin) throw new Error("userName, email, and pin are required");
+  if (!validator.isEmail(email)) throw new Error("Invalid email format");
+
   return await prisma.$transaction(async (tx) => {
     const regPin = await tx.registrationPin.findFirst({
-      where: { code: pin, used: false, expiresAt: { gt: new Date() } }
+      where: { code: pin, used: false, expiresAt: { gt: new Date() } },
+    });
+    if (!regPin) throw new Error("Invalid or expired registration PIN");
+
+    const newUser = await tx.user.create({
+      data: {
+        userName,
+        email,
+        role,
+        isVerified: false,
+      },
     });
 
-    if (!regPin) throw new Error('Invalid or expired registration PIN');
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiredAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    const newUser = await tx.user.create({ data: { name, role, isVerified: false } });
+    await tx.emailVerification.deleteMany({
+      where: { userId: newUser.id, email, verified: false },
+    });
+
+    await tx.emailVerification.create({
+      data: { 
+        userId: newUser.id, 
+        email, 
+        code: otpCode, 
+        expiresAt: otpExpiredAt, 
+        verified: false 
+      },
+    });
 
     await tx.registrationPin.update({
       where: { id: regPin.id },
-      data: { used: true, usedAt: new Date() }
+      data: { used: true, usedAt: new Date() },
     });
 
-    return newUser;
+    return { 
+      userId: newUser.id,
+      otpCode: otpCode,
+      message: "User registered. OTP will be sent to email."
+    };
+  })
+  .then(async (result) => {
+    const emailResult = await emailService.sendOtpEmail(email, result.otpCode);
+    if (!emailResult.success) {
+      console.error("Failed to send OTP email");
+    }
+    return { userId: result.userId, message: "User registered. OTP sent to email." };
   });
 }
 
-async function sendEmailOTP({ userId, email }) {
-  if (!validator.isEmail(email)) throw new Error('Invalid email format');
+async function verifyEmailOTP({ userId, otpCode }) {
+  if (!userId || !otpCode) throw new Error('userId and otpCode are required');
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const emailVerification = await prisma.emailVerification.findFirst({
+    where: {
+      userId,
+      code: otpCode,
+      verified: false,
+      expiresAt: { gt: new Date() }
+    },
+    include: { user: true }
+  });
+
+  if (!emailVerification) throw new Error('Invalid or expired OTP');
+  if (emailVerification.user.isVerified) throw new Error('Email already verified');
+
+  await prisma.$transaction(async (tx) => {
+    await tx.emailVerification.update({
+      where: { id: emailVerification.id },
+      data: { verified: true }
+    });
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { isVerified: false }
+    });
+  });
+
+  return { message: 'Email verified successfully. Please set your password.' };
+}
+
+async function setPassword({ userId, newPassword }) {
+  if (!userId || !newPassword) throw new Error('userId and newPassword are required');
+
+  const user = await prisma.user.findFirst({
+    where: { id: userId },
+    include: {
+      emailVerifications: {
+        where: { verified: true },
+        orderBy: { createdAt: 'desc' },
+        take: 1
+      }
+    }
+  });
+
   if (!user) throw new Error('User not found');
+  if (user.isVerified) throw new Error('User already verified');
+  if (!user.emailVerifications.length) throw new Error('Please verify your email first');
 
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-  await prisma.$transaction(async (tx) => {
-    await tx.emailVerification.deleteMany({ where: { userId, email, verified: false } });
-    await tx.emailVerification.create({
-      data: { userId, email, code: otpCode, expiresAt, verified: false }
-    });
-  });
-
-  const result = await emailService.sendOtpEmail(email, otpCode);
-  if (!result.success) throw new Error('Failed to send OTP email');
-
-  return { message: 'OTP sent to email. Code valid for 5 minutes.' };
-}
-
-async function verifyEmailOTP({ userId, email, otpCode }) {
-  if (!validator.isEmail(email)) throw new Error('Invalid email format');
-
-  await prisma.$transaction(async (tx) => {
-    const verification = await tx.emailVerification.findFirst({
-      where: { userId, email, code: otpCode, expiresAt: { gt: new Date() }, verified: false }
-    });
-
-    if (!verification) throw new Error('Invalid or expired OTP');
-
-    await Promise.all([
-      tx.user.update({ where: { id: userId }, data: { email } }),
-      tx.emailVerification.update({
-        where: { id: verification.id },
-        data: { verified: true, verifiedAt: new Date() }
-      })
-    ]);
-  });
-
-  return { message: 'Email verified successfully' };
-}
-
-async function setPassword({ userId, newPassword, confirmPassword }) {
   const passwordValidation = PasswordService.validatePassword(newPassword);
-  if (!passwordValidation.isValid) {
-    return { success: false, message: 'Password validation failed', details: passwordValidation.errors };
-  }
-
-  const confirmValidation = PasswordService.validateConfirmPassword(newPassword, confirmPassword);
-  if (!confirmValidation.isValid) {
-    return { success: false, message: 'Passwords do not match', details: confirmValidation.errors };
-  }
+  if (!passwordValidation.isValid) throw new Error('Password validation failed');
 
   const hashedPassword = await PasswordService.hashPassword(newPassword);
-  await prisma.user.update({
+
+  const updatedUser = await prisma.user.update({
     where: { id: userId },
-    data: { password: hashedPassword, isVerified: true, emailVerifiedAt: new Date() }
+    data: { 
+      password: hashedPassword, 
+      isVerified: true,
+    }
   });
 
-  return { success: true, message: 'Password set successfully. Registration completed.' };
+  const payload = { 
+    userId: updatedUser.id, 
+    email: updatedUser.email, 
+    role: updatedUser.role, 
+    userName: updatedUser.userName 
+  };
+  
+  const { accessToken, refreshToken } = JWTService.generateTokenPair(payload);
+
+  return {
+    message: 'Password set successfully. Registration completed.',
+    data: {
+      user: {
+        userId: updatedUser.id,
+        userName: updatedUser.userName,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        isVerified: updatedUser.isVerified
+      },
+      tokens: { 
+        accessToken, 
+        refreshToken, 
+        expiresIn: 900, 
+        refreshExpiresIn: 604800 
+      }
+    }
+  };
 }
 
+
 async function login({ email, password }) {
+  if (!email || !password) throw new Error('Email and password are required');
   if (!validator.isEmail(email)) throw new Error('Invalid email format');
 
   const user = await prisma.user.findUnique({ where: { email } });
@@ -100,7 +166,7 @@ async function login({ email, password }) {
 
   if (!user.isVerified) throw new Error('Please verify your email before logging in');
 
-  const payload = { userId: user.id, email: user.email, role: user.role, name: user.name };
+  const payload = { userId: user.id, email: user.email, role: user.role, userName: user.userName };
   const { accessToken, refreshToken } = JWTService.generateTokenPair(payload);
 
   return {
@@ -108,17 +174,12 @@ async function login({ email, password }) {
     data: {
       user: {
         userId: user.id,
-        name: user.name,
+        userName: user.userName,
         email: user.email,
         role: user.role,
         isVerified: user.isVerified
       },
-      tokens: {
-        accessToken,
-        refreshToken,
-        expiresIn: 900,
-        refreshExpiresIn: 604800
-      }
+      tokens: { accessToken, refreshToken, expiresIn: 900, refreshExpiresIn: 604800 }
     }
   };
 }
@@ -241,7 +302,7 @@ async function getProfile(userId) {
 
   return {
     id: user.id,
-    name: user.name,
+    userName: user.name,
     email: user.email,
     role: user.role,
     isVerified: user.isVerified,
@@ -253,7 +314,6 @@ async function getProfile(userId) {
 
 module.exports = {
   register,
-  sendEmailOTP,
   verifyEmailOTP,
   setPassword,
   login,

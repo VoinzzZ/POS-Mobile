@@ -3,38 +3,13 @@ const JWTService = require('../utils/jwtService');
 
 async function register(req, res) {
   try {
-    const { name, pin, role = 'Cashier' } = req.body;
-    if (!name || !pin) {
-      return res.status(400).json({ success: false, message: 'name and pin are required' });
+    const { userName, pin, email, role } = req.body;
+    if (!userName || !pin || !email) {
+      return res.status(400).json({ success: false, message: 'userName, pin, and email are required' });
     }
 
-    const newUser = await AuthService.register({ name, pin, role });
-
-    res.status(201).json({
-      success: true,
-      message: 'User created. Please continue with email verification.',
-      data: {
-        userId: newUser.id,
-        name: newUser.name,
-        role: newUser.role,
-        isVerified: newUser.isVerified
-      }
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-async function sendEmailOTP(req, res) {
-  try {
-    const { userId, email } = req.body;
-    if (!userId || !email) {
-      return res.status(400).json({ success: false, message: 'userId and email are required' });
-    }
-
-    const result = await AuthService.sendEmailOTP(req.body);
-    res.status(200).json({ success: true, message: result.message, data: result.data || null });
+    const result = await AuthService.register({ userName, pin, email, role });
+    res.status(201).json({ success: true, message: result.message, data: { userId: result.userId } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
@@ -43,13 +18,13 @@ async function sendEmailOTP(req, res) {
 
 async function verifyEmailOTP(req, res) {
   try {
-    const { userId, email, otpCode } = req.body;
-    if (!userId || !email || !otpCode) {
-      return res.status(400).json({ success: false, message: 'userId, email, and otpCode are required' });
+    const { userId, otpCode } = req.body;
+    if (!userId || !otpCode) {
+      return res.status(400).json({ success: false, message: 'userId and otpCode are required' });
     }
 
-    const result = await AuthService.verifyEmailOTP(req.body);
-    res.status(200).json({ success: true, message: result.message, data: result.data || null });
+    const result = await AuthService.verifyEmailOTP({ userId, otpCode });
+    res.status(200).json({ success: true, message: result.message });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
@@ -58,18 +33,18 @@ async function verifyEmailOTP(req, res) {
 
 async function setPassword(req, res) {
   try {
-    const { userId, newPassword, confirmPassword } = req.body;
-    if (!userId || !newPassword || !confirmPassword) {
-      return res.status(400).json({ success: false, message: 'userId, newPassword, and confirmPassword are required' });
+    const { userId, newPassword} = req.body;
+    if (!userId || !newPassword) {
+      return res.status(400).json({ success: false, message: 'userI and newPassword are required' });
     }
 
-    const result = await AuthService.setPassword({ userId, newPassword, confirmPassword });
+    const result = await AuthService.setPassword({ userId, newPassword });
 
     if (!result.success) {
       return res.status(400).json({ success: false, message: result.message, details: result.details });
     }
 
-    return res.status(200).json({ success: true, message: result.message });
+    res.status(200).json({ success: true, message: result.message, data: result.data });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
@@ -83,7 +58,7 @@ async function login(req, res) {
       return res.status(400).json({ success: false, message: 'email and password are required' });
     }
 
-    const result = await AuthService.login(req.body);
+    const result = await AuthService.login({ email, password });
     res.status(200).json({ success: true, message: result.message, data: result.data });
   } catch (error) {
     console.error(error);
@@ -183,7 +158,6 @@ async function getProfile(req, res) {
 
 module.exports = {
   register,
-  sendEmailOTP,
   verifyEmailOTP,
   setPassword,
   login,

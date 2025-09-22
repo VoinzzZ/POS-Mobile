@@ -7,7 +7,6 @@ const router = express.Router();
 
 // Public routes (multi-step register)
 router.post('/register', authLimiter, speedLimiter, AuthController.register);
-router.post('/send-email-code', authLimiter, speedLimiter, AuthController.sendEmailOTP);
 router.post('/verify-email-code', authLimiter, speedLimiter, AuthController.verifyEmailOTP);
 router.post('/set-password', AuthController.setPassword);
 

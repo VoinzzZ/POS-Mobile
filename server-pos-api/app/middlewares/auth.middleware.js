@@ -79,11 +79,11 @@ function requireRole(allowedRoles) {
 }
 
 function requireAdmin(req, res, next) {
-  return requireRole('Admin')(req, res, next);
+  return requireRole('ADMIN')(req, res, next);
 }
 
 function requireCashierOrAdmin(req, res, next) {
-  return requireRole(['Admin', 'Cashier'])(req, res, next);
+  return requireRole(['ADMIN', 'CASHIER'])(req, res, next);
 }
 
 function verifyRefreshToken(req, res, next) {
