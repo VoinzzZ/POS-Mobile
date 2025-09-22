@@ -48,19 +48,8 @@ function validatePassword(password) {
   };
 }
 
-function validateConfirmPassword(password, confirmPassword) {
-  if (password !== confirmPassword) {
-    return {
-      isValid: false,
-      errors: ['Passwords do not match']
-    };
-  }
-  return { isValid: true, errors: [] };
-}
-
 module.exports = {
   hashPassword,
   comparePassword,
   validatePassword,
-  validateConfirmPassword
 };
