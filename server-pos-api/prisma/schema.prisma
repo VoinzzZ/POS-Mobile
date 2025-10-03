@@ -11,7 +11,7 @@ model brand {
   id        Int       @id @default(autoincrement())
   name      String    @unique(map: "Brand_name_key")
   createdAt DateTime  @default(now())
-  updatedAt DateTime
+  updatedAt DateTime  @updatedAt
   product   product[]
 }
 
@@ -19,7 +19,7 @@ model category {
   id        Int       @id @default(autoincrement())
   name      String    @unique(map: "Category_name_key")
   createdAt DateTime  @default(now())
-  updatedAt DateTime
+  updatedAt DateTime  @updatedAt
   product   product[]
 }
 
@@ -60,7 +60,7 @@ model product {
   brandId         Int?
   categoryId      Int?
   createdAt       DateTime          @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime          @updatedAt
   brand           brand?            @relation(fields: [brandId], references: [id], map: "Product_brandId_fkey")
   category        category?         @relation(fields: [categoryId], references: [id], map: "Product_categoryId_fkey")
   transactionitem transactionitem[]
@@ -120,7 +120,7 @@ model user {
   isVerified        Boolean             @default(false)
   role              user_role           @default(CASHIER)
   createdAt         DateTime            @default(now())
-  updatedAt         DateTime
+  updatedAt         DateTime            @updatedAt
   emailverification emailverification[]
   passwordreset     passwordreset[]
   registrationpin   registrationpin[]
