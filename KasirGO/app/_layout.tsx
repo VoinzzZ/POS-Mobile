@@ -1,29 +1,16 @@
 import React from "react";
-import { Stack, Redirect } from "expo-router";
-import { AuthProvider, useAuth } from "../src/context/AuthContext";
-
-function RootStack() {
-  const { user } = useAuth();
-
-  if (!user) {
-    return <Redirect href="/auth/login" />;
-  }
-
-  if (user.role === "ADMIN") {
-    return <Redirect href="/(admin)/dashboard" />;
-  } else if (user.role === "CASHIER") {
-    return <Redirect href="/(cashier)/dashboard" />;
-  }
-
-  // Default fallback
-  return <Redirect href="/auth/login" />;
-}
+import { Stack } from "expo-router";
+import { AuthProvider } from "../src/context/AuthContext";
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootStack />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="(admin)" />
+        <Stack.Screen name="(cashier)" />
+      </Stack>
     </AuthProvider>
   );
 }

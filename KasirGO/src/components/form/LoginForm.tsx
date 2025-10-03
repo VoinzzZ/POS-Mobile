@@ -1,24 +1,49 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import PasswordInput from "../shared/PasswordInput";
 import { useRouter } from "expo-router";
+import { useAuth } from "../../context/AuthContext";
 
 interface LoginFormProps {}
 
 const LoginForm = (props: LoginFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
+  const { login } = useAuth();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    // Validation
     if (!email || !password) {
-      alert("Email & Password wajib diisi");
+      Alert.alert("Validation Error", "Email & Password wajib diisi");
       return;
     }
-    console.log("Email:", email);
-    console.log("Password:", password);
-    // nanti bisa tambahkan API call di sini
+
+    if (!email.includes("@")) {
+      Alert.alert("Validation Error", "Email tidak valid");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Call login from AuthContext
+      await login(email, password);
+      
+      // Login success - AuthContext will handle the redirect via index.tsx
+      // No need to manually redirect here
+      
+    } catch (error: any) {
+      console.error("Login error:", error);
+      Alert.alert(
+        "Login Failed",
+        error.message || "Invalid email or password. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,8 +75,16 @@ const LoginForm = (props: LoginFormProps) => {
       />
 
       {/* Button Login */}
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>LOGIN</Text>
+      <TouchableOpacity 
+        style={[styles.button, isLoading && styles.buttonDisabled]} 
+        onPress={handleLogin}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <Text style={styles.buttonText}>LOGIN</Text>
+        )}
       </TouchableOpacity>
 
       {/* Links */}
@@ -110,6 +143,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     marginTop: 10,
+  },
+  buttonDisabled: {
+    backgroundColor: "#2c7a73",
+    opacity: 0.7,
   },
   buttonText: {
     color: "white",

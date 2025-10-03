@@ -1,15 +1,23 @@
-import React from "react";
-import { View, StyleSheet, ImageBackground, Alert } from "react-native";
+import React, { useEffect } from "react";
+import { View, StyleSheet, ImageBackground } from "react-native";
 import LoginForm from "../../src/components/form/LoginForm";
 import { useAuth } from "../../src/context/AuthContext";
-import { Redirect } from "expo-router";
+import { useRouter } from "expo-router";
 
 const LoginScreen = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
 
-  if (user) {
-    return <Redirect href={user.role === "ADMIN" ? "/(admin)/dashboard" : "/(cashier)/dashboard"} />;
-  }
+  useEffect(() => {
+    // If user is already logged in, redirect to appropriate dashboard
+    if (isAuthenticated && user) {
+      if (user.role === "ADMIN") {
+        router.replace("/(admin)/dashboard");
+      } else if (user.role === "CASHIER") {
+        router.replace("/(cashier)/dashboard");
+      }
+    }
+  }, [isAuthenticated, user]);
 
   return (
     <ImageBackground
