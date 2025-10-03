@@ -9,19 +9,15 @@ export default function Index() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
-      // Role-based redirect
       if (user.role === "ADMIN") {
         router.replace("/(admin)/dashboard");
       } else if (user.role === "CASHIER") {
         router.replace("/(cashier)/dashboard");
       } else {
-        // Unknown role, logout
         router.replace("/auth/login");
       }
     }
   }, [isLoading, isAuthenticated, user]);
-
-  // Show loading while checking auth
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -30,12 +26,10 @@ export default function Index() {
     );
   }
 
-  // Not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Redirect href="/auth/login" />;
   }
 
-  // Authenticated but still processing redirect
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color="#4ECDC4" />

@@ -27,6 +27,9 @@ export default function CashierLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="dashboard" />
+      <Stack.Screen name="workspace" />
+      <Stack.Screen name="history" />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }
