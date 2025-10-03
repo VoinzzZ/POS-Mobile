@@ -23,10 +23,15 @@ api.interceptors.request.use(
         const tokens = JSON.parse(tokensStr);
         if (tokens.accessToken) {
           config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+          console.log('✅ Token added to request:', config.url);
+        } else {
+          console.log('⚠️  No accessToken in stored tokens');
         }
+      } else {
+        console.log('⚠️  No tokens found in AsyncStorage for request:', config.url);
       }
     } catch (error) {
-      console.error("Error getting token from storage:", error);
+      console.error("❌ Error getting token from storage:", error);
     }
     return config;
   },
