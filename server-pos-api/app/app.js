@@ -8,6 +8,9 @@ const routes = require('./routes/index.routes');
 
 const app = express();
 
+// Trust proxy for ngrok/reverse proxy support
+app.set('trust proxy', 1);
+
 app.use(helmet({
     contentSecurityPolicy: process.env.NODE_ENV === 'production',
     crossOriginEmbedderPolicy: process.env.NODE_ENV === 'production',
