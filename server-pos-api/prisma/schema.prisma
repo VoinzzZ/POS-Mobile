@@ -7,139 +7,132 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  CASHIER
-}
-
-enum TransactionStatus {
-  DRAFT
-  LOCKED
-}
-
-model User {
-  id           Int       @id @default(autoincrement())
-  userName     String    @unique
-  email        String    @unique
-  password     String?   
-  isVerified   Boolean   @default(false)
-
-  role         Role      @default(CASHIER)
-
-  registrationPins   RegistrationPin[]
-  emailVerifications EmailVerification[]
-  passwordResets     PasswordReset[]
-  transactions       Transaction[]        @relation("CashierTransactions")
-
+model brand {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique(map: "Brand_name_key")
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  updatedAt DateTime
+  product   product[]
 }
 
-model RegistrationPin {
-  id        Int      @id @default(autoincrement())
-  code      String   @unique
-  expiresAt DateTime
-  used      Boolean  @default(false)
-
-  createdBy   User @relation(fields: [createdById], references: [id])
-  createdById Int
-
+model category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique(map: "Category_name_key")
   createdAt DateTime  @default(now())
-  usedAt    DateTime?
-
-  revokedById Int? 
-  revokedAt   DateTime?
+  updatedAt DateTime
+  product   product[]
 }
 
-model EmailVerification {
+model emailverification {
   id         Int       @id @default(autoincrement())
   userId     Int
-  user       User      @relation(fields: [userId], references: [id])
   email      String
   code       String
   expiresAt  DateTime
   verified   Boolean   @default(false)
   createdAt  DateTime  @default(now())
   verifiedAt DateTime?
+  user       user      @relation(fields: [userId], references: [id], map: "EmailVerification_userId_fkey")
 
-  @@index([code, expiresAt])
+  @@index([code, expiresAt], map: "EmailVerification_code_expiresAt_idx")
+  @@index([userId], map: "EmailVerification_userId_fkey")
 }
 
-model PasswordReset {
-  id        Int       @id @default(autoincrement())
+model passwordreset {
+  id        Int      @id @default(autoincrement())
   userId    Int
   code      String
   expiresAt DateTime
-  used      Boolean   @default(false)
-  createdAt DateTime  @default(now())
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      user     @relation(fields: [userId], references: [id], map: "PasswordReset_userId_fkey")
 
-  user      User      @relation(fields: [userId], references: [id])
-
-  @@index([code, expiresAt])
+  @@index([code, expiresAt], map: "PasswordReset_code_expiresAt_idx")
+  @@index([userId], map: "PasswordReset_userId_fkey")
 }
 
-model Brand {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+model product {
+  id              Int               @id @default(autoincrement())
+  name            String
+  price           Float
+  stock           Int               @default(0)
+  imageUrl        String?
+  brandId         Int?
+  categoryId      Int?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  brand           brand?            @relation(fields: [brandId], references: [id], map: "Product_brandId_fkey")
+  category        category?         @relation(fields: [categoryId], references: [id], map: "Product_categoryId_fkey")
+  transactionitem transactionitem[]
+
+  @@index([brandId], map: "Product_brandId_fkey")
+  @@index([categoryId], map: "Product_categoryId_fkey")
+  @@index([name], map: "Product_name_idx")
 }
 
-model Category {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+model registrationpin {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique(map: "RegistrationPin_code_key")
+  expiresAt   DateTime
+  used        Boolean   @default(false)
+  createdById Int
+  createdAt   DateTime  @default(now())
+  usedAt      DateTime?
+  revokedById Int?
+  revokedAt   DateTime?
+  user        user      @relation(fields: [createdById], references: [id], map: "RegistrationPin_createdById_fkey")
+
+  @@index([createdById], map: "RegistrationPin_createdById_fkey")
 }
 
-model Product {
-  id        Int       @id @default(autoincrement())
-  name      String
-  price     Float
-  stock     Int       @default(0)
-  imageUrl  String?
+model transaction {
+  id              Int                @id @default(autoincrement())
+  cashierId       Int
+  total           Float
+  status          transaction_status @default(DRAFT)
+  createdAt       DateTime           @default(now())
+  user            user               @relation(fields: [cashierId], references: [id], map: "Transaction_cashierId_fkey")
+  transactionitem transactionitem[]
 
-  brandId   Int?
-  brand     Brand?    @relation(fields: [brandId], references: [id])
-
-  categoryId Int?
-  category   Category? @relation(fields: [categoryId], references: [id])
-
-  transactionItems TransactionItem[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@index([name])
+  @@index([cashierId], map: "Transaction_cashierId_idx")
+  @@index([createdAt], map: "Transaction_createdAt_idx")
 }
 
-model Transaction {
-  id        Int               @id @default(autoincrement())
-  cashierId Int
-  total     Float
-  status    TransactionStatus @default(DRAFT)
-  createdAt DateTime          @default(now())
-
-  // 🔗 Relasi ke User (Cashier)
-  cashier   User              @relation("CashierTransactions", fields: [cashierId], references: [id])
-  items     TransactionItem[] 
-
-  @@index([cashierId])
-  @@index([createdAt])
-}
-
-model TransactionItem {
+model transactionitem {
   id            Int         @id @default(autoincrement())
   transactionId Int
   productId     Int
   quantity      Int
   price         Float
   subtotal      Float
+  product       product     @relation(fields: [productId], references: [id], map: "TransactionItem_productId_fkey")
+  transaction   transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade, map: "TransactionItem_transactionId_fkey")
 
-  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  product       Product     @relation(fields: [productId], references: [id])
-  
-  @@index([transactionId])
+  @@index([productId], map: "TransactionItem_productId_fkey")
+  @@index([transactionId], map: "TransactionItem_transactionId_idx")
+}
+
+model user {
+  id                Int                 @id @default(autoincrement())
+  userName          String              @unique(map: "User_userName_key")
+  email             String              @unique(map: "User_email_key")
+  password          String?
+  isVerified        Boolean             @default(false)
+  role              user_role           @default(CASHIER)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  emailverification emailverification[]
+  passwordreset     passwordreset[]
+  registrationpin   registrationpin[]
+  transaction       transaction[]
+}
+
+enum transaction_status {
+  DRAFT
+  LOCKED
+}
+
+enum user_role {
+  ADMIN
+  CASHIER
 }

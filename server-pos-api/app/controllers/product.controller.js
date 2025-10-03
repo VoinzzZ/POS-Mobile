@@ -2,10 +2,14 @@ const productService = require('../services/product.service');
 
 async function createProduct(req, res) {
   try {
-    // Add image URL from Cloudinary if uploaded
+    // Parse FormData fields (they come as strings)
     const productData = {
-      ...req.body,
-      image: req.file ? req.file.path : null, // Cloudinary URL
+      name: req.body.name,
+      price: parseFloat(req.body.price),
+      stock: parseInt(req.body.stock, 10),
+      categoryId: req.body.categoryId ? parseInt(req.body.categoryId, 10) : null,
+      brandId: req.body.brandId ? parseInt(req.body.brandId, 10) : null,
+      imageUrl: req.file ? req.file.path : null, // Cloudinary URL
     };
     
     const product = await productService.createProduct(productData);
@@ -65,14 +69,15 @@ async function getProductById(req, res) {
 
 async function updateProduct(req, res) {
   try {
-    // Add image URL from Cloudinary if uploaded
-    const productData = {
-      ...req.body,
-    };
+    // Parse FormData fields (they come as strings)
+    const productData = {};
     
-    if (req.file) {
-      productData.image = req.file.path; // Cloudinary URL
-    }
+    if (req.body.name) productData.name = req.body.name;
+    if (req.body.price) productData.price = parseFloat(req.body.price);
+    if (req.body.stock) productData.stock = parseInt(req.body.stock, 10);
+    if (req.body.categoryId) productData.categoryId = parseInt(req.body.categoryId, 10);
+    if (req.body.brandId) productData.brandId = parseInt(req.body.brandId, 10);
+    if (req.file) productData.imageUrl = req.file.path; // Cloudinary URL
     
     const product = await productService.updateProduct(req.params.id, productData);
     return res.status(200).json({
