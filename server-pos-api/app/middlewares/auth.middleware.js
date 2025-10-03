@@ -29,7 +29,13 @@ function verifyToken(req, res, next) {
     setUser(req, decoded);
     next();
   } catch (error) {
-    if (error.name === 'TokenExpiredError' || error.name === 'jsonWebTokenError') {
+    console.error('🔴 Auth Middleware Error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.split('\n').slice(0, 3)
+    });
+    
+    if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
         message: error.message,
@@ -38,7 +44,7 @@ function verifyToken(req, res, next) {
     }
     return res.status(500).json({
       success: false,
-      message: 'authenticate verification failed',
+      message: error.message || 'authenticate verification failed',
       error: 'AUTH_ERROR'
     });
   }
