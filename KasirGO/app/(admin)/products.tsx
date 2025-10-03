@@ -283,9 +283,16 @@ export default function AdminProducts() {
     const productCount = products.filter(p => p.categoryId === category.id).length;
     
     return (
-      <View
+      <TouchableOpacity
         key={category.id}
         style={[styles.listCard, { backgroundColor: colors.card }]}
+        onPress={() => {
+          // Filter products by this category
+          setActiveTab("products");
+          const filtered = products.filter(p => p.categoryId === category.id);
+          setFilteredProducts(filtered);
+          Alert.alert("Filter", `Menampilkan ${filtered.length} produk dengan kategori "${category.name}"`);
+        }}
       >
         <View style={[styles.listIcon, { backgroundColor: colors.primary + "20" }]}>
           <Folder size={24} color={colors.primary} />
@@ -315,7 +322,7 @@ export default function AdminProducts() {
             <Trash2 size={16} color="#ef4444" />
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -323,9 +330,16 @@ export default function AdminProducts() {
     const productCount = products.filter(p => p.brandId === brand.id).length;
     
     return (
-      <View
+      <TouchableOpacity
         key={brand.id}
         style={[styles.listCard, { backgroundColor: colors.card }]}
+        onPress={() => {
+          // Filter products by this brand
+          setActiveTab("products");
+          const filtered = products.filter(p => p.brandId === brand.id);
+          setFilteredProducts(filtered);
+          Alert.alert("Filter", `Menampilkan ${filtered.length} produk dengan brand "${brand.name}"`);
+        }}
       >
         <View style={[styles.listIcon, { backgroundColor: colors.primary + "20" }]}>
           <Tag size={24} color={colors.primary} />
@@ -355,7 +369,7 @@ export default function AdminProducts() {
             <Trash2 size={16} color="#ef4444" />
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -602,6 +616,7 @@ export default function AdminProducts() {
         }}
         onSuccess={() => {
           loadCategories();
+          loadProducts(); // Reload products to sync category names
           setShowEditCategoryModal(false);
           setSelectedCategory(null);
         }}
@@ -615,6 +630,7 @@ export default function AdminProducts() {
         }}
         onSuccess={() => {
           loadBrands();
+          loadProducts(); // Reload products to sync brand names
           setShowEditBrandModal(false);
           setSelectedBrand(null);
         }}
