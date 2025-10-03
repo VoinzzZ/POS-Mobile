@@ -82,9 +82,11 @@ api.interceptors.response.use(
           }
         }
       } catch (refreshError) {
+        console.log('❌ Refresh token failed, clearing auth and redirecting to login');
         await AsyncStorage.removeItem("@tokens");
         await AsyncStorage.removeItem("@user");
-        return Promise.reject(refreshError);
+        // Redirect to login will happen automatically via AuthContext
+        return Promise.reject(new Error('Session expired. Please login again.'));
       }
     }
 

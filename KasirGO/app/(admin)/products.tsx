@@ -36,9 +36,16 @@ import EditBrandModal from "../../src/components/modals/EditBrandModal";
 type TabType = "products" | "categories" | "brands";
 
 export default function AdminProducts() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { colors } = useTheme();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated && !user) {
+      router.replace('/auth/login');
+    }
+  }, [isAuthenticated, user]);
 
   const [activeTab, setActiveTab] = useState<TabType>("products");
   const [searchQuery, setSearchQuery] = useState("");
