@@ -99,24 +99,20 @@ const AddBrandModal: React.FC<AddBrandModalProps> = ({
             <Text style={[styles.label, { color: colors.text }]}>
               Nama Brand *
             </Text>
-            <View
+            <TextInput
               style={[
                 styles.input,
-                { borderColor: error ? "#ef4444" : colors.border },
+                { borderColor: error ? "#ef4444" : colors.border, color: colors.text },
               ]}
-            >
-              <TextInput
-                style={{ color: colors.text, flex: 1 }}
-                placeholder="Contoh: Coca-Cola, Indomie, ABC"
-                placeholderTextColor={colors.textSecondary}
-                value={name}
-                onChangeText={(text) => {
-                  setName(text);
-                  if (error) setError("");
-                }}
-                autoFocus
-              />
-            </View>
+              placeholder="Contoh: Coca-Cola, Indomie, ABC"
+              placeholderTextColor={colors.textSecondary}
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                if (error) setError("");
+              }}
+              autoFocus
+            />
             {error && <Text style={styles.errorText}>{error}</Text>}
           </View>
 
