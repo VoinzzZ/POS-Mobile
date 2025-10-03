@@ -2,7 +2,13 @@ const productService = require('../services/product.service');
 
 async function createProduct(req, res) {
   try {
-    const product = await productService.createProduct(req.body);
+    // Add image URL from Cloudinary if uploaded
+    const productData = {
+      ...req.body,
+      image: req.file ? req.file.path : null, // Cloudinary URL
+    };
+    
+    const product = await productService.createProduct(productData);
     return res.status(201).json({
       success: true,
       message: 'Product created successfully',
@@ -59,7 +65,16 @@ async function getProductById(req, res) {
 
 async function updateProduct(req, res) {
   try {
-    const product = await productService.updateProduct(req.params.id, req.body);
+    // Add image URL from Cloudinary if uploaded
+    const productData = {
+      ...req.body,
+    };
+    
+    if (req.file) {
+      productData.image = req.file.path; // Cloudinary URL
+    }
+    
+    const product = await productService.updateProduct(req.params.id, productData);
     return res.status(200).json({
       success: true,
       message: 'Product updated successfully',
