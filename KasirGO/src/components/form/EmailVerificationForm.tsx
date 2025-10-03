@@ -7,17 +7,52 @@ import {
   StyleSheet,
   Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { MailCheck } from 'lucide-react-native';
 import { useRouter } from "expo-router";
+import { verifyEmailOTPApi, registerApi } from "../../api/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTheme } from "../../context/ThemeContext";
 
 const EmailVerificationForm: React.FC = () => {
   const [verificationCode, setVerificationCode] = useState<string[]>(['', '', '', '', '', '']);
-  const [timeLeft, setTimeLeft] = useState<number>(60);
+  const [timeLeft, setTimeLeft] = useState<number>(300); // 5 minutes
   const [canResend, setCanResend] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [email, setEmail] = useState<string>("");
+  const [codeError, setCodeError] = useState<string>("");
   
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const router = useRouter();
+  const { colors } = useTheme();
+
+  // Load userId and email from AsyncStorage
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const storedUserId = await AsyncStorage.getItem("@temp_userId");
+        const storedEmail = await AsyncStorage.getItem("@temp_email");
+        
+        if (storedUserId) {
+          setUserId(parseInt(storedUserId));
+        } else {
+          Alert.alert("Error", "Data registrasi tidak ditemukan. Silakan daftar ulang.", [
+            { text: "OK", onPress: () => router.push("/auth/register") }
+          ]);
+        }
+        
+        if (storedEmail) {
+          setEmail(storedEmail);
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      }
+    };
+    
+    loadUserData();
+  }, []);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -30,6 +65,11 @@ const EmailVerificationForm: React.FC = () => {
 
   const handleCodeChange = (value: string, index: number): void => {
     if (!/^\d*$/.test(value)) return;
+    
+    // Clear error when user starts typing
+    if (codeError) {
+      setCodeError("");
+    }
     
     const newCode = [...verificationCode];
     newCode[index] = value;
@@ -46,21 +86,78 @@ const EmailVerificationForm: React.FC = () => {
     }
   };
 
-  const handleVerify = (): void => {
-    router.push("/auth/setPassword");
+  const handleVerify = async (): Promise<void> => {
+    const code = verificationCode.join('');
+    
+    if (code.length !== 6) {
+      setCodeError("Silakan masukkan kode 6 digit lengkap");
+      return;
+    }
+
+    if (!userId) {
+      Alert.alert("Error", "Data registrasi tidak valid. Silakan daftar ulang.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await verifyEmailOTPApi(userId, code);
+      
+      if (response.success) {
+        Alert.alert(
+          "Berhasil!", 
+          "Email berhasil diverifikasi. Silakan buat password.",
+          [{ text: "OK", onPress: () => router.push("/auth/setPassword") }]
+        );
+      } else {
+        Alert.alert("Error", response.message || "Verifikasi gagal");
+      }
+    } catch (error: any) {
+      console.error("Verification error:", error);
+      const errorMsg = error.response?.data?.message || error.message || "Terjadi kesalahan saat verifikasi";
+      setCodeError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResendCode = (): void => {
-    if (canResend) {
-      setTimeLeft(60);
-      setCanResend(false);
-      setVerificationCode(['', '', '', '', '', '']);
-      Alert.alert('Info', 'Verification code has been resent');
+  const handleResendCode = async (): Promise<void> => {
+    if (!canResend || !userId || !email) return;
+
+    setLoading(true);
+    try {
+      // Get userName and PIN from AsyncStorage
+      const userName = await AsyncStorage.getItem("@temp_userName") || email.split('@')[0];
+      const pin = await AsyncStorage.getItem("@temp_pin");
+      
+      if (!pin) {
+        Alert.alert("Error", "PIN tidak ditemukan. Silakan daftar ulang.");
+        return;
+      }
+
+      const response = await registerApi(userName, pin, email);
+      
+      if (response.success) {
+        setTimeLeft(300);
+        setCanResend(false);
+        setVerificationCode(['', '', '', '', '', '']);
+        Alert.alert('Berhasil', 'Kode verifikasi baru telah dikirim ke email Anda');
+      } else {
+        Alert.alert("Error", response.message || "Gagal mengirim ulang kode");
+      }
+    } catch (error: any) {
+      console.error("Resend error:", error);
+      Alert.alert(
+        "Error", 
+        error.response?.data?.message || error.message || "Gagal mengirim ulang kode"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
       {/* Logo */}
       <Image 
         source={require("../../../assets/images/KasirGOTrnsprt.png")} 
@@ -68,46 +165,59 @@ const EmailVerificationForm: React.FC = () => {
       />
 
       {/* Title */}
-      <Text style={styles.title}>EMAIL</Text>
-      <Text style={styles.title}>VERIFICATION</Text>
+      <Text style={[styles.title, { color: colors.text }]}>VERIFIKASI</Text>
+      <Text style={[styles.title, { color: colors.text }]}>EMAIL</Text>
       
       {/* Subtitle */}
-      <Text style={styles.subtitle}>
-        Please enter 6 6-digit code sent to your email
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        Masukkan kode 6 digit yang telah dikirim ke email Anda{email ? `: ${email}` : ""}
       </Text>
 
     {/* Email Icon */}
         <View style={styles.emailIconContainer}>
-        <View style={styles.emailIcon}>
-            <MailCheck size={40} color="#1e293b" strokeWidth={2.5} />
+        <View style={[styles.emailIcon, { backgroundColor: colors.primary }]}>
+            <MailCheck size={40} color="#ffffff" strokeWidth={2.5} />
         </View>
         </View>
 
 
       {/* Code Input Fields */}
-      <View style={styles.codeContainer}>
-        {verificationCode.map((digit, index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => (inputRefs.current[index] = ref)}
-            style={styles.codeInput}
-            value={digit}
-            onChangeText={(value) => handleCodeChange(value, index)}
-            onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
-            keyboardType="numeric"
-            maxLength={1}
-            textAlign="center"
-            placeholderTextColor="#94a3b8"
-          />
-        ))}
+      <View style={styles.codeFieldContainer}>
+        <View style={styles.codeContainer}>
+          {verificationCode.map((digit, index) => (
+            <TextInput
+              key={index}
+              ref={(ref) => (inputRefs.current[index] = ref)}
+              style={[
+                styles.codeInput,
+                codeError && { borderColor: "#ef4444", borderWidth: 2 }
+              ]}
+              value={digit}
+              onChangeText={(value) => handleCodeChange(value, index)}
+              onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
+              keyboardType="numeric"
+              maxLength={1}
+              textAlign="center"
+              placeholderTextColor="#94a3b8"
+            />
+          ))}
+        </View>
+        {codeError && (
+          <Text style={styles.codeErrorText}>{codeError}</Text>
+        )}
       </View>
 
       {/* Verify Button */}
       <TouchableOpacity 
-        style={styles.verifyButton} 
+        style={[styles.verifyButton, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]} 
         onPress={handleVerify}
+        disabled={loading}
       >
-        <Text style={styles.verifyButtonText}>VERIFY</Text>
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.verifyButtonText}>VERIFIKASI</Text>
+        )}
       </TouchableOpacity>
 
       {/* Resend Code */}
@@ -118,16 +228,17 @@ const EmailVerificationForm: React.FC = () => {
       >
         <Text style={[
           styles.resendText, 
+          { color: canResend ? colors.primary : colors.textSecondary },
           !canResend && styles.resendTextDisabled
         ]}>
-          {canResend ? 'Resend Code' : `Resend Code (${timeLeft}s)`}
+          {canResend ? 'Kirim Ulang Kode' : `Kirim Ulang Kode (${timeLeft}s)`}
         </Text>
       </TouchableOpacity>
 
       {/* Back to Login */}
-      <Text style={styles.footer}>
-        Back to{" "}
-        <Text style={styles.link} onPress={() => router.push("/auth/login")}>
+      <Text style={[styles.footer, { color: colors.textSecondary }]}>
+        Kembali ke{" "}
+        <Text style={[styles.link, { color: colors.primary }]} onPress={() => router.push("/auth/login")}>
           Login
         </Text>
       </Text>
@@ -190,10 +301,13 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 6, 
   },
+  codeFieldContainer: {
+    width: "100%",
+    marginBottom: 20,
+  },
   codeContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 35,
     marginRight: 20,
     width: "100%",
     gap: 8,
@@ -243,6 +357,12 @@ const styles = StyleSheet.create({
   link: {
     color: "#4ECDC4",
     fontWeight: "500",
+  },
+  codeErrorText: {
+    color: "#ef4444",
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: "center",
   },
 });
 

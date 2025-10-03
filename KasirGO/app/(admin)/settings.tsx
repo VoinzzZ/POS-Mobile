@@ -1,19 +1,21 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
-import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight } from "lucide-react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from "react-native";
+import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight, Moon, Sun } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
 import { useAuth } from "../../src/context/AuthContext";
+import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter } from "expo-router";
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme, colors } = useTheme();
   const router = useRouter();
 
   const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert("Keluar", "Apakah Anda yakin ingin keluar?", [
+      { text: "Batal", style: "cancel" },
       {
-        text: "Logout",
+        text: "Keluar",
         style: "destructive",
         onPress: async () => {
           await logout();
@@ -26,45 +28,68 @@ export default function SettingsScreen() {
   const settingsOptions = [
     {
       icon: User,
-      title: "Profile",
-      subtitle: "Manage your profile information",
+      title: "Profil",
+      subtitle: "Kelola informasi profil Anda",
       onPress: () => {},
     },
     {
       icon: Bell,
-      title: "Notifications",
-      subtitle: "Manage notification preferences",
+      title: "Notifikasi",
+      subtitle: "Atur preferensi notifikasi",
       onPress: () => {},
     },
     {
       icon: Lock,
-      title: "Security",
-      subtitle: "Password and security settings",
+      title: "Keamanan",
+      subtitle: "Password dan pengaturan keamanan",
       onPress: () => {},
     },
     {
       icon: HelpCircle,
-      title: "Help & Support",
-      subtitle: "Get help and contact support",
+      title: "Bantuan & Dukungan",
+      subtitle: "Dapatkan bantuan dan hubungi support",
       onPress: () => {},
     },
   ];
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Pengaturan</Text>
       </View>
 
       <ScrollView style={styles.scrollView}>
+        {/* Theme Toggle */}
+        <View style={[styles.themeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.themeLeft}>
+            {theme === "dark" ? (
+              <Moon size={24} color={colors.primary} />
+            ) : (
+              <Sun size={24} color={colors.primary} />
+            )}
+            <View style={styles.themeInfo}>
+              <Text style={[styles.themeTitle, { color: colors.text }]}>Mode Tema</Text>
+              <Text style={[styles.themeSubtitle, { color: colors.textSecondary }]}>
+                {theme === "dark" ? "Mode Gelap" : "Mode Terang"}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={theme === "dark"}
+            onValueChange={toggleTheme}
+            trackColor={{ false: "#cbd5e1", true: colors.primary }}
+            thumbColor={"#ffffff"}
+          />
+        </View>
+
         {/* User Info Card */}
-        <View style={styles.userCard}>
-          <View style={styles.avatar}>
+        <View style={[styles.userCard, { backgroundColor: colors.card }]}>
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
             <Text style={styles.avatarText}>{user?.userName?.charAt(0).toUpperCase()}</Text>
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.userName}</Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
+            <Text style={[styles.userName, { color: colors.text }]}>{user?.userName}</Text>
+            <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
             <View style={styles.roleBadge}>
               <Text style={styles.roleText}>{user?.role}</Text>
             </View>
@@ -78,28 +103,28 @@ export default function SettingsScreen() {
             return (
               <TouchableOpacity
                 key={index}
-                style={styles.option}
+                style={[styles.option, { backgroundColor: colors.card }]}
                 onPress={option.onPress}
               >
                 <View style={styles.optionLeft}>
-                  <View style={styles.iconContainer}>
-                    <Icon size={20} color="#4ECDC4" />
+                  <View style={[styles.iconContainer, { backgroundColor: colors.background }]}>
+                    <Icon size={20} color={colors.primary} />
                   </View>
                   <View>
-                    <Text style={styles.optionTitle}>{option.title}</Text>
-                    <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+                    <Text style={[styles.optionTitle, { color: colors.text }]}>{option.title}</Text>
+                    <Text style={[styles.optionSubtitle, { color: colors.textSecondary }]}>{option.subtitle}</Text>
                   </View>
                 </View>
-                <ChevronRight size={20} color="#64748b" />
+                <ChevronRight size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             );
           })}
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <LogOut size={20} color="#ef4444" />
-          <Text style={styles.logoutText}>Logout</Text>
+        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.card, borderColor: colors.error }]} onPress={handleLogout}>
+          <LogOut size={20} color={colors.error} />
+          <Text style={[styles.logoutText, { color: colors.error }]}>Keluar</Text>
         </TouchableOpacity>
 
         <View style={{ height: 20 }} />
@@ -113,26 +138,48 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f172a",
   },
   header: {
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: "#1e293b",
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#ffffff",
   },
   scrollView: {
     flex: 1,
   },
+  themeCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    margin: 20,
+    marginBottom: 12,
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  themeLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  themeInfo: {
+    gap: 4,
+  },
+  themeTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  themeSubtitle: {
+    fontSize: 12,
+  },
   userCard: {
     flexDirection: "row",
-    backgroundColor: "#1e293b",
-    margin: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
     padding: 20,
     borderRadius: 12,
     alignItems: "center",
@@ -141,7 +188,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#4ECDC4",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -157,11 +203,9 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#ffffff",
   },
   userEmail: {
     fontSize: 14,
-    color: "#94a3b8",
     marginTop: 4,
   },
   roleBadge: {
@@ -185,7 +229,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#1e293b",
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -199,7 +242,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#0f172a",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -207,28 +249,23 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#ffffff",
   },
   optionSubtitle: {
     fontSize: 12,
-    color: "#64748b",
     marginTop: 2,
   },
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1e293b",
     marginHorizontal: 20,
     padding: 16,
     borderRadius: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: "#ef4444",
   },
   logoutText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#ef4444",
   },
 });

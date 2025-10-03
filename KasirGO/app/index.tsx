@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, Image } from "react-native";
 import { useRouter, Redirect } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
 
@@ -31,11 +31,16 @@ export default function Index() {
     }
   }, [isLoading, isAuthenticated, user, hasRedirected]);
 
-  // Show loading while processing
+  // Show splash screen with logo while processing
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#4ECDC4" />
-      <Text style={styles.text}>Loading...</Text>
+      <Image 
+        source={require("../assets/images/KasirGOTrnsprt.png")} 
+        style={styles.logo} 
+        resizeMode="contain"
+      />
+      <ActivityIndicator size="large" color="#4ECDC4" style={styles.loader} />
+      <Text style={styles.text}>Memuat aplikasi...</Text>
     </View>
   );
 }
@@ -47,9 +52,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#0f172a",
   },
+  logo: {
+    width: 250,
+    height: 120,
+    marginBottom: 40,
+  },
+  loader: {
+    marginBottom: 16,
+  },
   text: {
     color: "#94a3b8",
-    marginTop: 16,
     fontSize: 16,
+    fontWeight: "500",
   },
 });

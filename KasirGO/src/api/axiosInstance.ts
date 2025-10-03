@@ -2,12 +2,15 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@env";
 
+console.log('🔗 API_URL:', API_URL);
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 30000, // Increase timeout to 30 seconds
   headers: {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true", // Bypass ngrok browser warning
   },
 });
 
@@ -35,6 +38,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    console.log('🚨 Axios Error:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.status,
+      url: error.config?.url,
+      baseURL: error.config?.baseURL
+    });
+    
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };

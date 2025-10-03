@@ -1,11 +1,13 @@
 import React from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
-import { LayoutDashboard, ShoppingCart, History, Settings } from "lucide-react-native";
+import { LayoutDashboard, ShoppingCart, History, Package } from "lucide-react-native";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function CashierBottomNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const { colors } = useTheme();
 
   const tabs = [
     {
@@ -27,17 +29,17 @@ export default function CashierBottomNav() {
       path: "/history",
     },
     {
-      name: "Settings",
-      icon: Settings,
-      route: "/(cashier)/settings",
-      path: "/settings",
+      name: "Stock",
+      icon: Package,
+      route: "/(cashier)/stock",
+      path: "/stock",
     },
   ];
 
   const isActive = (path: string) => pathname.includes(path);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const active = isActive(tab.path);
@@ -50,10 +52,10 @@ export default function CashierBottomNav() {
           >
             <Icon
               size={24}
-              color={active ? "#4ECDC4" : "#64748b"}
+              color={active ? colors.primary : colors.textSecondary}
               strokeWidth={active ? 2.5 : 2}
             />
-            <Text style={[styles.label, active && styles.labelActive]}>
+            <Text style={[styles.label, active && styles.labelActive, { color: active ? colors.primary : colors.textSecondary }]}>
               {tab.name}
             </Text>
           </TouchableOpacity>
@@ -66,9 +68,7 @@ export default function CashierBottomNav() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    backgroundColor: "#1e293b",
     borderTopWidth: 1,
-    borderTopColor: "#334155",
     paddingVertical: 8,
     paddingHorizontal: 4,
     elevation: 8,
@@ -85,12 +85,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    color: "#64748b",
     marginTop: 4,
     fontWeight: "500",
   },
   labelActive: {
-    color: "#4ECDC4",
     fontWeight: "600",
   },
 });

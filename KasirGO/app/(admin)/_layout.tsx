@@ -28,8 +28,9 @@ export default function AdminLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="dashboard" />
-      <Stack.Screen name="stock" />
+      <Stack.Screen name="products" />
       <Stack.Screen name="history" />
+      <Stack.Screen name="users" />
       <Stack.Screen name="settings" />
     </Stack>
   );

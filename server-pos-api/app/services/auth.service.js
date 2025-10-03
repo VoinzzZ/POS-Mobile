@@ -199,7 +199,7 @@ async function sendForgotPasswordOtp(email) {
     await tx.passwordReset.create({ data: { userId: user.id, code: otpCode, expiresAt, used: false } });
   });
 
-  const result = await emailService.sendForgotPasswordOtp(email, otpCode, user.name);
+  const result = await emailService.sendForgotPasswordOtp(email, otpCode, user.userName);
   if (!result.success) throw new Error('Failed to send reset code to email');
 
   return { email, message: 'Password reset code sent. Valid for 10 minutes.' };
@@ -302,7 +302,7 @@ async function getProfile(userId) {
 
   return {
     id: user.id,
-    userName: user.name,
+    userName: user.userName,
     email: user.email,
     role: user.role,
     isVerified: user.isVerified,

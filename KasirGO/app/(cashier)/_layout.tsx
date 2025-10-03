@@ -29,6 +29,7 @@ export default function CashierLayout() {
       <Stack.Screen name="dashboard" />
       <Stack.Screen name="workspace" />
       <Stack.Screen name="history" />
+      <Stack.Screen name="stock" />
       <Stack.Screen name="settings" />
     </Stack>
   );

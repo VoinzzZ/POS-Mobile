@@ -47,7 +47,7 @@ async function listPins(status, page = 1, limit = 10) {
         createdBy: {
           select: {
             id: true,
-            name: true,
+            userName: true,
             email: true,
           },
         },
@@ -107,7 +107,7 @@ async function getPinStats() {
       take: 5,
       include: {
         createdBy: {
-          select: { name: true, email: true },
+          select: { userName: true, email: true },
         },
       },
     }),
@@ -121,9 +121,68 @@ async function getPinStats() {
   };
 }
 
+// Get all users with optional role filter
+async function getAllUsers(role, page = 1, limit = 50) {
+  const skip = (page - 1) * limit;
+  const where = {};
+
+  if (role && ['ADMIN', 'CASHIER'].includes(role.toUpperCase())) {
+    where.role = role.toUpperCase();
+  }
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip,
+      take: parseInt(limit),
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        userName: true,
+        email: true,
+        role: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return {
+    users,
+    pagination: {
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
+
+// Get user statistics
+async function getUserStats() {
+  const [totalUsers, adminCount, cashierCount, verifiedUsers] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.count({ where: { role: 'ADMIN' } }),
+    prisma.user.count({ where: { role: 'CASHIER' } }),
+    prisma.user.count({ where: { isVerified: true } }),
+  ]);
+
+  return {
+    totalUsers,
+    adminCount,
+    cashierCount,
+    verifiedUsers,
+    unverifiedUsers: totalUsers - verifiedUsers,
+  };
+}
+
 module.exports = {
   generatePin,
   listPins,
   revokePin,
   getPinStats,
+  getAllUsers,
+  getUserStats,
 };

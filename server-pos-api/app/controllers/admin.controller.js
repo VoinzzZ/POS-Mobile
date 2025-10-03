@@ -87,9 +87,52 @@ async function getPinStats(req, res) {
   }
 }
 
+async function getAllUsers(req, res) {
+  try {
+    const { role, page, limit } = req.query;
+    const data = await adminService.getAllUsers(role, page, limit);
+
+    return res.json({
+      success: true,
+      message: 'Users retrieved successfully',
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      status: 'error',
+      message: error.message || 'Internal Server Error',
+      error: error.code || 'INTERNAL_SERVER_ERROR',
+      details: error.stack,
+    });
+  }
+}
+
+async function getUserStats(req, res) {
+  try {
+    const data = await adminService.getUserStats();
+
+    return res.json({
+      success: true,
+      message: 'User statistics retrieved successfully',
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      status: 'error',
+      message: error.message || 'Internal Server Error',
+      error: error.code || 'INTERNAL_SERVER_ERROR',
+      details: error.stack,
+    });
+  }
+}
+
 module.exports = {
   generatePin,
   listPins,
   revokePin,
   getPinStats,
+  getAllUsers,
+  getUserStats,
 };

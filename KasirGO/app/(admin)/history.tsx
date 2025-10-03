@@ -1,20 +1,31 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import { History } from "lucide-react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { History, Settings } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
+import { useTheme } from "../../src/context/ThemeContext";
+import { useRouter } from "expo-router";
 
 export default function HistoryScreen() {
+  const { colors } = useTheme();
+  const router = useRouter();
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Transaction History</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Riwayat Transaksi</Text>
+        <TouchableOpacity 
+          onPress={() => router.push("/(admin)/settings")} 
+          style={styles.settingsBtn}
+        >
+          <Settings size={24} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.emptyState}>
-          <History size={48} color="#475569" />
-          <Text style={styles.emptyText}>No transactions yet</Text>
-          <Text style={styles.emptySubtext}>Transaction history will appear here</Text>
+          <History size={48} color={colors.textSecondary} />
+          <Text style={[styles.emptyText, { color: colors.text }]}>Belum ada transaksi</Text>
+          <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Riwayat transaksi akan muncul di sini</Text>
         </View>
       </ScrollView>
 
@@ -26,18 +37,21 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f172a",
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: "#1e293b",
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#ffffff",
+  },
+  settingsBtn: {
+    padding: 8,
   },
   scrollView: {
     flex: 1,
@@ -50,12 +64,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: "#64748b",
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#475569",
     marginTop: 8,
   },
 });
