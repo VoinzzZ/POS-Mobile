@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_URL } from "@";
+import { API_URL } from "@env";
 
 // Create axios instance
 const api = axios.create({
@@ -32,7 +32,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - handle token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -40,7 +39,6 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -49,7 +47,6 @@ api.interceptors.response.use(
         if (tokensStr) {
           const tokens = JSON.parse(tokensStr);
 
-          // Try to refresh token
           const response = await axios.post(
             `${API_URL}/auth/refresh-token`,
             {},
@@ -64,16 +61,13 @@ api.interceptors.response.use(
             const newTokens = response.data.data.tokens;
             await AsyncStorage.setItem("@tokens", JSON.stringify(newTokens));
 
-            // Retry original request with new token
             originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
             return api(originalRequest);
           }
         }
       } catch (refreshError) {
-        // Refresh failed, clear storage and redirect to login
         await AsyncStorage.removeItem("@tokens");
         await AsyncStorage.removeItem("@user");
-        // You can emit an event here to trigger logout in AuthContext
         return Promise.reject(refreshError);
       }
     }
