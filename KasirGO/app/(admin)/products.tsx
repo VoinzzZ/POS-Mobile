@@ -30,6 +30,8 @@ import {
 import AddProductModal from "../../src/components/modals/AddProductModal";
 import AddCategoryModal from "../../src/components/modals/AddCategoryModal";
 import AddBrandModal from "../../src/components/modals/AddBrandModal";
+import EditCategoryModal from "../../src/components/modals/EditCategoryModal";
+import EditBrandModal from "../../src/components/modals/EditBrandModal";
 
 type TabType = "products" | "categories" | "brands";
 
@@ -59,6 +61,10 @@ export default function AdminProducts() {
   const [showProductModal, setShowProductModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showBrandModal, setShowBrandModal] = useState(false);
+  const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
+  const [showEditBrandModal, setShowEditBrandModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
 
   useEffect(() => {
     loadAllData();
@@ -257,8 +263,8 @@ export default function AdminProducts() {
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: colors.primary + "20" }]}
           onPress={() => {
-            // TODO: Implement edit
-            Alert.alert("Info", "Edit feature coming soon!");
+            // TODO: Implement EditProductModal
+            Alert.alert("Info", "Edit product feature coming soon!");
           }}
         >
           <Edit size={16} color={colors.primary} />
@@ -295,7 +301,10 @@ export default function AdminProducts() {
         <View style={styles.cardActions}>
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.primary + "20" }]}
-            onPress={() => Alert.alert("Info", "Edit feature coming soon!")}
+            onPress={() => {
+              setSelectedCategory(category);
+              setShowEditCategoryModal(true);
+            }}
           >
             <Edit size={16} color={colors.primary} />
           </TouchableOpacity>
@@ -332,7 +341,10 @@ export default function AdminProducts() {
         <View style={styles.cardActions}>
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.primary + "20" }]}
-            onPress={() => Alert.alert("Info", "Edit feature coming soon!")}
+            onPress={() => {
+              setSelectedBrand(brand);
+              setShowEditBrandModal(true);
+            }}
           >
             <Edit size={16} color={colors.primary} />
           </TouchableOpacity>
@@ -580,6 +592,32 @@ export default function AdminProducts() {
         visible={showBrandModal}
         onClose={() => setShowBrandModal(false)}
         onSuccess={loadBrands}
+      />
+      <EditCategoryModal
+        visible={showEditCategoryModal}
+        category={selectedCategory}
+        onClose={() => {
+          setShowEditCategoryModal(false);
+          setSelectedCategory(null);
+        }}
+        onSuccess={() => {
+          loadCategories();
+          setShowEditCategoryModal(false);
+          setSelectedCategory(null);
+        }}
+      />
+      <EditBrandModal
+        visible={showEditBrandModal}
+        brand={selectedBrand}
+        onClose={() => {
+          setShowEditBrandModal(false);
+          setSelectedBrand(null);
+        }}
+        onSuccess={() => {
+          loadBrands();
+          setShowEditBrandModal(false);
+          setSelectedBrand(null);
+        }}
       />
     </View>
   );
