@@ -41,6 +41,7 @@ export interface CreateProductData {
   imageUrl?: string | null;
   brandId?: number | null;
   categoryId?: number | null;
+  image?: any;
 }
 
 export interface ApiResponse<T = any> {
@@ -88,6 +89,25 @@ export const getProductById = async (
 export const createProduct = async (
   data: CreateProductData
 ): Promise<ApiResponse<Product>> => {
+  // If image is provided, use FormData
+  if (data.image) {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('price', data.price.toString());
+    formData.append('stock', data.stock.toString());
+    if (data.brandId) formData.append('brandId', data.brandId.toString());
+    if (data.categoryId) formData.append('categoryId', data.categoryId.toString());
+    formData.append('image', data.image);
+    
+    const res = await api.post("/product", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data;
+  }
+  
+  // Otherwise, use regular JSON
   const res = await api.post("/product", data);
   return res.data;
 };
@@ -101,6 +121,25 @@ export const updateProduct = async (
   id: number,
   data: Partial<CreateProductData>
 ): Promise<ApiResponse<Product>> => {
+  // If image is provided, use FormData
+  if (data.image) {
+    const formData = new FormData();
+    if (data.name) formData.append('name', data.name);
+    if (data.price) formData.append('price', data.price.toString());
+    if (data.stock) formData.append('stock', data.stock.toString());
+    if (data.brandId) formData.append('brandId', data.brandId.toString());
+    if (data.categoryId) formData.append('categoryId', data.categoryId.toString());
+    formData.append('image', data.image);
+    
+    const res = await api.put(`/product/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data;
+  }
+  
+  // Otherwise, use regular JSON
   const res = await api.put(`/product/${id}`, data);
   return res.data;
 };
@@ -203,36 +242,19 @@ export const deleteBrand = async (
 };
 
 /**
- * Upload product image
+ * Prepare image file object for upload
  * @param imageUri - Local image URI from image picker
  * @param productName - Product name for filename
  */
-export const uploadProductImage = async (
-  imageUri: string,
-  productName: string
-): Promise<string> => {
-  // Create FormData
-  const formData = new FormData();
-  
+export const prepareImageFile = (imageUri: string, productName: string): any => {
   // Extract file extension
   const uriParts = imageUri.split('.');
   const fileType = uriParts[uriParts.length - 1];
   
   // Create file object for upload
-  const file: any = {
+  return {
     uri: imageUri,
     name: `${productName.replace(/\s/g, '_')}_${Date.now()}.${fileType}`,
     type: `image/${fileType}`,
   };
-  
-  formData.append('image', file);
-  
-  // Upload to server
-  const res = await api.post("/upload/product-image", formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  
-  return res.data.data.imageUrl;
 };

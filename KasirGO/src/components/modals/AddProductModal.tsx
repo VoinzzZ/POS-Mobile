@@ -16,7 +16,7 @@ import { useTheme } from "../../context/ThemeContext";
 import * as ImagePicker from "expo-image-picker";
 import {
   createProduct,
-  uploadProductImage,
+  prepareImageFile,
   getAllCategories,
   getAllBrands,
   Category,
@@ -158,33 +158,22 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
 
     setLoading(true);
     try {
-      let imageUrl: string | null = null;
-
-      // Upload image if selected
-      if (imageUri) {
-        setUploadingImage(true);
-        try {
-          imageUrl = await uploadProductImage(imageUri, name);
-        } catch (error) {
-          console.error("Error uploading image:", error);
-          Alert.alert(
-            "Warning",
-            "Gagal upload gambar, produk akan dibuat tanpa gambar."
-          );
-        } finally {
-          setUploadingImage(false);
-        }
-      }
-
-      // Create product
-      const response = await createProduct({
+      // Prepare product data
+      const productData: any = {
         name: name.trim(),
         price: Number(price),
         stock: Number(stock),
         categoryId: categoryId || null,
         brandId: brandId || null,
-        imageUrl: imageUrl,
-      });
+      };
+
+      // Add image if selected
+      if (imageUri) {
+        productData.image = prepareImageFile(imageUri, name);
+      }
+
+      // Create product
+      const response = await createProduct(productData);
 
       if (response.success) {
         Alert.alert("Berhasil!", "Produk berhasil ditambahkan", [
