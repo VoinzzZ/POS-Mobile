@@ -21,13 +21,15 @@ const speedLimiter = slowDown({
 
 // General API rate limiter
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100, // limit each IP to 100 requests per windowMs
+    windowMs: 1 * 60 * 1000, // 1 minute window for development
+    max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 for dev, 100 for prod
     message: {
         success: false,
         message: 'Too many requests from this IP. Please try again later.',
         error: 'RATE_LIMIT_EXCEEDED'
-    }
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 
 module.exports = {
