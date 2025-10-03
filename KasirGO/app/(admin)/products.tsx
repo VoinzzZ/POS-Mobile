@@ -32,6 +32,7 @@ import AddCategoryModal from "../../src/components/modals/AddCategoryModal";
 import AddBrandModal from "../../src/components/modals/AddBrandModal";
 import EditCategoryModal from "../../src/components/modals/EditCategoryModal";
 import EditBrandModal from "../../src/components/modals/EditBrandModal";
+import EditProductModal from "../../src/components/modals/EditProductModal";
 
 type TabType = "products" | "categories" | "brands";
 
@@ -70,8 +71,10 @@ export default function AdminProducts() {
   const [showBrandModal, setShowBrandModal] = useState(false);
   const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
   const [showEditBrandModal, setShowEditBrandModal] = useState(false);
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     loadAllData();
@@ -270,8 +273,8 @@ export default function AdminProducts() {
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: colors.primary + "20" }]}
           onPress={() => {
-            // TODO: Implement EditProductModal
-            Alert.alert("Info", "Edit product feature coming soon!");
+            setSelectedProduct(product);
+            setShowEditProductModal(true);
           }}
         >
           <Edit size={16} color={colors.primary} />
@@ -640,6 +643,19 @@ export default function AdminProducts() {
           loadProducts(); // Reload products to sync brand names
           setShowEditBrandModal(false);
           setSelectedBrand(null);
+        }}
+      />
+      <EditProductModal
+        visible={showEditProductModal}
+        product={selectedProduct}
+        onClose={() => {
+          setShowEditProductModal(false);
+          setSelectedProduct(null);
+        }}
+        onSuccess={() => {
+          loadProducts();
+          setShowEditProductModal(false);
+          setSelectedProduct(null);
         }}
       />
     </View>
