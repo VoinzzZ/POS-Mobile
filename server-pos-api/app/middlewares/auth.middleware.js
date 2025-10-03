@@ -35,7 +35,11 @@ function verifyToken(req, res, next) {
       stack: error.stack?.split('\n').slice(0, 3)
     });
     
-    if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
+    // Handle both JWT library errors and custom errors
+    if (error.name === 'TokenExpiredError' || 
+        error.name === 'JsonWebTokenError' ||
+        error.message?.includes('expired') ||
+        error.message?.includes('invalid')) {
       return res.status(401).json({
         success: false,
         message: error.message,
