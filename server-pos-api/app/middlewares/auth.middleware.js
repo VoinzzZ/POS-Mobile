@@ -98,20 +98,43 @@ function requireCashierOrAdmin(req, res, next) {
 
 function verifyRefreshToken(req, res, next) {
   try {
-    const refreshToken = req.cookies?.refreshToken;
-
+    // Try to get refresh token from cookies first, then from Authorization header
+    let refreshToken = req.cookies?.refreshToken;
+    
     if (!refreshToken) {
-      return res.status(401).json({
-        success: false,
-        message: 'Refresh Token is required',
-        error: 'MISSING_REFRESH_TOKEN'
-      });
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer')) {
+        return res.status(401).json({
+          success: false,
+          message: 'Refresh Token is required',
+          error: 'MISSING_REFRESH_TOKEN'
+        });
+      }
+      refreshToken = authHeader.split(' ')[1];
     }
 
     const decoded = JWTService.verifyRefreshToken(refreshToken);
     setUser(req, decoded);
     next();
   } catch (error) {
+    console.error('🔴 Refresh Token Middleware Error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.split('\n').slice(0, 3)
+    });
+    
+    // Handle both JWT library errors and custom errors
+    if (error.name === 'TokenExpiredError' || 
+        error.name === 'JsonWebTokenError' ||
+        error.message?.includes('expired') ||
+        error.message?.includes('invalid')) {
+      return res.status(401).json({
+        success: false,
+        message: error.message,
+        error: 'INVALID_OR_EXPIRED_REFRESH_TOKEN'
+      });
+    }
+    
     return res.status(500).json({
       success: false,
       message: 'Refresh token verification failed',

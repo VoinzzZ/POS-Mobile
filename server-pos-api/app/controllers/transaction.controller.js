@@ -4,12 +4,18 @@ const transactionService = require("../services/transaction.service");
 const createTransaction = async (req, res) => {
   try {
     const cashierId = req.user?.userId;
+    console.log('🔍 Create Transaction Request:');
+    console.log('- User ID:', cashierId);
+    console.log('- Request Body:', JSON.stringify(req.body, null, 2));
+    
     if (!cashierId) return res.status(401).json({ success: false, message: "User belum login" });
 
     const result = await transactionService.createTransaction(req.body, cashierId);
+    console.log('✅ Transaction created successfully:', result.id);
     return res.status(201).json({ success: true, message: "Transaksi berhasil dibuat", data: result });
   } catch (error) {
-    console.error("Create Transaction Error:", error.message);
+    console.error('❌ Create Transaction Error:', error.message);
+    console.error('❌ Error Stack:', error.stack);
     return res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -59,9 +65,44 @@ const deleteTransaction = async (req, res) => {
   }
 };
 
+// Complete Transaction Payment
+const completePayment = async (req, res) => {
+  try {
+    const transactionId = req.params.id;
+    const { paymentAmount } = req.body;
+    const cashierId = req.user?.userId;
+
+    if (!paymentAmount || paymentAmount <= 0) {
+      return res.status(400).json({ success: false, message: "Payment amount required" });
+    }
+
+    const result = await transactionService.completeTransactionPayment(transactionId, paymentAmount, cashierId);
+    return res.json({ success: true, message: "Payment completed successfully", data: result });
+  } catch (error) {
+    console.error("Complete Payment Error:", error.message);
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// Get Receipt Data for PDF Generation
+const getReceiptData = async (req, res) => {
+  try {
+    const transactionId = req.params.id;
+    const cashierId = req.user?.userId;
+
+    const result = await transactionService.getReceiptData(transactionId, cashierId);
+    return res.json({ success: true, message: "Receipt data retrieved", data: result });
+  } catch (error) {
+    console.error("Get Receipt Data Error:", error.message);
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createTransaction,
   getAllTransactions,
   getTransactionDetail,
-  deleteTransaction
+  deleteTransaction,
+  completePayment,
+  getReceiptData
 };

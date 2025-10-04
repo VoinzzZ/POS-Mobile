@@ -7,12 +7,12 @@ async function createProduct(data) {
       price: data.price,
       stock: data.stock ?? 0,
       imageUrl: data.imageUrl ?? null,
-      brandId: data.brandId || null,       
-      categoryId: data.categoryId || null, 
+      brandId: data.brandId || null,
     },
     include: {
-      brand: true,
-      category: true,
+      brand: {
+        include: { category: true }
+      }
     }
   });
 }
@@ -32,11 +32,15 @@ async function getAllProducts(filters = {} ) {
           },
         }
         : {},
-        safeCategoryId ? { categoryId: safeCategoryId }: {},
+        safeCategoryId ? { brand: { categoryId: safeCategoryId } }: {},
         safeBrandId ? { brandId: safeBrandId } : {},
       ],
     },
-    include: { category: true, brand: true },
+    include: { 
+      brand: {
+        include: { category: true }
+      }
+    },
     orderBy: { createdAt: 'desc' }
   });
 }
@@ -44,7 +48,11 @@ async function getAllProducts(filters = {} ) {
 async function getProductById(id) {
   return prisma.product.findUnique({
     where: { id: Number(id) },
-    include: { category: true, brand: true }
+    include: { 
+      brand: {
+        include: { category: true }
+      }
+    }
   });
 }
 
@@ -63,7 +71,6 @@ async function updateProduct(id, data) {
     stock: data.stock ?? existingProduct.stock,
     imageUrl: data.imageUrl ?? existingProduct.imageUrl,
     brandId: data.brandId ?? existingProduct.brandId,
-    categoryId: data.categoryId ?? existingProduct.categoryId,
   };
 
   return prisma.product.update({

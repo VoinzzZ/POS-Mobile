@@ -5,6 +5,16 @@ async function generatePin(req, res) {
     const { expiresInHours } = req.body;
     const { userId: adminId } = req.user;
 
+    console.log('🎯 Generate PIN request:', { adminId, expiresInHours, user: req.user });
+
+    if (!adminId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Admin ID not found in request',
+        error: 'MISSING_ADMIN_ID',
+      });
+    }
+
     const data = await adminService.generatePin(adminId, expiresInHours);
 
     return res.status(201).json({

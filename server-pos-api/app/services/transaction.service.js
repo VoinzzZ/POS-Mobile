@@ -1,11 +1,16 @@
 const prisma = require("../config/mysql.db");
 
 async function createTransaction(payload, cashierId) {
+  console.log('🔍 Transaction Service - Payload:', JSON.stringify(payload, null, 2));
+  console.log('🔍 Transaction Service - CashierId:', cashierId);
+  
   const { items } = payload;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     throw new Error("Items required");
   }
+  
+  console.log('🔍 Transaction Service - Items:', JSON.stringify(items, null, 2));
 
   return await prisma.$transaction(async (tx) => {
     const productIds = items.map(i => i.productId);
@@ -44,7 +49,7 @@ async function createTransaction(payload, cashierId) {
       }
     });
 
-    await tx.transactionItem.createMany({
+    await tx.transactionitem.createMany({
       data: transactionItemsData.map(item => ({
         ...item,
         transactionId: transaction.id
@@ -83,7 +88,8 @@ async function getAllTransactions({ startDate, endDate, cashierId, page = 1, lim
     prisma.transaction.findMany({
       where,
       include: {
-        items: { include: { product: true } }
+        transactionitem: { include: { product: true } },
+        user: { select: { userName: true, email: true } }
       },
       orderBy: { createdAt: 'desc' },
       skip,
@@ -92,8 +98,15 @@ async function getAllTransactions({ startDate, endDate, cashierId, page = 1, lim
     prisma.transaction.count({ where })
   ]);
 
+  // Map transactionitem to items for compatibility
+  const mappedTransactions = transactions.map(t => ({
+    ...t,
+    items: t.transactionitem,
+    cashier: t.user
+  }));
+
   return {
-    data: transactions,
+    data: mappedTransactions,
     pagination: {
       total,
       page,
@@ -107,32 +120,25 @@ async function getTransactionDetail(transactionId) {
   const transaction = await prisma.transaction.findUnique({
     where: { id: Number(transactionId) },
     include: {
-      items: { include: { product: true } }
+      transactionitem: { include: { product: true } },
+      user: { select: { userName: true, email: true } }
     }
   });
 
   if (!transaction) throw new Error('Transaction not found');
-  return transaction;
-}
-
-
-async function getTransactionDetail(transactionId) {
-  const transaction = await prisma.transaction.findUnique({
-    where: { id: Number(transactionId) },
-    include: {
-      items: { include: { product: true } },
-      cashier: true
-    }
-  });
-
-  if (!transaction) throw new Error('Transaction not found');
-  return transaction;
+  
+  // Map transactionitem to items for compatibility
+  return {
+    ...transaction,
+    items: transaction.transactionitem,
+    cashier: transaction.user
+  };
 }
 
 async function deleteTransaction(transactionId, cashierId) {
   const transaction = await prisma.transaction.findUnique({
     where: { id: Number(transactionId) },
-    include: { items: true }
+    include: { transactionitem: true }
   });
 
   if (!transaction) throw new Error('Transaction not found');
@@ -147,7 +153,7 @@ async function deleteTransaction(transactionId, cashierId) {
   }
 
   // kembalikan stok
-  await Promise.all(transaction.items.map(item =>
+  await Promise.all(transaction.transactionitem.map(item =>
     prisma.product.update({
       where: { id: item.productId },
       data: { stock: { increment: item.quantity } }
@@ -159,9 +165,72 @@ async function deleteTransaction(transactionId, cashierId) {
   return { message: 'Transaction deleted successfully' };
 }
 
+// Complete Transaction Payment
+async function completeTransactionPayment(transactionId, paymentAmount, cashierId) {
+  const transaction = await prisma.transaction.findUnique({
+    where: { id: Number(transactionId) },
+    include: { transactionitem: { include: { product: true } }, user: true }
+  });
+
+  if (!transaction) throw new Error('Transaction not found');
+  if (transaction.cashierId !== cashierId) throw new Error('Not authorized');
+  if (transaction.status !== 'DRAFT') throw new Error('Transaction already completed');
+  
+  if (paymentAmount < transaction.total) {
+    throw new Error(`Insufficient payment. Required: ${transaction.total}, Provided: ${paymentAmount}`);
+  }
+
+  const changeAmount = paymentAmount - transaction.total;
+
+  const updatedTransaction = await prisma.transaction.update({
+    where: { id: Number(transactionId) },
+    data: {
+      paymentAmount,
+      changeAmount,
+      status: 'COMPLETED',
+      completedAt: new Date()
+    },
+    include: {
+      transactionitem: { include: { product: true } },
+      user: { select: { userName: true, email: true } }
+    }
+  });
+
+  // Map transactionitem to items for compatibility
+  return {
+    ...updatedTransaction,
+    items: updatedTransaction.transactionitem,
+    cashier: updatedTransaction.user
+  };
+}
+
+// Get Receipt Data
+async function getReceiptData(transactionId, cashierId) {
+  const transaction = await prisma.transaction.findUnique({
+    where: { id: Number(transactionId) },
+    include: {
+      transactionitem: { include: { product: true } },
+      user: { select: { userName: true, email: true } }
+    }
+  });
+
+  if (!transaction) throw new Error('Transaction not found');
+  if (transaction.cashierId !== cashierId) throw new Error('Not authorized');
+  if (transaction.status !== 'COMPLETED') throw new Error('Transaction not completed yet');
+
+  // Map transactionitem to items for compatibility
+  return {
+    ...transaction,
+    items: transaction.transactionitem,
+    cashier: transaction.user
+  };
+}
+
 module.exports = {
   createTransaction,
   getAllTransactions,
   getTransactionDetail,
-  deleteTransaction
+  deleteTransaction,
+  completeTransactionPayment,
+  getReceiptData
 };

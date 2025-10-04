@@ -32,4 +32,20 @@ router.delete(
   transactionController.deleteTransaction
 );
 
+// Complete payment for a transaction
+router.post(
+  "/:id/complete",
+  authMiddleware.verifyToken,
+  authMiddleware.requireCashierOrAdmin,
+  transactionController.completePayment
+);
+
+// Get receipt data for PDF generation
+router.get(
+  "/:id/receipt",
+  authMiddleware.verifyToken,
+  authMiddleware.requireCashierOrAdmin,
+  transactionController.getReceiptData
+);
+
 module.exports = router;

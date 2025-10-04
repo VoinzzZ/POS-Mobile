@@ -68,18 +68,43 @@ async function login(req, res) {
 
 async function refreshToken(req, res) {
   try {
+    console.log('🔄 Refresh token request for user:', req.user?.email);
+    
     const { userId, email, role, name } = req.user;
+    
+    if (!userId || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user data in refresh token',
+        error: 'INVALID_USER_DATA'
+      });
+    }
+    
     const tokenPayload = { userId, email, role, name };
-    const { accessToken, refreshToken } = JWTService.generateTokenPair(tokenPayload);
+    const tokenPair = JWTService.generateTokenPair(tokenPayload);
 
+    console.log('✅ Token refreshed successfully for user:', email);
+    
     res.status(200).json({
       success: true,
       message: 'Token refreshed successfully',
-      data: { tokens: { accessToken, refreshToken, expiresIn: 900, refreshExpiresIn: 604800 } }
+      data: { 
+        tokens: {
+          accessToken: tokenPair.accessToken,
+          refreshToken: tokenPair.refreshToken,
+          tokenType: tokenPair.tokenType,
+          expiresIn: tokenPair.expiresIn,
+          refreshExpiresIn: tokenPair.refreshExpiresIn
+        }
+      }
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('🔴 Refresh Token Controller Error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Failed to refresh token',
+      error: 'REFRESH_TOKEN_FAILED'
+    });
   }
 }
 

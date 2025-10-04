@@ -3,25 +3,50 @@ const crypto = require('crypto');
 
 // Generate Registration PIN
 async function generatePin(adminId, expiresInHours = 24) {
-  if (expiresInHours < 1 || expiresInHours > 168) {
-    throw new Error('Expiry hours must be between 1 and 168');
+  try {
+    console.log('🔑 Generating PIN:', { adminId, expiresInHours });
+    
+    if (expiresInHours < 1 || expiresInHours > 168) {
+      throw new Error('Expiry hours must be between 1 and 168');
+    }
+
+    // Verify admin user exists
+    const admin = await prisma.user.findUnique({
+      where: { id: parseInt(adminId) },
+    });
+
+    if (!admin) {
+      throw new Error('Admin user not found');
+    }
+
+    const code = String(crypto.randomInt(100000, 999999));
+    const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
+
+    console.log('📝 Creating PIN:', { code, expiresAt, createdById: parseInt(adminId) });
+
+    const pin = await prisma.registrationpin.create({
+      data: {
+        code,
+        expiresAt,
+        createdById: parseInt(adminId),
+      },
+    });
+
+    console.log('✅ PIN created successfully:', pin.id);
+
+    return {
+      pin: pin.code,
+      expiresAt: pin.expiresAt,
+    };
+  } catch (error) {
+    console.error('❌ Error generating PIN:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack?.split('\n').slice(0, 5),
+    });
+    throw error;
   }
-
-  const code = String(crypto.randomInt(100000, 999999));
-  const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
-
-  const pin = await prisma.registrationPin.create({
-    data: {
-      code,
-      expiresAt,
-      createdById: adminId,
-    },
-  });
-
-  return {
-    pin: pin.code,
-    expiresAt: pin.expiresAt,
-  };
 }
 
 // List all generated PINs
@@ -38,7 +63,7 @@ async function listPins(status, page = 1, limit = 10) {
   }
 
   const [pins, total] = await Promise.all([
-    prisma.registrationPin.findMany({
+    prisma.registrationpin.findMany({
       where,
       skip,
       take: parseInt(limit),
@@ -53,7 +78,7 @@ async function listPins(status, page = 1, limit = 10) {
         },
       },
     }),
-    prisma.registrationPin.count({ where }),
+    prisma.registrationpin.count({ where }),
   ]);
 
   return {
@@ -70,14 +95,14 @@ async function listPins(status, page = 1, limit = 10) {
 // Revoke a PIN
 async function revokePin(pinId, adminId) {
   const id = parseInt(pinId, 10);
-  const pin = await prisma.registrationPin.findUnique({
+  const pin = await prisma.registrationpin.findUnique({
     where: { id },
   });
 
   if (!pin) throw new Error('Registration PIN not found');
   if (pin.used) throw new Error('Cannot revoke already used PIN');
 
-  await prisma.registrationPin.update({
+  await prisma.registrationpin.update({
     where: { id },
     data: {
       expiresAt: new Date(),
@@ -90,16 +115,16 @@ async function revokePin(pinId, adminId) {
 // Get PIN usage statistics
 async function getPinStats() {
   const [activePins, usedPins, expiredPins, recentActivity] = await prisma.$transaction([
-    prisma.registrationPin.count({
+    prisma.registrationpin.count({
       where: { used: false, expiresAt: { gt: new Date() } },
     }),
-    prisma.registrationPin.count({
+    prisma.registrationpin.count({
       where: { used: true },
     }),
-    prisma.registrationPin.count({
+    prisma.registrationpin.count({
       where: { used: false, expiresAt: { lt: new Date() } },
     }),
-    prisma.registrationPin.findMany({
+    prisma.registrationpin.findMany({
       where: {
         OR: [{ used: true }, { expiresAt: { lt: new Date() } }],
       },

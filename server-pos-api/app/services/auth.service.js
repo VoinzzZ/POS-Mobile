@@ -11,7 +11,7 @@ async function register({ userName, email, pin, role = "CASHIER" }) {
   if (!validator.isEmail(email)) throw new Error("Invalid email format");
 
   return await prisma.$transaction(async (tx) => {
-    const regPin = await tx.registrationPin.findFirst({
+    const regPin = await tx.registrationpin.findFirst({
       where: { code: pin, used: false, expiresAt: { gt: new Date() } },
     });
     if (!regPin) throw new Error("Invalid or expired registration PIN");
@@ -28,11 +28,11 @@ async function register({ userName, email, pin, role = "CASHIER" }) {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiredAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    await tx.emailVerification.deleteMany({
+    await tx.emailverification.deleteMany({
       where: { userId: newUser.id, email, verified: false },
     });
 
-    await tx.emailVerification.create({
+    await tx.emailverification.create({
       data: { 
         userId: newUser.id, 
         email, 
@@ -42,7 +42,7 @@ async function register({ userName, email, pin, role = "CASHIER" }) {
       },
     });
 
-    await tx.registrationPin.update({
+    await tx.registrationpin.update({
       where: { id: regPin.id },
       data: { used: true, usedAt: new Date() },
     });
@@ -65,7 +65,7 @@ async function register({ userName, email, pin, role = "CASHIER" }) {
 async function verifyEmailOTP({ userId, otpCode }) {
   if (!userId || !otpCode) throw new Error('userId and otpCode are required');
 
-  const emailVerification = await prisma.emailVerification.findFirst({
+  const emailVerification = await prisma.emailverification.findFirst({
     where: {
       userId,
       code: otpCode,
@@ -79,7 +79,7 @@ async function verifyEmailOTP({ userId, otpCode }) {
   if (emailVerification.user.isVerified) throw new Error('Email already verified');
 
   await prisma.$transaction(async (tx) => {
-    await tx.emailVerification.update({
+    await tx.emailverification.update({
       where: { id: emailVerification.id },
       data: { verified: true }
     });
@@ -99,7 +99,7 @@ async function setPassword({ userId, newPassword }) {
   const user = await prisma.user.findFirst({
     where: { id: userId },
     include: {
-      emailVerifications: {
+      emailverification: {
         where: { verified: true },
         orderBy: { createdAt: 'desc' },
         take: 1
@@ -109,7 +109,7 @@ async function setPassword({ userId, newPassword }) {
 
   if (!user) throw new Error('User not found');
   if (user.isVerified) throw new Error('User already verified');
-  if (!user.emailVerifications.length) throw new Error('Please verify your email first');
+  if (!user.emailverification.length) throw new Error('Please verify your email first');
 
   const passwordValidation = PasswordService.validatePassword(newPassword);
   if (!passwordValidation.isValid) throw new Error('Password validation failed');
@@ -195,8 +195,8 @@ async function sendForgotPasswordOtp(email) {
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
   await prisma.$transaction(async (tx) => {
-    await tx.passwordReset.deleteMany({ where: { userId: user.id, used: false } });
-    await tx.passwordReset.create({ data: { userId: user.id, code: otpCode, expiresAt, used: false } });
+    await tx.passwordreset.deleteMany({ where: { userId: user.id, used: false } });
+    await tx.passwordreset.create({ data: { userId: user.id, code: otpCode, expiresAt, used: false } });
   });
 
   const result = await emailService.sendForgotPasswordOtp(email, otpCode, user.userName);
@@ -211,7 +211,7 @@ async function verifyForgotPasswordOTP(email, otpCode) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new Error('No account found with this email address');
 
-  const passwordReset = await prisma.passwordReset.findFirst({
+  const passwordReset = await prisma.passwordreset.findFirst({
     where: { userId: user.id, code: otpCode, expiresAt: { gt: new Date() }, used: false }
   });
 
@@ -243,7 +243,7 @@ async function resetPassword(resetToken, newPassword, confirmPassword) {
 
   if (newPassword !== confirmPassword) throw new Error('Passwords do not match');
 
-  const passwordReset = await prisma.passwordReset.findFirst({
+  const passwordReset = await prisma.passwordreset.findFirst({
     where: {
       id: tokenData.resetId,
       userId: tokenData.userId,
@@ -262,12 +262,12 @@ async function resetPassword(resetToken, newPassword, confirmPassword) {
       data: { password: hashedPassword, updatedAt: new Date() }
     });
 
-    await tx.passwordReset.update({
+    await tx.passwordreset.update({
       where: { id: passwordReset.id },
       data: { used: true, updatedAt: new Date() }
     });
 
-    await tx.passwordReset.deleteMany({
+    await tx.passwordreset.deleteMany({
       where: { userId: tokenData.userId, used: false, id: { not: passwordReset.id } }
     });
   });

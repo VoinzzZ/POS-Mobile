@@ -8,30 +8,34 @@ datasource db {
 }
 
 model brand {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique(map: "Brand_name_key")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  product   product[]
+  id         Int       @id @default(autoincrement())
+  name       String    @unique(map: "Brand_name_key")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  categoryId Int?
+  category   category? @relation(fields: [categoryId], references: [id], map: "Brand_categoryId_fkey")
+  product    product[]
+
+  @@index([categoryId], map: "Brand_categoryId_fkey")
 }
 
 model category {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique(map: "Category_name_key")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  product   product[]
+  id        Int      @id @default(autoincrement())
+  name      String   @unique(map: "Category_name_key")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  brand     brand[]
 }
 
 model emailverification {
   id         Int       @id @default(autoincrement())
-  userId     Int
   email      String
   code       String
   expiresAt  DateTime
   verified   Boolean   @default(false)
   createdAt  DateTime  @default(now())
   verifiedAt DateTime?
+  userId     Int
   user       user      @relation(fields: [userId], references: [id], map: "EmailVerification_userId_fkey")
 
   @@index([code, expiresAt], map: "EmailVerification_code_expiresAt_idx")
@@ -41,10 +45,10 @@ model emailverification {
 model passwordreset {
   id        Int      @id @default(autoincrement())
   userId    Int
-  code      String
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
+  code      String
   user      user     @relation(fields: [userId], references: [id], map: "PasswordReset_userId_fkey")
 
   @@index([code, expiresAt], map: "PasswordReset_code_expiresAt_idx")
@@ -57,16 +61,13 @@ model product {
   price           Float
   stock           Int               @default(0)
   imageUrl        String?
-  brandId         Int?
-  categoryId      Int?
   createdAt       DateTime          @default(now())
+  brandId         Int?
   updatedAt       DateTime          @updatedAt
   brand           brand?            @relation(fields: [brandId], references: [id], map: "Product_brandId_fkey")
-  category        category?         @relation(fields: [categoryId], references: [id], map: "Product_categoryId_fkey")
   transactionitem transactionitem[]
 
   @@index([brandId], map: "Product_brandId_fkey")
-  @@index([categoryId], map: "Product_categoryId_fkey")
   @@index([name], map: "Product_name_idx")
 }
 
@@ -78,8 +79,8 @@ model registrationpin {
   createdById Int
   createdAt   DateTime  @default(now())
   usedAt      DateTime?
-  revokedById Int?
   revokedAt   DateTime?
+  revokedById Int?
   user        user      @relation(fields: [createdById], references: [id], map: "RegistrationPin_createdById_fkey")
 
   @@index([createdById], map: "RegistrationPin_createdById_fkey")
@@ -89,8 +90,11 @@ model transaction {
   id              Int                @id @default(autoincrement())
   cashierId       Int
   total           Float
-  status          transaction_status @default(DRAFT)
   createdAt       DateTime           @default(now())
+  status          transaction_status @default(DRAFT)
+  changeAmount    Float?
+  completedAt     DateTime?
+  paymentAmount   Float?
   user            user               @relation(fields: [cashierId], references: [id], map: "Transaction_cashierId_fkey")
   transactionitem transactionitem[]
 
@@ -114,13 +118,13 @@ model transactionitem {
 
 model user {
   id                Int                 @id @default(autoincrement())
-  userName          String              @unique(map: "User_userName_key")
   email             String              @unique(map: "User_email_key")
   password          String?
-  isVerified        Boolean             @default(false)
   role              user_role           @default(CASHIER)
+  isVerified        Boolean             @default(false)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
+  userName          String              @unique(map: "User_userName_key")
   emailverification emailverification[]
   passwordreset     passwordreset[]
   registrationpin   registrationpin[]
@@ -130,6 +134,7 @@ model user {
 enum transaction_status {
   DRAFT
   LOCKED
+  COMPLETED
 }
 
 enum user_role {
