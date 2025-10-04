@@ -13,6 +13,7 @@ import {
   setPasswordApi,
   getProfileApi,
 } from "../api/auth";
+import TokenService from "../services/tokenService";
 
 // ========== TYPES ==========
 interface User {
@@ -88,7 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const saveAuthToStorage = async (user: User, tokens: Tokens) => {
     try {
       await AsyncStorage.setItem("@user", JSON.stringify(user));
-      await AsyncStorage.setItem("@tokens", JSON.stringify(tokens));
+      await TokenService.storeTokens(tokens); // Use TokenService for better token management
       setUser(user);
       setTokens(tokens);
     } catch (error) {
@@ -99,8 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const clearAuthFromStorage = async () => {
     try {
-      await AsyncStorage.removeItem("@user");
-      await AsyncStorage.removeItem("@tokens");
+      await TokenService.clearTokens(); // Use TokenService to clear all auth data
       setUser(null);
       setTokens(null);
     } catch (error) {

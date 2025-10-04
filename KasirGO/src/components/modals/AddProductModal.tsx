@@ -27,12 +27,16 @@ interface AddProductModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  preSelectedCategoryId?: number;
+  preSelectedBrandId?: number;
 }
 
 const AddProductModal: React.FC<AddProductModalProps> = ({
   visible,
   onClose,
   onSuccess,
+  preSelectedCategoryId,
+  preSelectedBrandId,
 }) => {
   const { colors } = useTheme();
   
@@ -45,6 +49,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [filteredBrands, setFilteredBrands] = useState<Brand[]>([]);
   
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -59,8 +64,15 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   useEffect(() => {
     if (visible) {
       loadCategoriesAndBrands();
+      // Set preselected values
+      if (preSelectedCategoryId) {
+        setCategoryId(preSelectedCategoryId);
+      }
+      if (preSelectedBrandId) {
+        setBrandId(preSelectedBrandId);
+      }
     }
-  }, [visible]);
+  }, [visible, preSelectedCategoryId, preSelectedBrandId]);
 
   const loadCategoriesAndBrands = async () => {
     try {
@@ -80,6 +92,20 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       console.error("Error loading categories and brands:", error);
     }
   };
+
+  // Filter brands based on selected category
+  useEffect(() => {
+    if (categoryId) {
+      const filtered = brands.filter(b => b.categoryId === categoryId);
+      setFilteredBrands(filtered);
+      // Reset brand selection if current brand is not in filtered list
+      if (brandId && !filtered.find(b => b.id === brandId)) {
+        setBrandId(null);
+      }
+    } else {
+      setFilteredBrands(brands);
+    }
+  }, [categoryId, brands]);
 
   const validateInputs = (): boolean => {
     const newErrors: typeof errors = {};
@@ -163,7 +189,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         name: name.trim(),
         price: Number(price),
         stock: Number(stock),
-        categoryId: categoryId || null,
         brandId: brandId || null,
       };
 
@@ -376,12 +401,18 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
             {/* Category Dropdown */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: colors.text }]}>
-                Kategori (Opsional)
+                Kategori *
+              </Text>
+              <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+                Pilih kategori terlebih dahulu untuk melihat brand yang tersedia
               </Text>
               <View style={[styles.dropdownContainer, { borderColor: colors.border }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <TouchableOpacity
-                    onPress={() => setCategoryId(null)}
+                    onPress={() => {
+                      setCategoryId(null);
+                      setBrandId(null);
+                    }}
                     style={[
                       styles.dropdownChip,
                       !categoryId && { backgroundColor: colors.primary },
@@ -426,14 +457,32 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
               <Text style={[styles.label, { color: colors.text }]}>
                 Brand (Opsional)
               </Text>
-              <View style={[styles.dropdownContainer, { borderColor: colors.border }]}>
+              {!categoryId && (
+                <Text style={[styles.warningText, { color: "#f59e0b" }]}>
+                  ⚠️ Pilih kategori terlebih dahulu untuk melihat brand
+                </Text>
+              )}
+              {categoryId && filteredBrands.length === 0 && (
+                <Text style={[styles.warningText, { color: colors.textSecondary }]}>
+                  Tidak ada brand untuk kategori ini. Tambahkan brand terlebih dahulu.
+                </Text>
+              )}
+              <View style={[
+                styles.dropdownContainer, 
+                { 
+                  borderColor: colors.border,
+                  opacity: !categoryId ? 0.5 : 1 
+                }
+              ]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <TouchableOpacity
                     onPress={() => setBrandId(null)}
+                    disabled={!categoryId}
                     style={[
                       styles.dropdownChip,
                       !brandId && { backgroundColor: colors.primary },
                       { borderColor: colors.border },
+                      !categoryId && { opacity: 0.5 },
                     ]}
                   >
                     <Text
@@ -445,14 +494,16 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                       Tidak Ada
                     </Text>
                   </TouchableOpacity>
-                  {brands.map((brand) => (
+                  {filteredBrands.map((brand) => (
                     <TouchableOpacity
                       key={brand.id}
                       onPress={() => setBrandId(brand.id)}
+                      disabled={!categoryId}
                       style={[
                         styles.dropdownChip,
                         brandId === brand.id && { backgroundColor: colors.primary },
                         { borderColor: colors.border },
+                        !categoryId && { opacity: 0.5 },
                       ]}
                     >
                       <Text
@@ -600,6 +651,16 @@ const styles = StyleSheet.create({
     color: "#ef4444",
     fontSize: 12,
     marginTop: 4,
+  },
+  helperText: {
+    fontSize: 12,
+    marginBottom: 8,
+    marginTop: -4,
+  },
+  warningText: {
+    fontSize: 12,
+    marginBottom: 8,
+    fontStyle: "italic",
   },
   dropdownContainer: {
     borderWidth: 1,

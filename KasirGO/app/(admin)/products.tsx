@@ -10,9 +10,11 @@ import {
   RefreshControl,
   Image,
   Alert,
+  useWindowDimensions,
 } from "react-native";
+import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import { useAuth } from "../../src/context/AuthContext";
-import { Package, Search, Settings, Plus, Edit, Trash2, Tag, Folder } from "lucide-react-native";
+import { Package, Search, Settings, Plus, Edit, Trash2, Tag, Folder, ChevronDown, ChevronRight } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -40,6 +42,7 @@ export default function AdminProducts() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { colors } = useTheme();
+  const layout = useWindowDimensions();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -48,7 +51,12 @@ export default function AdminProducts() {
     }
   }, [isAuthenticated, user]);
 
-  const [activeTab, setActiveTab] = useState<TabType>("products");
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: 'products', title: 'Products' },
+    { key: 'categories', title: 'Categories' },
+    { key: 'brands', title: 'Brands' },
+  ]);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Products state
@@ -58,6 +66,7 @@ export default function AdminProducts() {
   // Categories state
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
   
   // Brands state
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -82,7 +91,7 @@ export default function AdminProducts() {
 
   useEffect(() => {
     handleSearch(searchQuery);
-  }, [searchQuery, products, categories, brands, activeTab]);
+  }, [searchQuery, products, categories, brands, index]);
 
   const loadAllData = async () => {
     setLoading(true);
@@ -140,22 +149,23 @@ export default function AdminProducts() {
   const handleSearch = (query: string) => {
     const lowerQuery = query.toLowerCase();
     
-    if (activeTab === "products") {
+    if (index === 0) {
       const filtered = products.filter(
         (p) =>
           p.name.toLowerCase().includes(lowerQuery) ||
-          p.category?.name.toLowerCase().includes(lowerQuery) ||
+          p.brand?.category?.name.toLowerCase().includes(lowerQuery) ||
           p.brand?.name.toLowerCase().includes(lowerQuery)
       );
       setFilteredProducts(filtered);
-    } else if (activeTab === "categories") {
+    } else if (index === 1) {
       const filtered = categories.filter((c) =>
         c.name.toLowerCase().includes(lowerQuery)
       );
       setFilteredCategories(filtered);
-    } else if (activeTab === "brands") {
+    } else if (index === 2) {
       const filtered = brands.filter((b) =>
-        b.name.toLowerCase().includes(lowerQuery)
+        b.name.toLowerCase().includes(lowerQuery) ||
+        b.category?.name.toLowerCase().includes(lowerQuery)
       );
       setFilteredBrands(filtered);
     }
@@ -196,8 +206,8 @@ export default function AdminProducts() {
           onPress: async () => {
             try {
               await deleteCategory(id);
-              Alert.alert("Berhasil", "Kategori berhasil dihapus");
-              loadCategories();
+              Alert.alert("Berhasil", "Kategori berhasil dihapus. Produk terkait telah diupdate.");
+              await Promise.all([loadCategories(), loadProducts()]);
             } catch (error: any) {
               Alert.alert("Error", error.message || "Gagal menghapus kategori");
             }
@@ -219,8 +229,8 @@ export default function AdminProducts() {
           onPress: async () => {
             try {
               await deleteBrand(id);
-              Alert.alert("Berhasil", "Brand berhasil dihapus");
-              loadBrands();
+              Alert.alert("Berhasil", "Brand berhasil dihapus. Produk terkait telah diupdate.");
+              await Promise.all([loadBrands(), loadProducts()]);
             } catch (error: any) {
               Alert.alert("Error", error.message || "Gagal menghapus brand");
             }
@@ -250,20 +260,16 @@ export default function AdminProducts() {
           Rp {product.price.toLocaleString("id-ID")}
         </Text>
         <View style={styles.cardMeta}>
-          {product.category && (
-            <View style={[styles.badge, { backgroundColor: "#3b82f6" + "20" }]}>
-              <Text style={[styles.badgeText, { color: "#3b82f6" }]}>
-                {product.category.name}
-              </Text>
-            </View>
-          )}
-          {product.brand && (
-            <View style={[styles.badge, { backgroundColor: "#f59e0b" + "20" }]}>
-              <Text style={[styles.badgeText, { color: "#f59e0b" }]}>
-                {product.brand.name}
-              </Text>
-            </View>
-          )}
+          <View style={[styles.badge, { backgroundColor: product.brand?.category ? "#3b82f6" + "20" : colors.border + "20" }]}>
+            <Text style={[styles.badgeText, { color: product.brand?.category ? "#3b82f6" : colors.textSecondary }]}>
+              {product.brand?.category ? product.brand.category.name : "Tanpa Kategori"}
+            </Text>
+          </View>
+          <View style={[styles.badge, { backgroundColor: product.brand ? "#f59e0b" + "20" : colors.border + "20" }]}>
+            <Text style={[styles.badgeText, { color: product.brand ? "#f59e0b" : colors.textSecondary }]}>
+              {product.brand ? product.brand.name : "Tanpa Brand"}
+            </Text>
+          </View>
         </View>
         <Text style={[styles.cardStock, { color: product.stock < 10 ? "#ef4444" : colors.textSecondary }]}>
           Stok: {product.stock}
@@ -289,50 +295,131 @@ export default function AdminProducts() {
     </View>
   );
 
-  const renderCategoryCard = (category: Category) => {
-    const productCount = products.filter(p => p.categoryId === category.id).length;
+  const toggleCategoryExpand = (categoryId: number) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  const renderCategoryWithBrands = (category: Category) => {
+    const categoryBrands = brands.filter(b => b.categoryId === category.id);
+    const brandCount = categoryBrands.length;
+    const productCount = products.filter(p => p.brand?.categoryId === category.id).length;
+    const isExpanded = expandedCategories.has(category.id);
     
     return (
-      <TouchableOpacity
-        key={category.id}
-        style={[styles.listCard, { backgroundColor: colors.card }]}
-        onPress={() => {
-          // Filter products by this category
-          setActiveTab("products");
-          const filtered = products.filter(p => p.categoryId === category.id);
-          setFilteredProducts(filtered);
-          Alert.alert("Filter", `Menampilkan ${filtered.length} produk dengan kategori "${category.name}"`);
-        }}
-      >
-        <View style={[styles.listIcon, { backgroundColor: colors.primary + "20" }]}>
-          <Folder size={24} color={colors.primary} />
-        </View>
-        <View style={styles.listContent}>
-          <Text style={[styles.listTitle, { color: colors.text }]}>
-            {category.name}
-          </Text>
-          <Text style={[styles.listSubtitle, { color: colors.textSecondary }]}>
-            {productCount} produk
-          </Text>
-        </View>
-        <View style={styles.cardActions}>
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.primary + "20" }]}
-            onPress={() => {
-              setSelectedCategory(category);
-              setShowEditCategoryModal(true);
-            }}
-          >
-            <Edit size={16} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: "#ef4444" + "20" }]}
-            onPress={() => handleDeleteCategory(category.id, category.name)}
-          >
-            <Trash2 size={16} color="#ef4444" />
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+      <View key={category.id} style={styles.categoryContainer}>
+        {/* Category Header */}
+        <TouchableOpacity
+          style={[styles.categoryHeader, { backgroundColor: colors.card }]}
+          onPress={() => toggleCategoryExpand(category.id)}
+          activeOpacity={0.7}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <View style={[styles.listIcon, { backgroundColor: colors.primary + "20" }]}>
+              <Folder size={24} color={colors.primary} />
+            </View>
+            <View style={styles.listContent}>
+              <Text style={[styles.listTitle, { color: colors.text }]}>
+                {category.name}
+              </Text>
+              <Text style={[styles.listSubtitle, { color: colors.textSecondary }]}>
+                {brandCount} brand • {productCount} produk
+              </Text>
+            </View>
+            {brandCount > 0 && (
+              isExpanded ? 
+                <ChevronDown size={20} color={colors.textSecondary} /> :
+                <ChevronRight size={20} color={colors.textSecondary} />
+            )}
+          </View>
+          <View style={styles.cardActions}>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.primary + "20" }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                setSelectedCategory(category);
+                setShowEditCategoryModal(true);
+              }}
+            >
+              <Edit size={16} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: "#ef4444" + "20" }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleDeleteCategory(category.id, category.name);
+              }}
+            >
+              <Trash2 size={16} color="#ef4444" />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+
+        {/* Expanded Brands */}
+        {isExpanded && categoryBrands.length > 0 && (
+          <View style={[styles.brandsContainer, { backgroundColor: colors.surface }]}>
+            {categoryBrands.map((brand) => {
+              const brandProductCount = products.filter(p => p.brandId === brand.id).length;
+              return (
+                <TouchableOpacity
+                  key={brand.id}
+                  style={[styles.brandItem, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/productsByFilter",
+                      params: {
+                        type: "brand",
+                        id: brand.id.toString(),
+                        name: brand.name,
+                      },
+                    });
+                  }}
+                >
+                  <View style={[styles.brandIcon, { backgroundColor: "#f59e0b" + "20" }]}>
+                    <Tag size={18} color="#f59e0b" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.brandName, { color: colors.text }]}>
+                      {brand.name}
+                    </Text>
+                    <Text style={[styles.brandCount, { color: colors.textSecondary }]}>
+                      {brandProductCount} produk
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: colors.primary + "20" }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        setSelectedBrand(brand);
+                        setShowEditBrandModal(true);
+                      }}
+                    >
+                      <Edit size={14} color={colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: "#ef4444" + "20" }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteBrand(brand.id, brand.name);
+                      }}
+                    >
+                      <Trash2 size={14} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -344,20 +431,33 @@ export default function AdminProducts() {
         key={brand.id}
         style={[styles.listCard, { backgroundColor: colors.card }]}
         onPress={() => {
-          // Filter products by this brand
-          setActiveTab("products");
-          const filtered = products.filter(p => p.brandId === brand.id);
-          setFilteredProducts(filtered);
-          Alert.alert("Filter", `Menampilkan ${filtered.length} produk dengan brand "${brand.name}"`);
+          // Navigate to products by filter screen
+          router.push({
+            pathname: "/productsByFilter",
+            params: {
+              type: "brand",
+              id: brand.id.toString(),
+              name: brand.name,
+            },
+          });
         }}
       >
         <View style={[styles.listIcon, { backgroundColor: colors.primary + "20" }]}>
           <Tag size={24} color={colors.primary} />
         </View>
         <View style={styles.listContent}>
-          <Text style={[styles.listTitle, { color: colors.text }]}>
-            {brand.name}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={[styles.listTitle, { color: colors.text }]}>
+              {brand.name}
+            </Text>
+            {brand.category && (
+              <View style={[styles.badge, { backgroundColor: "#3b82f6" + "20" }]}>
+                <Text style={[styles.badgeText, { color: "#3b82f6" }]}>
+                  {brand.category.name}
+                </Text>
+              </View>
+            )}
+          </View>
           <Text style={[styles.listSubtitle, { color: colors.textSecondary }]}>
             {productCount} produk
           </Text>
@@ -381,6 +481,128 @@ export default function AdminProducts() {
         </View>
       </TouchableOpacity>
     );
+  };
+
+  const renderScene = ({ route }: any) => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            Memuat data...
+          </Text>
+        </View>
+      );
+    }
+
+    switch (route.key) {
+      case 'products':
+        return (
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+              />
+            }
+          >
+            <View style={styles.section}>
+              {filteredProducts.length === 0 ? (
+                <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
+                  <Package size={48} color={colors.textSecondary} />
+                  <Text style={[styles.emptyText, { color: colors.text }]}>
+                    {searchQuery ? "Produk tidak ditemukan" : "Belum ada produk"}
+                  </Text>
+                </View>
+              ) : (
+                filteredProducts.map(renderProductCard)
+              )}
+            </View>
+            <View style={{ height: 100 }} />
+          </ScrollView>
+        );
+
+      case 'categories':
+        return (
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+              />
+            }
+          >
+            <View style={styles.section}>
+              {filteredCategories.length === 0 ? (
+                <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
+                  <Folder size={48} color={colors.textSecondary} />
+                  <Text style={[styles.emptyText, { color: colors.text }]}>
+                    {searchQuery ? "Kategori tidak ditemukan" : "Belum ada kategori"}
+                  </Text>
+                </View>
+              ) : (
+                filteredCategories.map(renderCategoryWithBrands)
+              )}
+            </View>
+            <View style={{ height: 100 }} />
+          </ScrollView>
+        );
+
+      case 'brands':
+        return (
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+              />
+            }
+          >
+            <View style={styles.section}>
+              {filteredBrands.length === 0 ? (
+                <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
+                  <Tag size={48} color={colors.textSecondary} />
+                  <Text style={[styles.emptyText, { color: colors.text }]}>
+                    {searchQuery ? "Brand tidak ditemukan" : "Belum ada brand"}
+                  </Text>
+                </View>
+              ) : (
+                filteredBrands.map(renderBrandCard)
+              )}
+            </View>
+            <View style={{ height: 100 }} />
+          </ScrollView>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const renderTabBar = (props: any) => (
+    <TabBar
+      {...props}
+      indicatorStyle={{ backgroundColor: colors.primary }}
+      style={{ backgroundColor: colors.background }}
+      labelStyle={{ fontSize: 14, fontWeight: '600', textTransform: 'none' }}
+      activeColor={colors.primary}
+      inactiveColor={colors.textSecondary}
+    />
+  );
+
+  const getActiveTab = (): TabType => {
+    if (index === 0) return "products";
+    if (index === 1) return "categories";
+    return "brands";
   };
 
   return (
@@ -431,168 +653,34 @@ export default function AdminProducts() {
         </View>
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === "products" && {
-              borderBottomWidth: 2,
-              borderBottomColor: colors.primary,
-            },
-          ]}
-          onPress={() => setActiveTab("products")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              {
-                color:
-                  activeTab === "products" ? colors.primary : colors.textSecondary,
-              },
-            ]}
-          >
-            Products
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === "categories" && {
-              borderBottomWidth: 2,
-              borderBottomColor: colors.primary,
-            },
-          ]}
-          onPress={() => setActiveTab("categories")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              {
-                color:
-                  activeTab === "categories"
-                    ? colors.primary
-                    : colors.textSecondary,
-              },
-            ]}
-          >
-            Categories
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === "brands" && {
-              borderBottomWidth: 2,
-              borderBottomColor: colors.primary,
-            },
-          ]}
-          onPress={() => setActiveTab("brands")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              {
-                color:
-                  activeTab === "brands" ? colors.primary : colors.textSecondary,
-              },
-            ]}
-          >
-            Brands
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Search Bar */}
       <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
         <Search size={20} color={colors.textSecondary} />
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
-          placeholder={`Cari ${activeTab}...`}
+          placeholder={`Cari ${getActiveTab()}...`}
           placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
-      {/* Content */}
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-              Memuat data...
-            </Text>
-          </View>
-        ) : (
-          <>
-            {activeTab === "products" && (
-              <View style={styles.section}>
-                {filteredProducts.length === 0 ? (
-                  <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
-                    <Package size={48} color={colors.textSecondary} />
-                    <Text style={[styles.emptyText, { color: colors.text }]}>
-                      {searchQuery ? "Produk tidak ditemukan" : "Belum ada produk"}
-                    </Text>
-                  </View>
-                ) : (
-                  filteredProducts.map(renderProductCard)
-                )}
-              </View>
-            )}
-
-            {activeTab === "categories" && (
-              <View style={styles.section}>
-                {filteredCategories.length === 0 ? (
-                  <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
-                    <Folder size={48} color={colors.textSecondary} />
-                    <Text style={[styles.emptyText, { color: colors.text }]}>
-                      {searchQuery ? "Kategori tidak ditemukan" : "Belum ada kategori"}
-                    </Text>
-                  </View>
-                ) : (
-                  filteredCategories.map(renderCategoryCard)
-                )}
-              </View>
-            )}
-
-            {activeTab === "brands" && (
-              <View style={styles.section}>
-                {filteredBrands.length === 0 ? (
-                  <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
-                    <Tag size={48} color={colors.textSecondary} />
-                    <Text style={[styles.emptyText, { color: colors.text }]}>
-                      {searchQuery ? "Brand tidak ditemukan" : "Belum ada brand"}
-                    </Text>
-                  </View>
-                ) : (
-                  filteredBrands.map(renderBrandCard)
-                )}
-              </View>
-            )}
-          </>
-        )}
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
+      {/* TabView */}
+      <TabView
+        navigationState={{ index, routes }}
+        renderScene={renderScene}
+        renderTabBar={renderTabBar}
+        onIndexChange={setIndex}
+        initialLayout={{ width: layout.width }}
+      />
 
       {/* FAB */}
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: colors.primary }]}
         onPress={() => {
-          if (activeTab === "products") setShowProductModal(true);
-          else if (activeTab === "categories") setShowCategoryModal(true);
-          else if (activeTab === "brands") setShowBrandModal(true);
+          if (index === 0) setShowProductModal(true);
+          else if (index === 1) setShowCategoryModal(true);
+          else if (index === 2) setShowBrandModal(true);
         }}
       >
         <Plus size={28} color="#fff" />
@@ -704,20 +792,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 11,
-  },
-  tabsContainer: {
-    flexDirection: "row",
-    marginTop: 20,
-    paddingHorizontal: 20,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "600",
   },
   searchContainer: {
     flexDirection: "row",
@@ -856,5 +930,43 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+  },
+  categoryContainer: {
+    marginBottom: 8,
+  },
+  categoryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 12,
+  },
+  brandsContainer: {
+    marginLeft: 16,
+    marginTop: 4,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  brandItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    paddingLeft: 20,
+    borderBottomWidth: 1,
+  },
+  brandIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  brandName: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  brandCount: {
+    fontSize: 12,
   },
 });

@@ -125,3 +125,39 @@ export const changePasswordApi = async (
   });
   return res.data;
 };
+
+/**
+ * Refresh access token using refresh token
+ * @param refreshToken - Current refresh token
+ */
+export const refreshTokenApi = async (refreshToken: string): Promise<{
+  success: boolean;
+  message: string;
+  data: { tokens: Tokens };
+}> => {
+  const res = await api.post(
+    "/auth/refresh-token",
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${refreshToken}`,
+      },
+    }
+  );
+  return res.data;
+};
+
+/**
+ * Check if access token is about to expire (within 2 minutes)
+ * @param expiresIn - Token expiration time in seconds
+ * @param issuedAt - Token issued timestamp (optional, defaults to current time)
+ */
+export const isTokenExpiringSoon = (expiresIn: number, issuedAt?: number): boolean => {
+  const now = Math.floor(Date.now() / 1000);
+  const tokenIssuedAt = issuedAt || now;
+  const expirationTime = tokenIssuedAt + expiresIn;
+  const timeUntilExpiration = expirationTime - now;
+  
+  // Return true if token expires within 2 minutes (120 seconds)
+  return timeUntilExpiration <= 120;
+};

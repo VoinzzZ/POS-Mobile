@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import { Calendar, TrendingUp } from "lucide-react-native";
 import Svg, { Line, Circle, Text as SvgText, Rect } from "react-native-svg";
+import { useTheme } from "../../context/ThemeContext";
 
 interface RevenueChartProps {
   containerStyle?: any;
@@ -10,6 +11,7 @@ interface RevenueChartProps {
 type ViewMode = "weekly" | "yearly";
 
 const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
+  const { colors } = useTheme();
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
 
   // Dummy data untuk weekly view (7 hari terakhir)
@@ -77,27 +79,39 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
   const averageRevenue = totalRevenue / currentData.length;
 
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={[styles.container, { backgroundColor: colors.card }, containerStyle]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <TrendingUp size={20} color="#4ECDC4" />
-          <Text style={styles.title}>Revenue Overview</Text>
+          <TrendingUp size={20} color={colors.primary} />
+          <Text style={[styles.title, { color: colors.text }]}>Revenue Overview</Text>
         </View>
-        <View style={styles.toggleContainer}>
+        <View style={[styles.toggleContainer, { backgroundColor: colors.background }]}>
           <TouchableOpacity
-            style={[styles.toggleButton, viewMode === "weekly" && styles.toggleButtonActive]}
+            style={[
+              styles.toggleButton, 
+              viewMode === "weekly" && { backgroundColor: colors.primary }
+            ]}
             onPress={() => setViewMode("weekly")}
           >
-            <Text style={[styles.toggleText, viewMode === "weekly" && styles.toggleTextActive]}>
+            <Text style={[
+              styles.toggleText, 
+              { color: viewMode === "weekly" ? "#ffffff" : colors.textSecondary }
+            ]}>
               Week
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.toggleButton, viewMode === "yearly" && styles.toggleButtonActive]}
+            style={[
+              styles.toggleButton, 
+              viewMode === "yearly" && { backgroundColor: colors.primary }
+            ]}
             onPress={() => setViewMode("yearly")}
           >
-            <Text style={[styles.toggleText, viewMode === "yearly" && styles.toggleTextActive]}>
+            <Text style={[
+              styles.toggleText, 
+              { color: viewMode === "yearly" ? "#ffffff" : colors.textSecondary }
+            ]}>
               Year
             </Text>
           </TouchableOpacity>
@@ -105,15 +119,15 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
       </View>
 
       {/* Summary Stats */}
-      <View style={styles.summaryContainer}>
+      <View style={[styles.summaryContainer, { backgroundColor: colors.background }]}>
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Total</Text>
-          <Text style={styles.summaryValue}>Rp {formatValue(totalRevenue)}</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total</Text>
+          <Text style={[styles.summaryValue, { color: colors.primary }]}>Rp {formatValue(totalRevenue)}</Text>
         </View>
-        <View style={styles.summaryDivider} />
+        <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Average</Text>
-          <Text style={styles.summaryValue}>Rp {formatValue(averageRevenue)}</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Average</Text>
+          <Text style={[styles.summaryValue, { color: colors.primary }]}>Rp {formatValue(averageRevenue)}</Text>
         </View>
       </View>
 
@@ -130,7 +144,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
                 y1={y}
                 x2={chartWidth - paddingRight}
                 y2={y}
-                stroke="#334155"
+                stroke={colors.border}
                 strokeWidth="1"
                 strokeDasharray="4,4"
               />
@@ -152,7 +166,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke="#4ECDC4"
+                stroke={colors.primary}
                 strokeWidth="3"
               />
             );
@@ -165,8 +179,8 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
 
             return (
               <React.Fragment key={`point-${index}`}>
-                <Circle cx={x} cy={y} r="6" fill="#0f172a" stroke="#4ECDC4" strokeWidth="3" />
-                <Circle cx={x} cy={y} r="3" fill="#4ECDC4" />
+                <Circle cx={x} cy={y} r="6" fill={colors.background} stroke={colors.primary} strokeWidth="3" />
+                <Circle cx={x} cy={y} r="3" fill={colors.primary} />
               </React.Fragment>
             );
           })}
@@ -181,7 +195,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
                 key={`label-${index}`}
                 x={x}
                 y={y}
-                fill="#64748b"
+                fill={colors.textSecondary}
                 fontSize="10"
                 fontWeight="500"
                 textAnchor="middle"
@@ -195,8 +209,8 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
 
       {/* Legend */}
       <View style={styles.legendContainer}>
-        <Calendar size={14} color="#64748b" />
-        <Text style={styles.legendText}>
+        <Calendar size={14} color={colors.textSecondary} />
+        <Text style={[styles.legendText, { color: colors.textSecondary }]}>
           {viewMode === "weekly" 
             ? "Last 7 days daily revenue" 
             : "Monthly revenue for current year"}
@@ -208,7 +222,6 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#1e293b",
     borderRadius: 12,
     padding: 16,
   },
@@ -226,11 +239,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#ffffff",
   },
   toggleContainer: {
     flexDirection: "row",
-    backgroundColor: "#0f172a",
     borderRadius: 8,
     padding: 4,
   },
@@ -239,20 +250,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
   },
-  toggleButtonActive: {
-    backgroundColor: "#4ECDC4",
-  },
   toggleText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#64748b",
-  },
-  toggleTextActive: {
-    color: "#0f172a",
   },
   summaryContainer: {
     flexDirection: "row",
-    backgroundColor: "#0f172a",
     borderRadius: 8,
     padding: 12,
     marginBottom: 20,
@@ -263,18 +266,15 @@ const styles = StyleSheet.create({
   },
   summaryDivider: {
     width: 1,
-    backgroundColor: "#334155",
     marginHorizontal: 12,
   },
   summaryLabel: {
     fontSize: 12,
-    color: "#64748b",
     marginBottom: 4,
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#4ECDC4",
   },
   chartContainer: {
     alignItems: "center",
@@ -288,7 +288,6 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 11,
-    color: "#64748b",
   },
 });
 

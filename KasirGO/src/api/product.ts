@@ -7,14 +7,14 @@ export interface Product {
   stock: number;
   imageUrl: string | null;
   brandId: number | null;
-  categoryId: number | null;
   brand?: {
     id: number;
     name: string;
-  } | null;
-  category?: {
-    id: number;
-    name: string;
+    categoryId: number | null;
+    category?: {
+      id: number;
+      name: string;
+    } | null;
   } | null;
   createdAt: string;
   updatedAt: string;
@@ -30,6 +30,11 @@ export interface Category {
 export interface Brand {
   id: number;
   name: string;
+  categoryId: number | null;
+  category?: {
+    id: number;
+    name: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -40,7 +45,6 @@ export interface CreateProductData {
   stock: number;
   imageUrl?: string | null;
   brandId?: number | null;
-  categoryId?: number | null;
   image?: any;
 }
 
@@ -96,7 +100,6 @@ export const createProduct = async (
     formData.append('price', data.price.toString());
     formData.append('stock', data.stock.toString());
     if (data.brandId) formData.append('brandId', data.brandId.toString());
-    if (data.categoryId) formData.append('categoryId', data.categoryId.toString());
     formData.append('image', data.image);
     
     const res = await api.post("/product", formData, {
@@ -128,7 +131,6 @@ export const updateProduct = async (
     if (data.price) formData.append('price', data.price.toString());
     if (data.stock) formData.append('stock', data.stock.toString());
     if (data.brandId) formData.append('brandId', data.brandId.toString());
-    if (data.categoryId) formData.append('categoryId', data.categoryId.toString());
     formData.append('image', data.image);
     
     const res = await api.put(`/product/${id}`, formData, {
@@ -209,11 +211,13 @@ export const deleteCategory = async (
 /**
  * Create new brand
  * @param name - Brand name
+ * @param categoryId - Optional category ID
  */
 export const createBrand = async (
-  name: string
+  name: string,
+  categoryId?: number | null
 ): Promise<ApiResponse<Brand>> => {
-  const res = await api.post("/brand", { name });
+  const res = await api.post("/brand", { name, categoryId });
   return res.data;
 };
 
@@ -221,12 +225,14 @@ export const createBrand = async (
  * Update brand
  * @param id - Brand ID
  * @param name - New brand name
+ * @param categoryId - Optional category ID
  */
 export const updateBrand = async (
   id: number,
-  name: string
+  name: string,
+  categoryId?: number | null
 ): Promise<ApiResponse<Brand>> => {
-  const res = await api.put(`/brand/${id}`, { name });
+  const res = await api.put(`/brand/${id}`, { name, categoryId });
   return res.data;
 };
 
@@ -239,6 +245,26 @@ export const deleteBrand = async (
 ): Promise<ApiResponse> => {
   const res = await api.delete(`/brand/${id}`);
   return res.data;
+};
+
+/**
+ * Get products by category ID
+ * @param categoryId - Category ID to filter by
+ */
+export const getProductsByCategory = async (
+  categoryId: number
+): Promise<ApiResponse<Product[]>> => {
+  return getAllProducts(undefined, categoryId);
+};
+
+/**
+ * Get products by brand ID
+ * @param brandId - Brand ID to filter by
+ */
+export const getProductsByBrand = async (
+  brandId: number
+): Promise<ApiResponse<Product[]>> => {
+  return getAllProducts(undefined, undefined, brandId);
 };
 
 /**

@@ -8,10 +8,11 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
-import { X } from "lucide-react-native";
+import { X, ChevronDown } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
-import { updateBrand, Brand } from "../../api/product";
+import { updateBrand, Brand, getAllCategories, Category } from "../../api/product";
 
 interface EditBrandModalProps {
   visible: boolean;
@@ -29,14 +30,35 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
   const { colors } = useTheme();
   
   const [name, setName] = useState("");
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (visible) {
+      loadCategories();
+    }
+  }, [visible]);
+
+  useEffect(() => {
     if (brand) {
       setName(brand.name);
+      setCategoryId(brand.categoryId || null);
     }
   }, [brand]);
+
+  const loadCategories = async () => {
+    try {
+      const response = await getAllCategories();
+      if (response.success && response.data) {
+        setCategories(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading categories:", error);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!brand) return;
@@ -49,7 +71,7 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
 
     setLoading(true);
     try {
-      const response = await updateBrand(brand.id, name.trim());
+      const response = await updateBrand(brand.id, name.trim(), categoryId);
 
       if (response.success) {
         Alert.alert("Berhasil!", "Brand berhasil diupdate", [
@@ -80,7 +102,14 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
 
   const handleClose = () => {
     setError("");
+    setShowCategoryPicker(false);
     onClose();
+  };
+
+  const getSelectedCategoryName = () => {
+    if (!categoryId) return "Pilih Kategori (Opsional)";
+    const category = categories.find(c => c.id === categoryId);
+    return category ? category.name : "Pilih Kategori (Opsional)";
   };
 
   if (!brand) return null;
@@ -105,7 +134,7 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
           </View>
 
           {/* Body */}
-          <View style={styles.modalBody}>
+          <ScrollView style={styles.modalBody}>
             <Text style={[styles.label, { color: colors.text }]}>
               Nama Brand *
             </Text>
@@ -124,7 +153,56 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
               autoFocus
             />
             {error && <Text style={styles.errorText}>{error}</Text>}
-          </View>
+
+            <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>
+              Kategori
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.picker,
+                { borderColor: colors.border, backgroundColor: colors.surface },
+              ]}
+              onPress={() => setShowCategoryPicker(!showCategoryPicker)}
+            >
+              <Text style={[styles.pickerText, { color: categoryId ? colors.text : colors.textSecondary }]}>
+                {getSelectedCategoryName()}
+              </Text>
+              <ChevronDown size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            {showCategoryPicker && (
+              <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.pickerItem}
+                  onPress={() => {
+                    setCategoryId(null);
+                    setShowCategoryPicker(false);
+                  }}
+                >
+                  <Text style={[styles.pickerItemText, { color: colors.textSecondary }]}>
+                    Tanpa Kategori
+                  </Text>
+                </TouchableOpacity>
+                {categories.map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.pickerItem,
+                      categoryId === category.id && { backgroundColor: colors.primary + "20" },
+                    ]}
+                    onPress={() => {
+                      setCategoryId(category.id);
+                      setShowCategoryPicker(false);
+                    }}
+                  >
+                    <Text style={[styles.pickerItemText, { color: colors.text }]}>
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </ScrollView>
 
           {/* Footer */}
           <View style={styles.modalFooter}>
@@ -200,6 +278,33 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  picker: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  pickerText: {
+    fontSize: 14,
+  },
+  pickerDropdown: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    maxHeight: 200,
+  },
+  pickerItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.1)",
+  },
+  pickerItemText: {
+    fontSize: 14,
   },
   errorText: {
     color: "#ef4444",

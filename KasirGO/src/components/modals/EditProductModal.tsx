@@ -49,6 +49,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [filteredBrands, setFilteredBrands] = useState<Brand[]>([]);
   
   const [loading, setLoading] = useState(false);
   
@@ -64,7 +65,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
       setName(product.name);
       setPrice(product.price.toString());
       setStock(product.stock.toString());
-      setCategoryId(product.categoryId || null);
+      // Set categoryId from product's brand
+      const productCategoryId = product.brand?.categoryId || null;
+      setCategoryId(productCategoryId);
       setBrandId(product.brandId || null);
       setExistingImageUrl(product.imageUrl || null);
       setImageUri(null); // Reset new image
@@ -90,6 +93,20 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
       console.error("Error loading categories and brands:", error);
     }
   };
+
+  // Filter brands based on selected category
+  useEffect(() => {
+    if (categoryId) {
+      const filtered = brands.filter(b => b.categoryId === categoryId);
+      setFilteredBrands(filtered);
+      // Reset brand selection if current brand is not in filtered list
+      if (brandId && !filtered.find(b => b.id === brandId)) {
+        setBrandId(null);
+      }
+    } else {
+      setFilteredBrands(brands);
+    }
+  }, [categoryId, brands]);
 
   const validateInputs = (): boolean => {
     const newErrors: typeof errors = {};
@@ -170,7 +187,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         name: name.trim(),
         price: Number(price),
         stock: Number(stock),
-        categoryId: categoryId || null,
         brandId: brandId || null,
       };
 
@@ -390,12 +406,18 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
             {/* Category Dropdown */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: colors.text }]}>
-                Kategori (Opsional)
+                Kategori *
+              </Text>
+              <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+                Pilih kategori terlebih dahulu untuk melihat brand yang tersedia
               </Text>
               <View style={[styles.dropdownContainer, { borderColor: colors.border }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <TouchableOpacity
-                    onPress={() => setCategoryId(null)}
+                    onPress={() => {
+                      setCategoryId(null);
+                      setBrandId(null);
+                    }}
                     style={[
                       styles.dropdownChip,
                       !categoryId && { backgroundColor: colors.primary },
@@ -440,14 +462,32 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
               <Text style={[styles.label, { color: colors.text }]}>
                 Brand (Opsional)
               </Text>
-              <View style={[styles.dropdownContainer, { borderColor: colors.border }]}>
+              {!categoryId && (
+                <Text style={[styles.warningText, { color: "#f59e0b" }]}>
+                  ⚠️ Pilih kategori terlebih dahulu untuk melihat brand
+                </Text>
+              )}
+              {categoryId && filteredBrands.length === 0 && (
+                <Text style={[styles.warningText, { color: colors.textSecondary }]}>
+                  Tidak ada brand untuk kategori ini. Tambahkan brand terlebih dahulu.
+                </Text>
+              )}
+              <View style={[
+                styles.dropdownContainer, 
+                { 
+                  borderColor: colors.border,
+                  opacity: !categoryId ? 0.5 : 1 
+                }
+              ]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <TouchableOpacity
                     onPress={() => setBrandId(null)}
+                    disabled={!categoryId}
                     style={[
                       styles.dropdownChip,
                       !brandId && { backgroundColor: colors.primary },
                       { borderColor: colors.border },
+                      !categoryId && { opacity: 0.5 },
                     ]}
                   >
                     <Text
@@ -459,14 +499,16 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                       Tidak Ada
                     </Text>
                   </TouchableOpacity>
-                  {brands.map((brand) => (
+                  {filteredBrands.map((brand) => (
                     <TouchableOpacity
                       key={brand.id}
                       onPress={() => setBrandId(brand.id)}
+                      disabled={!categoryId}
                       style={[
                         styles.dropdownChip,
                         brandId === brand.id && { backgroundColor: colors.primary },
                         { borderColor: colors.border },
+                        !categoryId && { opacity: 0.5 },
                       ]}
                     >
                       <Text
@@ -617,6 +659,16 @@ const styles = StyleSheet.create({
     color: "#ef4444",
     fontSize: 12,
     marginTop: 4,
+  },
+  helperText: {
+    fontSize: 12,
+    marginBottom: 8,
+    marginTop: -4,
+  },
+  warningText: {
+    fontSize: 12,
+    marginBottom: 8,
+    fontStyle: "italic",
   },
   dropdownContainer: {
     borderWidth: 1,
