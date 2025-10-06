@@ -23,12 +23,13 @@ const createTransaction = async (req, res) => {
 // Get All Transactions
 const getAllTransactions = async (req, res) => {
   try {
-    const { startDate, endDate, cashierId, page, limit } = req.query;
+    const { startDate, endDate, cashierId, status, page, limit } = req.query;
 
     const result = await transactionService.getAllTransactions({
       startDate,
       endDate,
       cashierId,
+      status,
       page: Number(page) || 1,
       limit: Number(limit) || 10,
     });
@@ -52,16 +53,37 @@ const getTransactionDetail = async (req, res) => {
   }
 };
 
+// Update Transaction
+const updateTransaction = async (req, res) => {
+  try {
+    const transactionId = req.params.id;
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+    
+    if (!userId) return res.status(401).json({ success: false, message: "User belum login" });
+    
+    const result = await transactionService.updateTransaction(transactionId, req.body, userId, userRole);
+    return res.json({ success: true, message: "Transaction updated successfully", data: result });
+  } catch (error) {
+    console.error('Error updating transaction:', error);
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 // Delete Transaction
 const deleteTransaction = async (req, res) => {
   try {
     const transactionId = req.params.id;
-    const cashierId = req.user?.userId;
-    const result = await transactionService.deleteTransaction(transactionId, cashierId);
-    res.json({ success: true, message: result.message });
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+    
+    if (!userId) return res.status(401).json({ success: false, message: "User belum login" });
+    
+    const result = await transactionService.deleteTransaction(transactionId, userId, userRole);
+    return res.json({ success: true, message: result.message });
   } catch (error) {
     console.error('Error deleting transaction:', error);
-    res.status(400).json({ success: false, message: error.message });
+    return res.status(400).json({ success: false, message: error.message });
   }
 };
 
@@ -69,14 +91,14 @@ const deleteTransaction = async (req, res) => {
 const completePayment = async (req, res) => {
   try {
     const transactionId = req.params.id;
-    const { paymentAmount } = req.body;
+    const { paymentAmount, paymentMethod } = req.body;
     const cashierId = req.user?.userId;
 
     if (!paymentAmount || paymentAmount <= 0) {
       return res.status(400).json({ success: false, message: "Payment amount required" });
     }
 
-    const result = await transactionService.completeTransactionPayment(transactionId, paymentAmount, cashierId);
+    const result = await transactionService.completeTransactionPayment(transactionId, paymentAmount, paymentMethod, cashierId);
     return res.json({ success: true, message: "Payment completed successfully", data: result });
   } catch (error) {
     console.error("Complete Payment Error:", error.message);
@@ -102,6 +124,7 @@ module.exports = {
   createTransaction,
   getAllTransactions,
   getTransactionDetail,
+  updateTransaction,
   deleteTransaction,
   completePayment,
   getReceiptData
