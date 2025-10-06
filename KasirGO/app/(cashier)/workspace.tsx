@@ -123,41 +123,59 @@ export default function WorkspaceScreen() {
     }
   };
 
-  const renderCartItem = (item: CartItem) => (
-    <View key={item.id} style={[styles.cartItem, { borderBottomColor: colors.border }]}>
-      <View style={styles.cartItemInfo}>
-        <Text style={[styles.cartItemName, { color: colors.text }]} numberOfLines={1}>
-          {item.name}
-        </Text>
-        <Text style={[styles.cartItemPrice, { color: colors.textSecondary }]}>
-          Rp {item.price.toLocaleString("id-ID")} x {item.quantity}
-        </Text>
+  const renderCartItem = (item: CartItem) => {
+    const subtotal = item.price * item.quantity;
+    
+    return (
+      <View key={item.id} style={[styles.cartItem, { borderBottomColor: colors.border }]}>
+        <View style={styles.cartItemHeader}>
+          <View style={styles.cartItemInfo}>
+            <Text style={[styles.cartItemName, { color: colors.text }]} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={[styles.cartItemPrice, { color: colors.textSecondary }]}>
+              Rp {item.price.toLocaleString("id-ID")} × {item.quantity}
+            </Text>
+          </View>
+          {item.quantity > 1 && (
+            <Text style={[styles.cartItemSubtotal, { color: colors.primary }]}>
+              Rp {subtotal.toLocaleString("id-ID")}
+            </Text>
+          )}
+        </View>
+        <View style={styles.cartItemActions}>
+          <View style={styles.quantityControls}>
+            <TouchableOpacity
+              style={[styles.quantityButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+              activeOpacity={0.7}
+            >
+              <Minus size={20} color={colors.text} strokeWidth={2.5} />
+            </TouchableOpacity>
+            <View style={[styles.quantityDisplay, { backgroundColor: colors.card }]}>
+              <Text style={[styles.quantityText, { color: colors.text }]}>
+                {item.quantity}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.quantityButton, { backgroundColor: colors.primary }]}
+              onPress={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+              activeOpacity={0.7}
+            >
+              <Plus size={20} color="#fff" strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={[styles.removeButton, { backgroundColor: "#fee2e2" }]}
+            onPress={() => removeFromCart(item.id)}
+            activeOpacity={0.7}
+          >
+            <X size={20} color="#ef4444" strokeWidth={2.5} />
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={styles.cartItemActions}>
-        <TouchableOpacity
-          style={[styles.quantityButton, { backgroundColor: colors.surface }]}
-          onPress={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-        >
-          <Minus size={16} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.quantityText, { color: colors.text }]}>
-          {item.quantity}
-        </Text>
-        <TouchableOpacity
-          style={[styles.quantityButton, { backgroundColor: colors.surface }]}
-          onPress={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-        >
-          <Plus size={16} color={colors.text} />
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => removeFromCart(item.id)}
-      >
-        <X size={18} color="#ef4444" />
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <GestureHandlerRootView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -334,44 +352,82 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   cartItem: {
-    flexDirection: "row",
-    alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     gap: 12,
   },
+  cartItemHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
   cartItemInfo: {
     flex: 1,
+    gap: 4,
   },
   cartItemName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
-    marginBottom: 4,
+    lineHeight: 20,
   },
   cartItemPrice: {
-    fontSize: 12,
+    fontSize: 13,
+  },
+  cartItemSubtotal: {
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "right",
   },
   cartItemActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  quantityControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
   },
   quantityButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  quantityDisplay: {
+    minWidth: 50,
+    height: 44,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
   },
   quantityText: {
-    fontSize: 14,
-    fontWeight: "600",
-    minWidth: 24,
+    fontSize: 18,
+    fontWeight: "700",
     textAlign: "center",
   },
   removeButton: {
-    padding: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   // Floating Checkout Button
   checkoutFAB: {
