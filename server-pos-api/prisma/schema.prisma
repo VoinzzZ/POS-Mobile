@@ -95,6 +95,7 @@ model transaction {
   changeAmount    Float?
   completedAt     DateTime?
   paymentAmount   Float?
+  paymentMethod   payment_method?    @default(CASH)
   user            user               @relation(fields: [cashierId], references: [id], map: "Transaction_cashierId_fkey")
   transactionitem transactionitem[]
 
@@ -116,6 +117,18 @@ model transactionitem {
   @@index([transactionId], map: "TransactionItem_transactionId_idx")
 }
 
+model store {
+  id          Int      @id @default(autoincrement())
+  name        String   @default("KasirGO")
+  address     String?  @db.Text
+  phone       String?
+  email       String?
+  logoUrl     String?
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model user {
   id                Int                 @id @default(autoincrement())
   email             String              @unique(map: "User_email_key")
@@ -135,6 +148,12 @@ enum transaction_status {
   DRAFT
   LOCKED
   COMPLETED
+}
+
+enum payment_method {
+  CASH
+  QRIS
+  DEBIT
 }
 
 enum user_role {
