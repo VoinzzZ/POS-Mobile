@@ -1,7 +1,7 @@
 import React from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
-import { LayoutDashboard, Package, History, Users } from "lucide-react-native";
+import { LayoutDashboard, Package, History, Store } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
 
 export default function AdminBottomNav() {
@@ -29,10 +29,10 @@ export default function AdminBottomNav() {
       path: "/history",
     },
     {
-      name: "Users",
-      icon: Users,
-      route: "/(admin)/users",
-      path: "/users",
+      name: "Toko",
+      icon: Store,
+      route: "/(admin)/store",
+      path: "/store",
     },
   ];
 
