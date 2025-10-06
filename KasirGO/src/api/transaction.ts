@@ -15,6 +15,7 @@ export interface Transaction {
   total: number;
   paymentAmount?: number;
   changeAmount?: number;
+  paymentMethod?: 'CASH' | 'QRIS' | 'DEBIT';
   status: 'DRAFT' | 'LOCKED' | 'COMPLETED';
   completedAt?: string;
   createdAt: string;
@@ -51,9 +52,14 @@ export const transactionService = {
   },
 
   // Complete payment for transaction
-  completePayment: async (transactionId: number, paymentAmount: number): Promise<ApiResponse<Transaction>> => {
+  completePayment: async (
+    transactionId: number, 
+    paymentAmount: number,
+    paymentMethod: 'CASH' | 'QRIS' | 'DEBIT' = 'CASH'
+  ): Promise<ApiResponse<Transaction>> => {
     const response = await axiosInstance.post(`/transactions/${transactionId}/complete`, {
-      paymentAmount
+      paymentAmount,
+      paymentMethod
     });
     return response.data;
   },
@@ -70,15 +76,28 @@ export const transactionService = {
     return response.data;
   },
 
-  // Get all transactions
+  // Get all transactions (history)
   getAllTransactions: async (params?: {
     startDate?: string;
     endDate?: string;
     cashierId?: number;
+    status?: 'DRAFT' | 'COMPLETED' | 'LOCKED';
     page?: number;
     limit?: number;
   }): Promise<ApiResponse<{ data: Transaction[]; pagination: any }>> => {
     const response = await axiosInstance.get('/transactions', { params });
+    return response.data;
+  },
+
+  // Update transaction (edit items)
+  updateTransaction: async (transactionId: number, payload: TransactionPayload): Promise<ApiResponse<Transaction>> => {
+    const response = await axiosInstance.put(`/transactions/${transactionId}`, payload);
+    return response.data;
+  },
+
+  // Delete transaction
+  deleteTransaction: async (transactionId: number): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.delete(`/transactions/${transactionId}`);
     return response.data;
   }
 };
