@@ -31,6 +31,16 @@ export default function CashierLayout() {
       <Stack.Screen name="history" />
       <Stack.Screen name="stock" />
       <Stack.Screen name="settings" />
+      <Stack.Screen 
+        name="edit-transaction/[id]" 
+        options={{ 
+          presentation: 'modal',
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          animationTypeForReplace: 'push',
+          headerShown: false
+        }} 
+      />
     </Stack>
   );
 }
