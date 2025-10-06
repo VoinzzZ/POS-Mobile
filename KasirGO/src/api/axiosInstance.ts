@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@env";
 import TokenService from "../services/tokenService";
 
-console.log('🔗 API_URL:', API_URL);
+// console.log('🔗 API_URL:', API_URL);
 
 // Create axios instance
 const api = axios.create({
