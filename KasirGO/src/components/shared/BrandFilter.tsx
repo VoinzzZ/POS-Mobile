@@ -34,10 +34,7 @@ export default function BrandFilter({
   const [filteredBrands, setFilteredBrands] = useState<Brand[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Use external selectedCategoryId from parent (from swipe gesture) or internal state
   const selectedCategoryId = externalSelectedCategoryId !== undefined ? externalSelectedCategoryId : null;
-  
 
   useEffect(() => {
     loadData();
