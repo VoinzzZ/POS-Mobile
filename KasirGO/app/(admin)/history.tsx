@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,10 +9,10 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { History, Settings, Receipt, ChevronRight } from "lucide-react-native";
+import { History, Settings, Receipt, ChevronRight, Trash2, Edit } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
 import { useTheme } from "../../src/context/ThemeContext";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { transactionService, Transaction } from "../../src/api/transaction";
 
 export default function HistoryScreen() {
@@ -23,16 +23,24 @@ export default function HistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
+  // Auto-refresh when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔄 Admin History screen focused - Refreshing transactions...');
+      fetchTransactions();
+    }, [])
+  );
 
   const fetchTransactions = async () => {
     try {
-      const response = await transactionService.getAllTransactions({
+      // Admin hanya melihat transaksi LOCKED (kemarin & sebelumnya, bukan hari ini)
+      const params: any = {
         page: 1,
-        limit: 50,
-      });
+        limit: 100,
+        status: 'LOCKED', // Hanya tampilkan yang sudah LOCKED
+      };
+      
+      const response = await transactionService.getAllTransactions(params);
       console.log('📦 Transaction Response:', JSON.stringify(response, null, 2));
       if (response.success) {
         // Check if data is array directly or nested in data.data
@@ -97,48 +105,105 @@ export default function HistoryScreen() {
     }
   };
 
+  const handleDeleteTransaction = async (transactionId: number, transactionStatus: string) => {
+    const statusText = transactionStatus === 'LOCKED' ? 'terkunci' : transactionStatus === 'COMPLETED' ? 'selesai' : 'draft';
+    Alert.alert(
+      'Hapus Transaksi',
+      `Apakah Anda yakin ingin menghapus transaksi ${statusText} ini? Stok produk akan dikembalikan.`,
+      [
+        {
+          text: 'Batal',
+          style: 'cancel',
+        },
+        {
+          text: 'Hapus',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await transactionService.deleteTransaction(transactionId);
+              if (response.success) {
+                Alert.alert('Berhasil', 'Transaksi berhasil dihapus');
+                fetchTransactions(); // Reload list
+              }
+            } catch (error: any) {
+              Alert.alert('Error', error.response?.data?.message || 'Gagal menghapus transaksi');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+
+  // Filter changes are handled by useFocusEffect dependency
+
   const handleTransactionPress = (transaction: Transaction) => {
-    if (transaction.status === 'DRAFT') {
-      router.push(`/(cashier)/transaction/${transaction.id}`);
-    } else {
-      // TODO: Navigate to transaction detail view
-      Alert.alert(
-        'Detail Transaksi',
-        `Transaksi #${transaction.id}\nTotal: ${formatCurrency(transaction.total)}\nStatus: ${getStatusText(transaction.status)}`,
-        [
-          {
-            text: 'Tutup',
-            style: 'cancel',
-          },
-          transaction.status === 'COMPLETED' && {
-            text: 'Cetak Struk',
-            onPress: () => router.push(`/(cashier)/transaction/${transaction.id}`),
-          },
-        ].filter(Boolean)
-      );
+    const cashierInfo = transaction.cashier ? `\nKasir: ${transaction.cashier.userName}` : '';
+    const items = transaction.items?.map(item => 
+      `${item.product.name} (${item.quantity}x) - ${formatCurrency(item.subtotal)}`
+    ).join('\n') || '';
+    
+    // Admin dapat melakukan berbagai aksi pada transaksi
+    const actions = [
+      {
+        text: 'Tutup',
+        style: 'cancel' as const,
+      },
+    ];
+
+    // Tambah opsi cetak struk untuk transaksi COMPLETED/LOCKED
+    if (transaction.status === 'COMPLETED' || transaction.status === 'LOCKED') {
+      actions.push({
+        text: 'Cetak Struk',
+        onPress: () => router.push(`/(admin)/receipt/${transaction.id}` as any),
+      });
     }
+
+    // Admin bisa edit semua transaksi, termasuk yang LOCKED
+    actions.push({
+      text: 'Edit Transaksi',
+      onPress: () => router.push(`/(admin)/edit-transaction/${transaction.id}` as any),
+    });
+
+    // Tambah opsi delete (admin bisa delete semua)
+    actions.push({
+      text: 'Hapus Transaksi',
+      onPress: () => handleDeleteTransaction(transaction.id, transaction.status),
+    });
+    
+    Alert.alert(
+      `Detail Transaksi #${transaction.id}`,
+      `Status: ${getStatusText(transaction.status)}${cashierInfo}\nTotal: ${formatCurrency(transaction.total)}\n\nProduk:\n${items}`,
+      actions
+    );
   };
 
   const renderTransactionItem = (transaction: Transaction) => (
-    <TouchableOpacity
+    <View
       key={transaction.id}
       style={[styles.transactionCard, { backgroundColor: colors.surface }]}
-      onPress={() => handleTransactionPress(transaction)}
     >
-      <View style={styles.transactionHeader}>
-        <View style={styles.transactionIconContainer}>
-          <Receipt size={20} color={colors.primary} />
+      <TouchableOpacity onPress={() => handleTransactionPress(transaction)}>
+        <View style={styles.transactionHeader}>
+          <View style={styles.transactionIconContainer}>
+            <Receipt size={20} color={colors.primary} />
+          </View>
+          <View style={styles.transactionInfo}>
+            <Text style={[styles.transactionId, { color: colors.text }]}>
+              Transaksi #{transaction.id}
+            </Text>
+            <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>
+              {formatDate(transaction.createdAt)}
+            </Text>
+            {transaction.cashier && (
+              <Text style={[styles.cashierName, { color: colors.textSecondary }]}>
+                Kasir: {transaction.cashier.userName}
+              </Text>
+            )}
+          </View>
+          <ChevronRight size={20} color={colors.textSecondary} />
         </View>
-        <View style={styles.transactionInfo}>
-          <Text style={[styles.transactionId, { color: colors.text }]}>
-            Transaksi #{transaction.id}
-          </Text>
-          <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>
-            {formatDate(transaction.createdAt)}
-          </Text>
-        </View>
-        <ChevronRight size={20} color={colors.textSecondary} />
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.transactionDetails}>
         <View style={styles.transactionRow}>
@@ -173,13 +238,50 @@ export default function HistoryScreen() {
           </View>
         </View>
       </View>
-    </TouchableOpacity>
+
+      {/* Admin action buttons - same as cashier but for all transactions */}
+      <View style={styles.actionButtons}>
+        {/* Cetak Struk - hanya untuk COMPLETED/LOCKED */}
+        {(transaction.status === 'COMPLETED' || transaction.status === 'LOCKED') && (
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: `${colors.primary}15` }]}
+            onPress={() => router.push(`/(admin)/receipt/${transaction.id}` as any)}
+          >
+            <Receipt size={16} color={colors.primary} />
+            <Text style={[styles.actionButtonText, { color: colors.primary }]}>Cetak</Text>
+          </TouchableOpacity>
+        )}
+        
+        {/* Edit Transaksi - Admin bisa edit semua, termasuk LOCKED */}
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: '#10b98115' }]}
+          onPress={() => router.push(`/(admin)/edit-transaction/${transaction.id}` as any)}
+        >
+          <Edit size={16} color="#10b981" />
+          <Text style={[styles.actionButtonText, { color: '#10b981' }]}>Edit</Text>
+        </TouchableOpacity>
+        
+        {/* Hapus Transaksi - admin bisa hapus semua */}
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: '#ef444415' }]}
+          onPress={() => handleDeleteTransaction(transaction.id, transaction.status)}
+        >
+          <Trash2 size={16} color="#ef4444" />
+          <Text style={[styles.actionButtonText, { color: '#ef4444' }]}>Hapus</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Riwayat Transaksi</Text>
+        <View>
+          <Text style={[styles.title, { color: colors.text }]}>Riwayat Transaksi</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Transaksi kemarin & sebelumnya
+          </Text>
+        </View>
         <TouchableOpacity
           onPress={() => router.push('/(admin)/settings')}
           style={styles.settingsBtn}
@@ -244,6 +346,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
+  },
+  subtitle: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  filterBtn: {
+    padding: 8,
+    borderRadius: 8,
   },
   settingsBtn: {
     padding: 8,
@@ -312,6 +427,10 @@ const styles = StyleSheet.create({
   transactionDate: {
     fontSize: 12,
   },
+  cashierName: {
+    fontSize: 11,
+    marginTop: 2,
+  },
   transactionDetails: {
     gap: 8,
   },
@@ -338,6 +457,28 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
+    fontWeight: '600',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 6,
+  },
+  actionButtonText: {
+    fontSize: 14,
     fontWeight: '600',
   },
 });
