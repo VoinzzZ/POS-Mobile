@@ -7,14 +7,12 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  Modal,
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Receipt, Check, DollarSign } from 'lucide-react-native';
+import { ArrowLeft, DollarSign } from 'lucide-react-native';
 import { useTheme } from '../../../src/context/ThemeContext';
 import { Transaction, transactionService } from '../../../src/api/transaction';
-import { generateReceiptPDF, shareReceipt, saveReceiptToDownloads } from '../../../src/utils/receiptGenerator';
 
 export default function TransactionScreen() {
   const { colors } = useTheme();
@@ -23,11 +21,9 @@ export default function TransactionScreen() {
   
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'QRIS' | 'DEBIT'>('CASH');
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [showCompleteModal, setShowCompleteModal] = useState(false);
-  const [completedTransaction, setCompletedTransaction] = useState<Transaction | null>(null);
-  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -66,10 +62,10 @@ export default function TransactionScreen() {
 
     setProcessing(true);
     try {
-      const response = await transactionService.completePayment(transaction.id, payment);
+      const response = await transactionService.completePayment(transaction.id, payment, paymentMethod);
       if (response.success && response.data) {
-        setCompletedTransaction(response.data);
-        setShowCompleteModal(true);
+        // Redirect langsung ke receipt preview
+        router.replace(`/(cashier)/receipt/${response.data.id}`);
       }
     } catch (error: any) {
       console.error('Error completing payment:', error);
@@ -80,71 +76,6 @@ export default function TransactionScreen() {
     }
   };
 
-  const handlePrintReceipt = async () => {
-    if (!completedTransaction || generatingPDF) return;
-    
-    setGeneratingPDF(true);
-    try {
-      const response = await transactionService.getReceiptData(completedTransaction.id);
-      if (response.success && response.data) {
-        // Generate PDF
-        const pdfResult = await generateReceiptPDF({
-          transaction: response.data,
-          companyName: 'KasirGO POS',
-          companyAddress: 'Jl. Contoh No. 123, Jakarta',
-          companyPhone: '+62 123 4567 8900'
-        });
-        
-        if (pdfResult.success && pdfResult.filePath) {
-          // Show options for sharing or saving
-          Alert.alert(
-            'Struk Berhasil Dibuat',
-            'Struk PDF Anda telah berhasil dibuat!',
-            [
-              {
-                text: 'Bagikan',
-                onPress: async () => {
-                  const shared = await shareReceipt(pdfResult.filePath!);
-                  setShowCompleteModal(false);
-                  router.replace('/(cashier)/workspace');
-                }
-              },
-              {
-                text: 'Simpan',
-                onPress: async () => {
-                  const fileName = `receipt_${response.data?.id}_${new Date().getTime()}`;
-                  const saved = await saveReceiptToDownloads(pdfResult.filePath!, fileName);
-                  setShowCompleteModal(false);
-                  router.replace('/(cashier)/workspace');
-                }
-              },
-              {
-                text: 'Selesai',
-                style: 'cancel',
-                onPress: () => {
-                  setShowCompleteModal(false);
-                  router.replace('/(cashier)/workspace');
-                }
-              }
-            ]
-          );
-        } else {
-          Alert.alert('Error', pdfResult.error || 'Gagal membuat PDF');
-        }
-      }
-    } catch (error: any) {
-      console.error('Error generating receipt:', error);
-      const message = error.message || 'Gagal membuat struk';
-      Alert.alert('Error', message);
-    } finally {
-      setGeneratingPDF(false);
-    }
-  };
-
-  const handleCompleteWithoutReceipt = () => {
-    setShowCompleteModal(false);
-    router.replace('/(cashier)/workspace');
-  };
 
   const formatCurrency = (amount: number) => {
     return `Rp ${amount.toLocaleString('id-ID')}`;
@@ -154,6 +85,35 @@ export default function TransactionScreen() {
     if (!transaction || !paymentAmount) return 0;
     const payment = parseFloat(paymentAmount) || 0;
     return Math.max(0, payment - transaction.total);
+  };
+
+  const getSmartPaymentSuggestions = (total: number): number[] => {
+    // Pembulatan ke atas ribuan terdekat
+    const roundedTotal = Math.ceil(total / 1000) * 1000;
+    
+    // Tentukan suggest berdasarkan range total
+    if (total <= 10000) {
+      return [10000, 50000, 100000];
+    } else if (total <= 20000) {
+      return [20000, 50000, 100000];
+    } else if (total <= 50000) {
+      return [50000, 100000, 150000];
+    } else if (total <= 100000) {
+      return [100000, 150000, 200000];
+    } else if (total <= 150000) {
+      return [150000, 200000, 500000];
+    } else if (total <= 200000) {
+      return [200000, 500000, 1000000];
+    } else if (total <= 500000) {
+      return [500000, 1000000, 2000000];
+    } else {
+      // Untuk total > 500rb, pakai pembulatan + kelipatan
+      return [
+        roundedTotal,
+        roundedTotal + 500000,
+        roundedTotal + 1000000
+      ];
+    }
   };
 
   if (loading) {
@@ -225,6 +185,67 @@ export default function TransactionScreen() {
           </View>
         </View>
 
+        {/* Payment Method Selection */}
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Metode Pembayaran</Text>
+          
+          <View style={styles.paymentMethodContainer}>
+            <TouchableOpacity
+              style={[
+                styles.paymentMethodButton,
+                { 
+                  backgroundColor: paymentMethod === 'CASH' ? colors.primary : colors.card,
+                  borderColor: paymentMethod === 'CASH' ? colors.primary : colors.border,
+                },
+              ]}
+              onPress={() => setPaymentMethod('CASH')}
+            >
+              <Text style={[
+                styles.paymentMethodText,
+                { color: paymentMethod === 'CASH' ? '#fff' : colors.text }
+              ]}>
+                💵 Tunai
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.paymentMethodButton,
+                { 
+                  backgroundColor: paymentMethod === 'QRIS' ? colors.primary : colors.card,
+                  borderColor: paymentMethod === 'QRIS' ? colors.primary : colors.border,
+                },
+              ]}
+              onPress={() => setPaymentMethod('QRIS')}
+            >
+              <Text style={[
+                styles.paymentMethodText,
+                { color: paymentMethod === 'QRIS' ? '#fff' : colors.text }
+              ]}>
+                📱 QRIS
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.paymentMethodButton,
+                { 
+                  backgroundColor: paymentMethod === 'DEBIT' ? colors.primary : colors.card,
+                  borderColor: paymentMethod === 'DEBIT' ? colors.primary : colors.border,
+                },
+              ]}
+              onPress={() => setPaymentMethod('DEBIT')}
+            >
+              <Text style={[
+                styles.paymentMethodText,
+                { color: paymentMethod === 'DEBIT' ? '#fff' : colors.text }
+              ]}>
+                💳 Debit
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Payment Input */}
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Jumlah Pembayaran</Text>
@@ -244,7 +265,7 @@ export default function TransactionScreen() {
 
           {/* Quick Amount Buttons */}
           <View style={styles.quickAmountContainer}>
-            {[transaction.total, transaction.total + 5000, transaction.total + 10000].map((amount) => (
+            {getSmartPaymentSuggestions(transaction.total).map((amount) => (
               <TouchableOpacity
                 key={amount}
                 style={[styles.quickAmountButton, { backgroundColor: colors.card }]}
@@ -293,67 +314,6 @@ export default function TransactionScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Completion Modal */}
-      <Modal
-        visible={showCompleteModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCompleteModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <View style={[styles.successIcon, { backgroundColor: colors.primary }]}>
-              <Check size={32} color="#fff" />
-            </View>
-            
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
-              Pembayaran Selesai!
-            </Text>
-            
-            {completedTransaction && (
-              <View style={styles.modalDetails}>
-                <Text style={[styles.modalText, { color: colors.textSecondary }]}>
-                  Pembayaran: {formatCurrency(completedTransaction.paymentAmount || 0)}
-                </Text>
-                <Text style={[styles.modalText, { color: colors.textSecondary }]}>
-                  Kembalian: {formatCurrency(completedTransaction.changeAmount || 0)}
-                </Text>
-              </View>
-            )}
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[
-                  styles.modalButton, 
-                  styles.receiptButton, 
-                  { backgroundColor: colors.primary },
-                  generatingPDF && styles.disabledButton
-                ]}
-                onPress={handlePrintReceipt}
-                disabled={generatingPDF}
-              >
-                {generatingPDF ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Receipt size={20} color="#fff" />
-                )}
-                <Text style={styles.modalButtonText}>
-                  {generatingPDF ? 'Membuat...' : 'Cetak Struk'}
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalCompleteButton, { borderColor: colors.border }]}
-                onPress={handleCompleteWithoutReceipt}
-              >
-                <Text style={[styles.modalButtonTextSecondary, { color: colors.text }]}>
-                  Selesai
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -510,6 +470,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
+  paymentMethodContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  paymentMethodButton: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paymentMethodText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   footer: {
     padding: 20,
     paddingBottom: 34,
@@ -529,67 +507,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-  },
-  successIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 16,
-  },
-  modalDetails: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  modalButtons: {
-    width: '100%',
-    gap: 12,
-  },
-  modalButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  receiptButton: {
-    backgroundColor: '#3b82f6',
-  },
-  modalCompleteButton: {
-    borderWidth: 2,
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalButtonTextSecondary: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
