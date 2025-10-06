@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,12 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { History, Settings, Receipt, ChevronRight } from "lucide-react-native";
+import { History, Settings, Receipt, ChevronRight, Trash2 } from "lucide-react-native";
 import CashierBottomNav from "../../src/components/navigation/CashierBottomNav";
 import { useTheme } from "../../src/context/ThemeContext";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { transactionService, Transaction } from "../../src/api/transaction";
+import TransactionEditModal from "../../src/components/modals/TransactionEditModal";
 
 export default function HistoryScreen() {
   const { colors } = useTheme();
@@ -22,14 +23,28 @@ export default function HistoryScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
+  // Auto-refresh when screen comes into focus (e.g., after returning from edit screen)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔄 History screen focused - Refreshing transactions...');
+      fetchTransactions();
+    }, [])
+  );
 
   const fetchTransactions = async () => {
     try {
+      // Fetch only today's transactions with COMPLETED status (belum LOCKED)
+      const today = new Date();
+      const startDate = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+      const endDate = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+      
       const response = await transactionService.getAllTransactions({
+        startDate,
+        endDate,
+        status: 'COMPLETED', // Hanya tampilkan yang sudah complete tapi belum locked
         page: 1,
         limit: 50,
       });
@@ -97,48 +112,71 @@ export default function HistoryScreen() {
     }
   };
 
+  const handleDeleteTransaction = async (transactionId: number) => {
+    Alert.alert(
+      'Hapus Transaksi',
+      'Apakah Anda yakin ingin menghapus transaksi ini? Stok produk akan dikembalikan.',
+      [
+        {
+          text: 'Batal',
+          style: 'cancel',
+        },
+        {
+          text: 'Hapus',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await transactionService.deleteTransaction(transactionId);
+              if (response.success) {
+                Alert.alert('Berhasil', 'Transaksi berhasil dihapus');
+                fetchTransactions(); // Reload list
+              }
+            } catch (error: any) {
+              Alert.alert('Error', error.response?.data?.message || 'Gagal menghapus transaksi');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleTransactionPress = (transaction: Transaction) => {
-    if (transaction.status === 'DRAFT') {
-      router.push(`/(cashier)/transaction/${transaction.id}`);
-    } else {
-      // TODO: Navigate to transaction detail view
-      Alert.alert(
-        'Detail Transaksi',
-        `Transaksi #${transaction.id}\nTotal: ${formatCurrency(transaction.total)}\nStatus: ${getStatusText(transaction.status)}`,
-        [
-          {
-            text: 'Tutup',
-            style: 'cancel',
-          },
-          transaction.status === 'COMPLETED' && {
-            text: 'Cetak Struk',
-            onPress: () => router.push(`/(cashier)/transaction/${transaction.id}`),
-          },
-        ].filter(Boolean)
-      );
-    }
+    // Open modal instead of navigating
+    setSelectedTransactionId(transaction.id);
+    setEditModalVisible(true);
+  };
+
+  const handleEditModalClose = () => {
+    setEditModalVisible(false);
+    setSelectedTransactionId(null);
+  };
+
+  const handleEditModalSaved = () => {
+    // Refresh transactions after successful edit
+    fetchTransactions();
   };
 
   const renderTransactionItem = (transaction: Transaction) => (
-    <TouchableOpacity
+    <View
       key={transaction.id}
       style={[styles.transactionCard, { backgroundColor: colors.surface }]}
-      onPress={() => handleTransactionPress(transaction)}
     >
-      <View style={styles.transactionHeader}>
-        <View style={styles.transactionIconContainer}>
-          <Receipt size={20} color={colors.primary} />
+      <TouchableOpacity onPress={() => handleTransactionPress(transaction)}>
+        <View style={styles.transactionHeader}>
+          <View style={styles.transactionIconContainer}>
+            <Receipt size={20} color={colors.primary} />
+          </View>
+          <View style={styles.transactionInfo}>
+            <Text style={[styles.transactionId, { color: colors.text }]}>
+              Transaksi #{transaction.id}
+            </Text>
+            <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>
+              {formatDate(transaction.createdAt)}
+            </Text>
+          </View>
+          <ChevronRight size={20} color={colors.textSecondary} />
         </View>
-        <View style={styles.transactionInfo}>
-          <Text style={[styles.transactionId, { color: colors.text }]}>
-            Transaksi #{transaction.id}
-          </Text>
-          <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>
-            {formatDate(transaction.createdAt)}
-          </Text>
-        </View>
-        <ChevronRight size={20} color={colors.textSecondary} />
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.transactionDetails}>
         <View style={styles.transactionRow}>
@@ -173,7 +211,26 @@ export default function HistoryScreen() {
           </View>
         </View>
       </View>
-    </TouchableOpacity>
+
+      {/* Action Buttons */}
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: `${colors.primary}15` }]}
+          onPress={() => router.push(`/(cashier)/receipt/${transaction.id}`)}
+        >
+          <Receipt size={16} color={colors.primary} />
+          <Text style={[styles.actionButtonText, { color: colors.primary }]}>Cetak Struk</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: '#ef444415' }]}
+          onPress={() => handleDeleteTransaction(transaction.id)}
+        >
+          <Trash2 size={16} color="#ef4444" />
+          <Text style={[styles.actionButtonText, { color: '#ef4444' }]}>Hapus</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 
   return (
@@ -225,6 +282,14 @@ export default function HistoryScreen() {
       )}
 
       <CashierBottomNav />
+      
+      {/* Transaction Edit Modal */}
+      <TransactionEditModal
+        visible={editModalVisible}
+        transactionId={selectedTransactionId}
+        onClose={handleEditModalClose}
+        onSaved={handleEditModalSaved}
+      />
     </View>
   );
 }
@@ -338,6 +403,28 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
+    fontWeight: '600',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 6,
+  },
+  actionButtonText: {
+    fontSize: 14,
     fontWeight: '600',
   },
 });
