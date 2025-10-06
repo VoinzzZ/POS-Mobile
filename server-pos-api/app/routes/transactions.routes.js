@@ -25,6 +25,13 @@ router.get(
   transactionController.getTransactionDetail
 );
 
+router.put(
+  "/:id",
+  authMiddleware.verifyToken,
+  authMiddleware.requireCashierOrAdmin,
+  transactionController.updateTransaction
+);
+
 router.delete(
   "/:id",
   authMiddleware.verifyToken,
