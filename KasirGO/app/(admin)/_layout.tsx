@@ -30,8 +30,9 @@ export default function AdminLayout() {
       <Stack.Screen name="dashboard" />
       <Stack.Screen name="products" />
       <Stack.Screen name="history" />
-      <Stack.Screen name="users" />
       <Stack.Screen name="settings" />
+      <Stack.Screen name="stock" />
+      <Stack.Screen name="store" />
     </Stack>
   );
 }
