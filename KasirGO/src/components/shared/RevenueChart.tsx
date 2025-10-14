@@ -38,7 +38,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
     { label: "Sep", value: 74000000 },
     { label: "Oct", value: 79000000 },
     { label: "Nov", value: 82000000 },
-    { label: "Dec", value: 88000000 },
+    { label: "Dec", value: 780000 },
   ];
 
   const currentData = viewMode === "weekly" ? weeklyData : yearlyData;
