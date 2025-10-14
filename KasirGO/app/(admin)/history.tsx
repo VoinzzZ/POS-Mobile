@@ -144,7 +144,11 @@ export default function HistoryScreen() {
     ).join('\n') || '';
     
     // Admin dapat melakukan berbagai aksi pada transaksi
-    const actions = [
+    const actions: {
+      text: string;
+      style?: 'default' | 'cancel' | 'destructive';
+      onPress?: () => void;
+    }[] = [
       {
         text: 'Tutup',
         style: 'cancel' as const,
