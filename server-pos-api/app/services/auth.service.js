@@ -1,325 +1,234 @@
 const prisma = require('../config/mysql.db.js');
-const validator = require('validator');
-const EmailService = require('./email.service.js');
 const PasswordService = require('../utils/passwordService.js');
 const JWTService = require('../utils/jwtService.js');
 
-const emailService = new EmailService();
-
-async function register({ userName, email, pin, role = "CASHIER" }) {
-  if (!userName || !email || !pin) throw new Error("userName, email, and pin are required");
-  if (!validator.isEmail(email)) throw new Error("Invalid email format");
-
-  return await prisma.$transaction(async (tx) => {
-    const regPin = await tx.registrationpin.findFirst({
-      where: { code: pin, used: false, expiresAt: { gt: new Date() } },
-    });
-    if (!regPin) throw new Error("Invalid or expired registration PIN");
-
-    const newUser = await tx.user.create({
-      data: {
-        userName,
-        email,
-        role,
-        isVerified: false,
-      },
-    });
-
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiredAt = new Date(Date.now() + 5 * 60 * 1000);
-
-    await tx.emailverification.deleteMany({
-      where: { userId: newUser.id, email, verified: false },
-    });
-
-    await tx.emailverification.create({
-      data: { 
-        userId: newUser.id, 
-        email, 
-        code: otpCode, 
-        expiresAt: otpExpiredAt, 
-        verified: false 
-      },
-    });
-
-    await tx.registrationpin.update({
-      where: { id: regPin.id },
-      data: { used: true, usedAt: new Date() },
-    });
-
-    return { 
-      userId: newUser.id,
-      otpCode: otpCode,
-      message: "User registered. OTP will be sent to email."
-    };
-  })
-  .then(async (result) => {
-    const emailResult = await emailService.sendOtpEmail(email, result.otpCode);
-    if (!emailResult.success) {
-      console.error("Failed to send OTP email");
-    }
-    return { userId: result.userId, message: "User registered. OTP sent to email." };
-  });
-}
-
-async function verifyEmailOTP({ userId, otpCode }) {
-  if (!userId || !otpCode) throw new Error('userId and otpCode are required');
-
-  const emailVerification = await prisma.emailverification.findFirst({
-    where: {
-      userId,
-      code: otpCode,
-      verified: false,
-      expiresAt: { gt: new Date() }
-    },
-    include: { user: true }
-  });
-
-  if (!emailVerification) throw new Error('Invalid or expired OTP');
-  if (emailVerification.user.isVerified) throw new Error('Email already verified');
-
-  await prisma.$transaction(async (tx) => {
-    await tx.emailverification.update({
-      where: { id: emailVerification.id },
-      data: { verified: true }
-    });
-
-    await tx.user.update({
-      where: { id: userId },
-      data: { isVerified: false }
-    });
-  });
-
-  return { message: 'Email verified successfully. Please set your password.' };
-}
-
-async function setPassword({ userId, newPassword }) {
-  if (!userId || !newPassword) throw new Error('userId and newPassword are required');
-
-  const user = await prisma.user.findFirst({
-    where: { id: userId },
-    include: {
-      emailverification: {
-        where: { verified: true },
-        orderBy: { createdAt: 'desc' },
-        take: 1
-      }
-    }
-  });
-
-  if (!user) throw new Error('User not found');
-  if (user.isVerified) throw new Error('User already verified');
-  if (!user.emailverification.length) throw new Error('Please verify your email first');
-
-  const passwordValidation = PasswordService.validatePassword(newPassword);
-  if (!passwordValidation.isValid) throw new Error('Password validation failed');
-
-  const hashedPassword = await PasswordService.hashPassword(newPassword);
-
-  const updatedUser = await prisma.user.update({
-    where: { id: userId },
-    data: { 
-      password: hashedPassword, 
-      isVerified: true,
-    }
-  });
-
-  const payload = { 
-    userId: updatedUser.id, 
-    email: updatedUser.email, 
-    role: updatedUser.role, 
-    userName: updatedUser.userName 
-  };
+class AuthService {
+  // ==================== AUTHENTICATION ====================
   
-  const { accessToken, refreshToken } = JWTService.generateTokenPair(payload);
+  /**
+   * User login
+   */
+  static async loginUser({ email, password }) {
+    if (!email || !password) {
+      throw new Error("Email dan password wajib diisi");
+    }
 
-  return {
-    message: 'Password set successfully. Registration completed.',
-    data: {
-      user: {
-        userId: updatedUser.id,
-        userName: updatedUser.userName,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        isVerified: updatedUser.isVerified
+    return await prisma.$transaction(async (tx) => {
+    // Find user with relations
+    const user = await tx.m_user.findFirst({
+      where: {
+        user_email: email,
+        deleted_at: null
       },
-      tokens: { 
-        accessToken, 
-        refreshToken, 
-        expiresIn: 900, 
-        refreshExpiresIn: 604800 
+      include: {
+        m_role: true,
+        m_tenant: true
+      }
+    });
+
+    if (!user) {
+      throw new Error("Email atau password salah");
+    }
+
+    // Check if user is locked
+    if (user.user_locked_until && user.user_locked_until > new Date()) {
+      throw new Error("Akun dikunci sementara. Silakan coba lagi nanti");
+    }
+
+    // Check if user is active
+    if (!user.is_active) {
+      throw new Error("Akun tidak aktif. Hubungi administrator");
+    }
+
+    // Check if email is verified
+    if (!user.user_is_verified) {
+      throw new Error("Email belum diverifikasi. Silakan periksa email Anda");
+    }
+
+    // Check tenant status for non-SA users
+    if (!user.is_sa && user.m_tenant) {
+      if (user.m_tenant.tenant_status !== 'APPROVED') {
+        throw new Error("Toko belum disetujui oleh administrator. Mohon menunggu persetujuan");
+      }
+
+      if (!user.m_tenant.is_active) {
+        throw new Error("Toko tidak aktif. Hubungi administrator");
       }
     }
-  };
-}
 
+    // Verify password
+    const isPasswordValid = await PasswordService.comparePassword(password, user.user_password);
+    if (!isPasswordValid) {
+      // Increment login attempts
+      const newAttempts = user.user_login_attempts + 1;
+      const maxAttempts = 5;
 
-async function login({ email, password }) {
-  if (!email || !password) throw new Error('Email and password are required');
-  if (!validator.isEmail(email)) throw new Error('Invalid email format');
+      await tx.m_user.update({
+        where: { user_id: user.user_id },
+        data: {
+          user_login_attempts: newAttempts,
+          user_locked_until: newAttempts >= maxAttempts
+            ? new Date(Date.now() + 30 * 60 * 1000) // Lock for 30 minutes
+            : null
+        }
+      });
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error('Invalid email or password');
-
-  const isPasswordValid = await PasswordService.comparePassword(password, user.password);
-  if (!isPasswordValid) throw new Error('Invalid email or password');
-
-  if (!user.isVerified) throw new Error('Please verify your email before logging in');
-
-  const payload = { userId: user.id, email: user.email, role: user.role, userName: user.userName };
-  const { accessToken, refreshToken } = JWTService.generateTokenPair(payload);
-
-  return {
-    message: 'Login successful',
-    data: {
-      user: {
-        userId: user.id,
-        userName: user.userName,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isVerified
-      },
-      tokens: { accessToken, refreshToken, expiresIn: 900, refreshExpiresIn: 604800 }
+      throw new Error("Email atau password salah");
     }
-  };
-}
 
-async function sendForgotPasswordOtp(email) {
-  if (!validator.isEmail(email)) throw new Error('Invalid email format');
+    // Reset login attempts on successful login
+    await tx.m_user.update({
+      where: { user_id: user.user_id },
+      data: {
+        user_last_login: new Date(),
+        user_login_attempts: 0,
+        user_locked_until: null
+      }
+    });
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error('No account found with this email address');
-  if (!user.isVerified) throw new Error('Please complete your registration first');
+    // Debug user data
+    console.log('🔑 Auth Service Debug - User data for JWT:', {
+      userId: user.user_id,
+      email: user.user_email,
+      is_sa: user.is_sa,
+      role: user.m_role?.role_name || 'SA'
+    });
 
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    // Generate tokens
+    const accessToken = JWTService.generateAccessToken({
+      userId: user.user_id,
+      email: user.user_email,
+      role: user.m_role?.role_name || 'SA',
+      name: user.user_full_name || user.user_name,
+      tenantId: user.tenant_id,
+      is_sa: user.is_sa
+    });
 
-  await prisma.$transaction(async (tx) => {
-    await tx.passwordreset.deleteMany({ where: { userId: user.id, used: false } });
-    await tx.passwordreset.create({ data: { userId: user.id, code: otpCode, expiresAt, used: false } });
-  });
+    console.log('🔑 Auth Service Debug - JWT Payload created with is_sa:', user.is_sa);
 
-  const result = await emailService.sendForgotPasswordOtp(email, otpCode, user.userName);
-  if (!result.success) throw new Error('Failed to send reset code to email');
+    const refreshToken = JWTService.generateRefreshToken({
+      userId: user.user_id,
+      email: user.user_email
+    });
 
-  return { email, message: 'Password reset code sent. Valid for 10 minutes.' };
-}
-
-async function verifyForgotPasswordOTP(email, otpCode) {
-  if (!validator.isEmail(email)) throw new Error('Invalid email format');
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error('No account found with this email address');
-
-  const passwordReset = await prisma.passwordreset.findFirst({
-    where: { userId: user.id, code: otpCode, expiresAt: { gt: new Date() }, used: false }
-  });
-
-  if (!passwordReset) throw new Error('Invalid or expired verification code');
-
-  const resetToken = JWTService.generateResetToken({
-    userId: user.id,
-    email: user.email,
-    resetId: passwordReset.id
-  });
-
-  return {
-    resetToken,
-    email: user.email,
-    message: 'Verification code confirmed. You can now set your new password.'
-  };
-}
-
-async function resetPassword(resetToken, newPassword, confirmPassword) {
-  let tokenData;
-  try {
-    tokenData = JWTService.verifyResetToken(resetToken);
-  } catch {
-    throw new Error('Invalid or expired reset token');
+      return {
+        user: {
+          id: user.user_id,
+          name: user.user_full_name || user.user_name,
+          email: user.user_email,
+          role: user.m_role?.role_name || 'SA',
+          roleId: user.role_id,
+          tenantId: user.tenant_id,
+          tenantName: user.m_tenant?.tenant_name,
+          isSA: user.is_sa,
+          isVerified: user.user_is_verified,
+          lastLogin: user.user_last_login
+        },
+        tokens: {
+          accessToken,
+          refreshToken
+        },
+        message: "Login berhasil"
+      };
+    });
   }
 
-  const passwordValidation = PasswordService.validatePassword(newPassword);
-  if (!passwordValidation.isValid) throw new Error('Password validation failed');
+  /**
+   * Refresh access token
+   */
+  static async refreshAccessToken(refreshToken) {
+    if (!refreshToken) {
+      throw new Error("Refresh token diperlukan");
+    }
 
-  if (newPassword !== confirmPassword) throw new Error('Passwords do not match');
+    try {
+    const decoded = JWTService.verifyRefreshToken(refreshToken);
 
-  const passwordReset = await prisma.passwordreset.findFirst({
+    const user = await prisma.m_user.findFirst({
+      where: {
+        user_id: decoded.userId,
+        user_email: decoded.email,
+        deleted_at: null,
+        user_is_active: true
+      },
+      include: {
+        m_role: true,
+        m_tenant: true
+      }
+    });
+
+    if (!user) {
+      throw new Error("User tidak ditemukan");
+    }
+
+    const newAccessToken = JWTService.generateAccessToken({
+      userId: user.user_id,
+      email: user.user_email,
+      role: user.m_role?.role_name || 'SA',
+      name: user.user_full_name || user.user_name,
+      tenantId: user.tenant_id
+    });
+
+      return {
+        accessToken: newAccessToken,
+        user: {
+          id: user.user_id,
+          name: user.user_full_name || user.user_name,
+          email: user.user_email,
+          role: user.m_role?.role_name || 'SA',
+          tenantId: user.tenant_id,
+          tenantName: user.m_tenant?.tenant_name
+        }
+      };
+    } catch (error) {
+      throw new Error("Refresh token tidak valid atau sudah kadaluarsa");
+    }
+  }
+
+  /**
+   * Get user profile
+   */
+  static async getUserProfile(userId) {
+    const user = await prisma.m_user.findFirst({
     where: {
-      id: tokenData.resetId,
-      userId: tokenData.userId,
-      expiresAt: { gt: new Date() },
-      used: false
+      user_id: userId,
+      deleted_at: null
+    },
+    include: {
+      m_role: {
+        select: {
+          role_id: true,
+          role_name: true,
+          role_description: true
+        }
+      },
+      m_tenant: {
+        select: {
+          tenant_id: true,
+          tenant_name: true,
+          tenant_status: true,
+          is_active: true
+        }
+      }
     }
   });
 
-  if (!passwordReset) throw new Error('Reset session has expired. Please request a new reset code.');
+    if (!user) {
+      throw new Error("User tidak ditemukan");
+    }
 
-  const hashedPassword = await PasswordService.hashPassword(newPassword);
-
-  await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: tokenData.userId },
-      data: { password: hashedPassword, updatedAt: new Date() }
-    });
-
-    await tx.passwordreset.update({
-      where: { id: passwordReset.id },
-      data: { used: true, updatedAt: new Date() }
-    });
-
-    await tx.passwordreset.deleteMany({
-      where: { userId: tokenData.userId, used: false, id: { not: passwordReset.id } }
-    });
-  });
-
-  return {
-    message: 'Password has been reset successfully. You can now login with your new password.',
-    email: tokenData.email
-  };
+    return {
+      id: user.user_id,
+      name: user.user_full_name || user.user_name,
+      email: user.user_email,
+      phone: user.user_phone,
+      role: user.m_role,
+      tenant: user.m_tenant,
+      isSA: user.is_sa,
+      isVerified: user.user_is_verified,
+      lastLogin: user.user_last_login
+    };
+  }
 }
 
-async function changePassword(userId, currentPassword, newPassword, confirmPassword) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new Error('User not found');
-
-  const isCurrentPasswordValid = await PasswordService.comparePassword(currentPassword, user.password);
-  if (!isCurrentPasswordValid) throw new Error('Current password is incorrect');
-
-  const passwordValidation = PasswordService.validatePassword(newPassword);
-  if (!passwordValidation.isValid) throw new Error('Password validation failed');
-
-  if (newPassword !== confirmPassword) throw new Error('Passwords do not match');
-
-  const hashedPassword = await PasswordService.hashPassword(newPassword);
-  await prisma.user.update({ where: { id: userId }, data: { password: hashedPassword } });
-
-  return { message: 'Password changed successfully' };
-}
-
-async function getProfile(userId) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new Error('User not found');
-
-  return {
-    id: user.id,
-    userName: user.userName,
-    email: user.email,
-    role: user.role,
-    isVerified: user.isVerified,
-    emailVerifiedAt: user.emailVerifiedAt,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt
-  };
-}
-
-module.exports = {
-  register,
-  verifyEmailOTP,
-  setPassword,
-  login,
-  sendForgotPasswordOtp,
-  verifyForgotPasswordOTP,
-  resetPassword,
-  changePassword,
-  getProfile
-};
+module.exports = AuthService;

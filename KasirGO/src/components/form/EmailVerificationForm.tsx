@@ -32,7 +32,7 @@ const EmailVerificationForm: React.FC = () => {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const storedUserId = await AsyncStorage.getItem("@temp_userId");
+        const storedUserId = await AsyncStorage.getItem("@temp_user_id");
         const storedEmail = await AsyncStorage.getItem("@temp_email");
         
         if (storedUserId) {
@@ -126,8 +126,8 @@ const EmailVerificationForm: React.FC = () => {
 
     setLoading(true);
     try {
-      // Get userName and PIN from AsyncStorage
-      const userName = await AsyncStorage.getItem("@temp_userName") || email.split('@')[0];
+      // Get user_name and PIN from AsyncStorage
+      const user_name = await AsyncStorage.getItem("@temp_user_name") || email.split('@')[0];
       const pin = await AsyncStorage.getItem("@temp_pin");
       
       if (!pin) {
@@ -135,7 +135,7 @@ const EmailVerificationForm: React.FC = () => {
         return;
       }
 
-      const response = await registerApi(userName, pin, email);
+      const response = await registerApi(user_name, pin, email);
       
       if (response.success) {
         setTimeLeft(300);

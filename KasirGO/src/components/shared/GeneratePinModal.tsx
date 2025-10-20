@@ -45,7 +45,7 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
       
       if (response.success) {
         setGeneratedPin(response.data.pin);
-        setExpiresAt(response.data.expiresAt);
+        setExpiresAt(response.data.expires_at);
         
         if (onSuccess) {
           onSuccess();
@@ -194,10 +194,7 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
                 <View style={styles.instructionBox}>
                   <Text style={styles.instructionTitle}>📋 Instructions:</Text>
                   <Text style={styles.instructionText}>
-                    1. Share this PIN with the cashier{"\n"}
-                    2. They can use it during registration{"\n"}
-                    3. PIN is single-use only{"\n"}
-                    4. Keep it secure and don't share publicly
+                    1. Share this PIN with the cashier\n                    2. They can use it during registration\n                    3. PIN is single-use only\n                    4. Keep it secure and don't share publicly
                   </Text>
                 </View>
               </View>

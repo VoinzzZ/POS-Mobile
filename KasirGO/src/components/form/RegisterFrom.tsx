@@ -6,12 +6,12 @@ import { registerApi } from "../../api/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LoginForm: React.FC = () => {
-  const [userName, setUserName] = useState("");
+  const [user_name, setUser_name] = useState("");
   const [registPin, setRegistPin] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
-    userName?: string;
+    user_name?: string;
     email?: string;
     pin?: string;
   }>({});
@@ -20,8 +20,8 @@ const LoginForm: React.FC = () => {
   const validateInputs = (): boolean => {
     const newErrors: typeof errors = {};
     
-    if (!userName.trim()) {
-      newErrors.userName = "Nama pengguna tidak boleh kosong";
+    if (!user_name.trim()) {
+      newErrors.user_name = "Nama pengguna tidak boleh kosong";
     }
     
     if (!email.trim()) {
@@ -51,14 +51,14 @@ const LoginForm: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await registerApi(userName.trim(), registPin.trim(), email.trim());
+      const response = await registerApi(user_name.trim(), registPin.trim(), email.trim());
       
-      if (response.success && response.data?.userId) {
-        // Save userId, email, and PIN for next steps
-        await AsyncStorage.setItem("@temp_userId", response.data.userId.toString());
+      if (response.success && response.data?.user_id) {
+        // Save user_id, email, and PIN for next steps
+        await AsyncStorage.setItem("@temp_user_id", response.data.user_id.toString());
         await AsyncStorage.setItem("@temp_email", email.trim());
         await AsyncStorage.setItem("@temp_pin", registPin.trim());
-        await AsyncStorage.setItem("@temp_userName", userName.trim());
+        await AsyncStorage.setItem("@temp_user_name", user_name.trim());
         
         Alert.alert(
           "Berhasil!", 
@@ -109,16 +109,16 @@ const LoginForm: React.FC = () => {
 
     {/* Username */}
     <View style={styles.fieldContainer}>
-      <View style={[styles.inputWrapper, { borderColor: errors.userName ? '#ef4444' : colors.border }]}>
+      <View style={[styles.inputWrapper, { borderColor: errors.user_name ? '#ef4444' : colors.border }]}>
         <TextInput
             style={[styles.input, dynamicStyles.input]}
             placeholder="Nama Pengguna"
             placeholderTextColor={colors.textSecondary}
-            value={userName}
+            value={user_name}
             onChangeText={(text) => {
-              setUserName(text);
-              if (errors.userName) {
-                setErrors({ ...errors, userName: undefined });
+              setUser_name(text);
+              if (errors.user_name) {
+                setErrors({ ...errors, user_name: undefined });
               }
             }}
             autoComplete="username"
@@ -126,8 +126,8 @@ const LoginForm: React.FC = () => {
             keyboardType="default"
         />
       </View>
-      {errors.userName && (
-        <Text style={styles.errorText}>{errors.userName}</Text>
+      {errors.user_name && (
+        <Text style={styles.errorText}>{errors.user_name}</Text>
       )}
     </View>
 

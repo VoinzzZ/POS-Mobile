@@ -1,195 +1,141 @@
+const prisma = require('../config/mysql.db.js');
 const AuthService = require('../services/auth.service');
-const JWTService = require('../utils/jwtService');
 
-async function register(req, res) {
-  try {
-    const { userName, pin, email, role } = req.body;
-    if (!userName || !pin || !email) {
-      return res.status(400).json({ success: false, message: 'userName, pin, and email are required' });
-    }
+class AuthController {
+  // ==================== AUTHENTICATION ====================
 
-    const result = await AuthService.register({ userName, pin, email, role });
-    res.status(201).json({ success: true, message: result.message, data: { userId: result.userId } });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
+  static async login(req, res) {
+    try {
+      const { email, password } = req.body;
 
-async function verifyEmailOTP(req, res) {
-  try {
-    const { userId, otpCode } = req.body;
-    if (!userId || !otpCode) {
-      return res.status(400).json({ success: false, message: 'userId and otpCode are required' });
-    }
+      const result = await AuthService.loginUser({
+        email,
+        password
+      });
 
-    const result = await AuthService.verifyEmailOTP({ userId, otpCode });
-    res.status(200).json({ success: true, message: result.message });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: {
+          user: result.user,
+          tokens: result.tokens
+        }
+      });
+    } catch (error) {
+      console.error('Login error:', error);
 
-async function setPassword(req, res) {
-  try {
-    const { userId, newPassword} = req.body;
-    if (!userId || !newPassword) {
-      return res.status(400).json({ success: false, message: 'userI and newPassword are required' });
-    }
-
-    const result = await AuthService.setPassword({ userId, newPassword });
-
-    if (!result.success) {
-      return res.status(400).json({ success: false, message: result.message, details: result.details });
-    }
-
-    res.status(200).json({ success: true, message: result.message, data: result.data });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-async function login(req, res) {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'email and password are required' });
-    }
-
-    const result = await AuthService.login({ email, password });
-    res.status(200).json({ success: true, message: result.message, data: result.data });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-async function refreshToken(req, res) {
-  try {
-    console.log('🔄 Refresh token request for user:', req.user?.email);
-    
-    const { userId, email, role, name } = req.user;
-    
-    if (!userId || !email) {
-      return res.status(400).json({
+      res.status(401).json({
         success: false,
-        message: 'Invalid user data in refresh token',
-        error: 'INVALID_USER_DATA'
+        message: error.message || 'Login gagal'
       });
     }
-    
-    const tokenPayload = { userId, email, role, name };
-    const tokenPair = JWTService.generateTokenPair(tokenPayload);
+  }
 
-    console.log('✅ Token refreshed successfully for user:', email);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Token refreshed successfully',
-      data: { 
-        tokens: {
-          accessToken: tokenPair.accessToken,
-          refreshToken: tokenPair.refreshToken,
-          tokenType: tokenPair.tokenType,
-          expiresIn: tokenPair.expiresIn,
-          refreshExpiresIn: tokenPair.refreshExpiresIn
+  static async refreshToken(req, res) {
+    try {
+      const { refreshToken } = req.body;
+
+      const result = await AuthService.refreshAccessToken(refreshToken);
+
+      res.status(200).json({
+        success: true,
+        message: 'Token berhasil diperbarui',
+        data: result
+      });
+    } catch (error) {
+      console.error('Refresh token error:', error);
+
+      res.status(401).json({
+        success: false,
+        message: error.message || 'Refresh token gagal'
+      });
+    }
+  }
+
+  static async logout(req, res) {
+    try {
+      // For now, just return success
+      // In production, you might want to invalidate tokens
+      res.status(200).json({
+        success: true,
+        message: 'Logout berhasil'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Logout gagal'
+      });
+    }
+  }
+
+  static async getProfile(req, res) {
+    try {
+      const { userId } = req.user;
+
+      const result = await AuthService.getUserProfile(userId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Profile berhasil diambil',
+        data: result
+      });
+    } catch (error) {
+      console.error('Get profile error:', error);
+
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Gagal mengambil profile'
+      });
+    }
+  }
+
+  static async getTenantInfo(req, res) {
+    try {
+      const { tenantId } = req.user;
+
+      const tenant = await prisma.m_tenant.findFirst({
+        where: {
+          tenant_id: tenantId,
+          deleted_at: null
+        },
+        select: {
+          tenant_id: true,
+          tenant_name: true,
+          tenant_status: true,
+          tenant_phone: true,
+          tenant_email: true,
+          tenant_description: true,
+          tenant_address: true,
+          is_active: true,
+          max_users: true,
+          created_at: true,
+          approved_at: true
         }
+      });
+
+      if (!tenant) {
+        return res.status(404).json({
+          success: false,
+          message: 'Tenant tidak ditemukan'
+        });
       }
-    });
-  } catch (error) {
-    console.error('🔴 Refresh Token Controller Error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Failed to refresh token',
-      error: 'REFRESH_TOKEN_FAILED'
-    });
-  }
-}
 
-async function sendForgotPasswordOtp(req, res) {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ success: false, message: 'email is required' });
+      res.status(200).json({
+        success: true,
+        message: 'Tenant info berhasil diambil',
+        data: tenant
+      });
+    } catch (error) {
+      console.error('Get tenant info error:', error);
+
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Gagal mengambil tenant info'
+      });
     }
-
-    const result = await AuthService.sendForgotPasswordOtp(email);
-    res.json({ success: true, message: result.message, data: { email: result.email } });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
   }
 }
 
-async function verifyForgotPasswordOTP(req, res) {
-  try {
-    const { email, otpCode } = req.body;
-    if (!email || !otpCode) {
-      return res.status(400).json({ success: false, message: 'email and otpCode are required' });
-    }
-
-    const result = await AuthService.verifyForgotPasswordOTP(email, otpCode);
-    res.json({ success: true, message: result.message, data: { resetToken: result.resetToken, email: result.email } });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-async function resetPassword(req, res) {
-  try {
-    const { resetToken, newPassword, confirmPassword } = req.body;
-    if (!resetToken || !newPassword || !confirmPassword) {
-      return res.status(400).json({ success: false, message: 'resetToken, newPassword, and confirmPassword are required' });
-    }
-
-    const result = await AuthService.resetPassword(resetToken, newPassword, confirmPassword);
-    res.json({ success: true, message: result.message, data: { email: result.email } });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-async function changePassword(req, res) {
-  try {
-    const { currentPassword, newPassword, confirmPassword } = req.body;
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      return res.status(400).json({ success: false, message: 'currentPassword, newPassword, and confirmPassword are required' });
-    }
-
-    const { userId } = req.user;
-    const result = await AuthService.changePassword(userId, currentPassword, newPassword, confirmPassword);
-    res.json({ success: true, message: result.message });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-async function getProfile(req, res) {
-  try {
-    const { userId } = req.user;
-    const profile = await AuthService.getProfile(userId);
-
-    res.json({ success: true, message: 'Profile retrieved successfully', data: profile });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-module.exports = {
-  register,
-  verifyEmailOTP,
-  setPassword,
-  login,
-  refreshToken,
-  sendForgotPasswordOtp,
-  verifyForgotPasswordOTP,
-  resetPassword,
-  changePassword,
-  getProfile
-};
+module.exports = AuthController;

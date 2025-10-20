@@ -17,18 +17,18 @@ import TokenService from "../services/tokenService";
 
 // ========== TYPES ==========
 interface User {
-  userId: number;
-  userName: string;
-  email: string;
-  role: string;
-  isVerified: boolean;
+  user_id: number;
+  user_name: string;
+  user_email: string;
+  user_role: string;
+  user_is_verified: boolean;
 }
 
 interface Tokens {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-  refreshExpiresIn: number;
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  refresh_expires_in: number;
 }
 
 interface AuthContextType {
@@ -38,12 +38,12 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (
-    userName: string,
+    user_name: string,
     pin: string,
     email: string
-  ) => Promise<{ userId: number }>;
-  verifyEmail: (userId: number, otpCode: string) => Promise<void>;
-  setPassword: (userId: number, newPassword: string) => Promise<void>;
+  ) => Promise<{ user_id: number }>;
+  verifyEmail: (user_id: number, otp_code: string) => Promise<void>;
+  setPassword: (user_id: number, new_password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -54,7 +54,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   isAuthenticated: false,
   login: async () => {},
-  register: async () => ({ userId: 0 }),
+  register: async () => ({ user_id: 0 }),
   verifyEmail: async () => {},
   setPassword: async () => {},
   logout: async () => {},
@@ -111,19 +111,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   /**
    * Step 1: Register with basic info
-   * Returns userId for next steps
+   * Returns user_id for next steps
    */
   const register = async (
-    userName: string,
+    user_name: string,
     pin: string,
     email: string
-  ): Promise<{ userId: number }> => {
+  ): Promise<{ user_id: number }> => {
     try {
-      const response = await registerApi(userName, pin, email);
+      const response = await registerApi(user_name, pin, email);
       if (!response.success) {
         throw new Error(response.message || "Registration failed");
       }
-      return { userId: response.data!.userId };
+      return { user_id: response.data!.user_id };
     } catch (error: any) {
       const message =
         error.response?.data?.message || error.message || "Registration failed";
@@ -135,11 +135,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
    * Step 2: Verify email with OTP
    */
   const verifyEmail = async (
-    userId: number,
-    otpCode: string
+    user_id: number,
+    otp_code: string
   ): Promise<void> => {
     try {
-      const response = await verifyEmailOTPApi(userId, otpCode);
+      const response = await verifyEmailOTPApi(user_id, otp_code);
       if (!response.success) {
         throw new Error(response.message || "Verification failed");
       }
@@ -157,11 +157,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
    * Auto-login after successful password set
    */
   const setPassword = async (
-    userId: number,
-    newPassword: string
+    user_id: number,
+    new_password: string
   ): Promise<void> => {
     try {
-      const response = await setPasswordApi(userId, newPassword);
+      const response = await setPasswordApi(user_id, new_password);
       if (!response.success) {
         throw new Error(response.message || "Failed to set password");
       }
@@ -178,7 +178,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ========== LOGIN ==========
+  // ========== LOGIN ==========>
   const login = async (email: string, password: string): Promise<void> => {
     try {
       const response = await loginApi(email, password);
@@ -195,12 +195,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ========== LOGOUT ==========
+  // ========== LOGOUT ==========>
   const logout = async (): Promise<void> => {
     await clearAuthFromStorage();
   };
 
-  // ========== REFRESH PROFILE ==========
+  // ========== REFRESH PROFILE ==========>
   const refreshProfile = async (): Promise<void> => {
     try {
       const response = await getProfileApi();
@@ -235,7 +235,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// ========== HOOK ==========
+// ========== HOOK ==========>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

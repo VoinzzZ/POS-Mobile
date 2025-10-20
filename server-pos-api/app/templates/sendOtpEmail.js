@@ -3,8 +3,8 @@ const otpEmailTemplate = (otpCode) => {
         <body style="margin:0; padding:0; font-family: Arial, sans-serif; background:#f5f7fa;">
             <div style="max-width:600px; margin:20px auto; background:#ffffff; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); overflow:hidden;">
                 <div style="background:#0d6efd; padding:20px; text-align:center;">
-                    <img src="cid:logo" alt="Logo" style="width:60px; height:auto;" />
-                    <h1 style="color:#ffffff; margin:10px 0 0; font-size:20px;">Verifikasi Email</h1>
+                    <h1 style="color:#ffffff; margin:10px 0; font-size:20px;">Verifikasi Email</h1>
+                    <p style="color:#ffffff; margin:0; font-size:14px;">POS Mobile System</p>
                 </div>
                 <div style="padding:30px; text-align:center; color:#333333;">
                     <p style="font-size:16px; margin-bottom:20px;">Masukkan kode OTP berikut untuk memverifikasi email kamu:</p>

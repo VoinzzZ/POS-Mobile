@@ -1,18 +1,18 @@
 import api from "./axiosInstance";
 
 interface User {
-  userId: number;
-  userName: string;
-  email: string;
-  role: string;
-  isVerified: boolean;
+  user_id: number;
+  user_name: string;
+  user_email: string;
+  user_role: string;
+  user_is_verified: boolean;
 }
 
 interface Tokens {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-  refreshExpiresIn: number;
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  refresh_expires_in: number;
 }
 
 interface ApiResponse<T = any> {
@@ -31,26 +31,26 @@ interface LoginResponse extends ApiResponse {
 
 interface RegisterResponse extends ApiResponse {
   data: {
-    userId: number;
+    user_id: number;
   };
 }
 
 
 /**
  * Register new user (step 1)
- * @param userName - User's full name
+ * @param user_name - User's full name
  * @param pin - 6-digit PIN
  * @param email - User's email
  * @param role - User role (optional, default: "CASHIER")
  */
 export const registerApi = async (
-  userName: string,
+  user_name: string,
   pin: string,
   email: string,
   role?: string
 ): Promise<RegisterResponse> => {
   const res = await api.post("/auth/register", {
-    userName,
+    user_name,
     pin,
     email,
     role: role || "CASHIER",
@@ -60,27 +60,27 @@ export const registerApi = async (
 
 /**
  * Verify email OTP (step 2)
- * @param userId - User ID from registration
- * @param otpCode - 6-digit OTP code from email
+ * @param user_id - User ID from registration
+ * @param otp_code - 6-digit OTP code from email
  */
 export const verifyEmailOTPApi = async (
-  userId: number,
-  otpCode: string
+  user_id: number,
+  otp_code: string
 ): Promise<ApiResponse> => {
-  const res = await api.post("/auth/verify-email-code", { userId, otpCode });
+  const res = await api.post("/auth/verify-email-code", { user_id, otp_code });
   return res.data;
 };
 
 /**
  * Set password (step 3 - final registration step)
- * @param userId - User ID
- * @param newPassword - New password
+ * @param user_id - User ID
+ * @param new_password - New password
  */
 export const setPasswordApi = async (
-  userId: number,
-  newPassword: string
+  user_id: number,
+  new_password: string
 ): Promise<LoginResponse> => {
-  const res = await api.post("/auth/set-password", { userId, newPassword });
+  const res = await api.post("/auth/set-password", { user_id, new_password });
   return res.data;
 };
 
@@ -109,28 +109,28 @@ export const getProfileApi = async (): Promise<
 
 /**
  * Change password (requires authentication)
- * @param currentPassword - Current password
- * @param newPassword - New password
- * @param confirmPassword - Confirm new password
+ * @param current_password - Current password
+ * @param new_password - New password
+ * @param confirm_password - Confirm new password
  */
 export const changePasswordApi = async (
-  currentPassword: string,
-  newPassword: string,
-  confirmPassword: string
+  current_password: string,
+  new_password: string,
+  confirm_password: string
 ): Promise<ApiResponse> => {
   const res = await api.post("/auth/change-password", {
-    currentPassword,
-    newPassword,
-    confirmPassword,
+    current_password,
+    new_password,
+    confirm_password,
   });
   return res.data;
 };
 
 /**
  * Refresh access token using refresh token
- * @param refreshToken - Current refresh token
+ * @param refresh_token - Current refresh token
  */
-export const refreshTokenApi = async (refreshToken: string): Promise<{
+export const refreshTokenApi = async (refresh_token: string): Promise<{
   success: boolean;
   message: string;
   data: { tokens: Tokens };
@@ -140,7 +140,7 @@ export const refreshTokenApi = async (refreshToken: string): Promise<{
     {},
     {
       headers: {
-        Authorization: `Bearer ${refreshToken}`,
+        Authorization: `Bearer ${refresh_token}`,
       },
     }
   );
@@ -149,13 +149,13 @@ export const refreshTokenApi = async (refreshToken: string): Promise<{
 
 /**
  * Check if access token is about to expire (within 2 minutes)
- * @param expiresIn - Token expiration time in seconds
+ * @param expires_in - Token expiration time in seconds
  * @param issuedAt - Token issued timestamp (optional, defaults to current time)
  */
-export const isTokenExpiringSoon = (expiresIn: number, issuedAt?: number): boolean => {
+export const isTokenExpiringSoon = (expires_in: number, issuedAt?: number): boolean => {
   const now = Math.floor(Date.now() / 1000);
   const tokenIssuedAt = issuedAt || now;
-  const expirationTime = tokenIssuedAt + expiresIn;
+  const expirationTime = tokenIssuedAt + expires_in;
   const timeUntilExpiration = expirationTime - now;
   
   // Return true if token expires within 2 minutes (120 seconds)

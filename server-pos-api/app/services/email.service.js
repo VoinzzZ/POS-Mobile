@@ -10,10 +10,10 @@ class EmailService {
     async verifyConnection() {
         try {
             await this.transporter.verify();
-            console.log('✅ Email Server connection verified');
+            console.log(' Email Server connection verified');
             return true;
         } catch (error) {
-            console.log('❌ Email Server connection failed', error.message);
+            console.log(' Email Server connection failed', error.message);
             return false;
         }
     }
@@ -33,7 +33,7 @@ class EmailService {
             };
 
             const result = await this.transporter.sendMail(mailOptions);
-            console.log(`📨 Email sent to ${to}: `, result.messageId);
+            console.log(` Email sent to ${to}: `, result.messageId);
             return { success: true, messageId: result.messageId };
         } catch (error) {
             console.error('nodemailer error: ', error);

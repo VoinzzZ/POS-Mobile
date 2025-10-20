@@ -27,7 +27,7 @@ const SetPasswordForm = (props: SetPasswordFrom) => {
   useEffect(() => {
     const loadUserId = async () => {
       try {
-        const storedUserId = await AsyncStorage.getItem("@temp_userId");
+        const storedUserId = await AsyncStorage.getItem("@temp_user_id");
         
         if (storedUserId) {
           setUserId(parseInt(storedUserId));
@@ -80,14 +80,14 @@ const SetPasswordForm = (props: SetPasswordFrom) => {
       if (response.success && response.data) {
         // Save tokens and user data
         const { user, tokens } = response.data;
-        await login(user, tokens.accessToken, tokens.refreshToken);
+        await login(user, tokens.access_token, tokens.refresh_token);
         
         // Clean up temporary data
         await AsyncStorage.multiRemove([
-          "@temp_userId",
+          "@temp_user_id",
           "@temp_email",
           "@temp_pin",
-          "@temp_userName"
+          "@temp_user_name"
         ]);
         
         Alert.alert(
@@ -97,7 +97,7 @@ const SetPasswordForm = (props: SetPasswordFrom) => {
             text: "OK", 
             onPress: () => {
               // Navigate based on role
-              if (user.role === "ADMIN") {
+              if (user.user_role === "ADMIN") {
                 router.replace("/(admin)");
               } else {
                 router.replace("/(cashier)");
