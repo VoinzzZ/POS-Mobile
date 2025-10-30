@@ -152,20 +152,20 @@ export default function AdminProducts() {
     if (index === 0) {
       const filtered = products.filter(
         (p) =>
-          p.name.toLowerCase().includes(lowerQuery) ||
-          p.brand?.category?.name.toLowerCase().includes(lowerQuery) ||
-          p.brand?.name.toLowerCase().includes(lowerQuery)
+          p.product_name.toLowerCase().includes(lowerQuery) ||
+          p.m_brand?.m_category?.category_name.toLowerCase().includes(lowerQuery) ||
+          p.m_brand?.brand_name.toLowerCase().includes(lowerQuery)
       );
       setFilteredProducts(filtered);
     } else if (index === 1) {
       const filtered = categories.filter((c) =>
-        c.name.toLowerCase().includes(lowerQuery)
+        c.category_name.toLowerCase().includes(lowerQuery)
       );
       setFilteredCategories(filtered);
     } else if (index === 2) {
       const filtered = brands.filter((b) =>
-        b.name.toLowerCase().includes(lowerQuery) ||
-        b.category?.name.toLowerCase().includes(lowerQuery)
+        b.brand_name.toLowerCase().includes(lowerQuery) ||
+        b.m_category?.category_name.toLowerCase().includes(lowerQuery)
       );
       setFilteredBrands(filtered);
     }
@@ -242,11 +242,11 @@ export default function AdminProducts() {
 
   const renderProductCard = (product: Product) => (
     <View
-      key={product.id}
+      key={product.product_id}
       style={[styles.card, { backgroundColor: colors.card }]}
     >
-      {product.imageUrl ? (
-        <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
+      {product.product_image_url ? (
+        <Image source={{ uri: product.product_image_url }} style={styles.productImage} />
       ) : (
         <View style={[styles.productImagePlaceholder, { backgroundColor: colors.primary + "20" }]}>
           <Package size={32} color={colors.primary} />
@@ -254,25 +254,25 @@ export default function AdminProducts() {
       )}
       <View style={styles.cardContent}>
         <Text style={[styles.cardTitle, { color: colors.text }]}>
-          {product.name}
+          {product.product_name}
         </Text>
         <Text style={[styles.cardPrice, { color: colors.primary }]}>
-          Rp {product.price.toLocaleString("id-ID")}
+          Rp {product.product_price.toLocaleString("id-ID")}
         </Text>
         <View style={styles.cardMeta}>
-          <View style={[styles.badge, { backgroundColor: product.brand?.category ? "#3b82f6" + "20" : colors.border + "20" }]}>
-            <Text style={[styles.badgeText, { color: product.brand?.category ? "#3b82f6" : colors.textSecondary }]}>
-              {product.brand?.category ? product.brand.category.name : "Tanpa Kategori"}
+          <View style={[styles.badge, { backgroundColor: product.m_brand?.m_category ? "#3b82f6" + "20" : colors.border + "20" }]}>
+            <Text style={[styles.badgeText, { color: product.m_brand?.m_category ? "#3b82f6" : colors.textSecondary }]}>
+              {product.m_brand?.m_category ? product.m_brand.m_category.category_name : "Tanpa Kategori"}
             </Text>
           </View>
-          <View style={[styles.badge, { backgroundColor: product.brand ? "#f59e0b" + "20" : colors.border + "20" }]}>
-            <Text style={[styles.badgeText, { color: product.brand ? "#f59e0b" : colors.textSecondary }]}>
-              {product.brand ? product.brand.name : "Tanpa Brand"}
+          <View style={[styles.badge, { backgroundColor: product.m_brand ? "#f59e0b" + "20" : colors.border + "20" }]}>
+            <Text style={[styles.badgeText, { color: product.m_brand ? "#f59e0b" : colors.textSecondary }]}>
+              {product.m_brand ? product.m_brand.brand_name : "Tanpa Brand"}
             </Text>
           </View>
         </View>
-        <Text style={[styles.cardStock, { color: product.stock < 10 ? "#ef4444" : colors.textSecondary }]}>
-          Stok: {product.stock}
+        <Text style={[styles.cardStock, { color: product.product_stock < 10 ? "#ef4444" : colors.textSecondary }]}>
+          Stok: {product.product_stock}
         </Text>
       </View>
       <View style={styles.cardActions}>
@@ -287,7 +287,7 @@ export default function AdminProducts() {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: "#ef4444" + "20" }]}
-          onPress={() => handleDeleteProduct(product.id, product.name)}
+          onPress={() => handleDeleteProduct(product.product_id, product.product_name)}
         >
           <Trash2 size={16} color="#ef4444" />
         </TouchableOpacity>
@@ -308,17 +308,17 @@ export default function AdminProducts() {
   };
 
   const renderCategoryWithBrands = (category: Category) => {
-    const categoryBrands = brands.filter(b => b.categoryId === category.id);
+    const categoryBrands = brands.filter(b => b.brand_category_id === category.category_id);
     const brandCount = categoryBrands.length;
-    const productCount = products.filter(p => p.brand?.categoryId === category.id).length;
-    const isExpanded = expandedCategories.has(category.id);
+    const productCount = products.filter(p => p.m_brand?.brand_category_id === category.category_id).length;
+    const isExpanded = expandedCategories.has(category.category_id);
     
     return (
-      <View key={category.id} style={styles.categoryContainer}>
+      <View key={category.category_id} style={styles.categoryContainer}>
         {/* Category Header */}
         <TouchableOpacity
           style={[styles.categoryHeader, { backgroundColor: colors.card }]}
-          onPress={() => toggleCategoryExpand(category.id)}
+          onPress={() => toggleCategoryExpand(category.category_id)}
           activeOpacity={0.7}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -327,7 +327,7 @@ export default function AdminProducts() {
             </View>
             <View style={styles.listContent}>
               <Text style={[styles.listTitle, { color: colors.text }]}>
-                {category.name}
+                {category.category_name}
               </Text>
               <Text style={[styles.listSubtitle, { color: colors.textSecondary }]}>
                 {brandCount} brand • {productCount} produk
@@ -354,7 +354,7 @@ export default function AdminProducts() {
               style={[styles.actionBtn, { backgroundColor: "#ef4444" + "20" }]}
               onPress={(e) => {
                 e.stopPropagation();
-                handleDeleteCategory(category.id, category.name);
+                handleDeleteCategory(category.category_id, category.category_name);
               }}
             >
               <Trash2 size={16} color="#ef4444" />
@@ -366,18 +366,18 @@ export default function AdminProducts() {
         {isExpanded && categoryBrands.length > 0 && (
           <View style={[styles.brandsContainer, { backgroundColor: colors.surface }]}>
             {categoryBrands.map((brand) => {
-              const brandProductCount = products.filter(p => p.brandId === brand.id).length;
+              const brandProductCount = products.filter(p => p.product_brand_id === brand.brand_id).length;
               return (
                 <TouchableOpacity
-                  key={brand.id}
+                  key={brand.brand_id}
                   style={[styles.brandItem, { borderBottomColor: colors.border }]}
                   onPress={() => {
                     router.push({
                       pathname: "/productsByFilter",
                       params: {
                         type: "brand",
-                        id: brand.id.toString(),
-                        name: brand.name,
+                        id: brand.brand_id.toString(),
+                        name: brand.brand_name,
                       },
                     });
                   }}
@@ -387,7 +387,7 @@ export default function AdminProducts() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.brandName, { color: colors.text }]}>
-                      {brand.name}
+                      {brand.brand_name}
                     </Text>
                     <Text style={[styles.brandCount, { color: colors.textSecondary }]}>
                       {brandProductCount} produk
@@ -408,7 +408,7 @@ export default function AdminProducts() {
                       style={[styles.actionBtn, { backgroundColor: "#ef4444" + "20" }]}
                       onPress={(e) => {
                         e.stopPropagation();
-                        handleDeleteBrand(brand.id, brand.name);
+                        handleDeleteBrand(brand.brand_id, brand.brand_name);
                       }}
                     >
                       <Trash2 size={14} color="#ef4444" />
@@ -424,11 +424,11 @@ export default function AdminProducts() {
   };
 
   const renderBrandCard = (brand: Brand) => {
-    const productCount = products.filter(p => p.brandId === brand.id).length;
+    const productCount = products.filter(p => p.product_brand_id === brand.brand_id).length;
     
     return (
       <TouchableOpacity
-        key={brand.id}
+        key={brand.brand_id}
         style={[styles.listCard, { backgroundColor: colors.card }]}
         onPress={() => {
           // Navigate to products by filter screen
@@ -436,8 +436,8 @@ export default function AdminProducts() {
             pathname: "/productsByFilter",
             params: {
               type: "brand",
-              id: brand.id.toString(),
-              name: brand.name,
+              id: brand.brand_id.toString(),
+              name: brand.brand_name,
             },
           });
         }}
@@ -448,12 +448,12 @@ export default function AdminProducts() {
         <View style={styles.listContent}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={[styles.listTitle, { color: colors.text }]}>
-              {brand.name}
+              {brand.brand_name}
             </Text>
-            {brand.category && (
+            {brand.m_category && (
               <View style={[styles.badge, { backgroundColor: "#3b82f6" + "20" }]}>
                 <Text style={[styles.badgeText, { color: "#3b82f6" }]}>
-                  {brand.category.name}
+                  {brand.m_category.category_name}
                 </Text>
               </View>
             )}
@@ -474,7 +474,7 @@ export default function AdminProducts() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: "#ef4444" + "20" }]}
-            onPress={() => handleDeleteBrand(brand.id, brand.name)}
+            onPress={() => handleDeleteBrand(brand.brand_id, brand.brand_name)}
           >
             <Trash2 size={16} color="#ef4444" />
           </TouchableOpacity>

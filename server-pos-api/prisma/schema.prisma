@@ -7,156 +7,351 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model brand {
-  id         Int       @id @default(autoincrement())
-  name       String    @unique(map: "Brand_name_key")
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  categoryId Int?
-  category   category? @relation(fields: [categoryId], references: [id], map: "Brand_categoryId_fkey")
-  product    product[]
+model m_tenant {
+  tenant_id             Int                    @id @default(autoincrement())
+  tenant_name           String                 @unique
+  tenant_phone          String?
+  tenant_email          String?
+  tenant_description    String?                @db.Text
+  tenant_address        String?                @db.Text
+  store_logo_url        String?
+  store_business_hours  String?
+  store_description     String?
+  tenant_status         tenant_status          @default(PENDING)
+  is_active             Boolean                @default(false)
+  approved_by           Int?
+  approved_at           DateTime?
+  rejected_by           Int?
+  rejected_at           DateTime?
+  rejection_reason      String?                @db.Text
+  max_users             Int                    @default(7)
+  created_by            Int?
+  updated_by            Int?
+  deleted_by            Int?
+  created_at            DateTime               @default(now())
+  updated_at            DateTime               @updatedAt
+  deleted_at            DateTime?
+  m_user                m_user[]
+  m_brand               m_brand[]
+  m_category            m_category[]
+  m_product             m_product[]
+  s_registration_pin    s_registration_pin[]
+  s_registration_tenant s_registration_tenant?
 
-  @@index([categoryId], map: "Brand_categoryId_fkey")
+  @@index([approved_by])
+  @@index([rejected_by])
+  @@map("m_tenant")
 }
 
-model category {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique(map: "Category_name_key")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  brand     brand[]
+model m_user {
+  user_id                 Int                    @id @default(autoincrement())
+  user_name               String                 @unique
+  user_email              String                 @unique
+  user_password           String?
+  tenant_id               Int?
+  role_id                 Int?
+  user_full_name          String?
+  user_phone              String?
+  is_sa                   Boolean                @default(false)
+  is_active               Boolean                @default(false)
+  user_is_verified        Boolean                @default(false)
+  user_last_login         DateTime?
+  user_locked_until       DateTime?
+  user_login_attempts     Int                    @default(0)
+  approved_by             Int?
+  approved_at             DateTime?
+  rejected_by             Int?
+  rejected_at             DateTime?
+  rejection_reason        String?                @db.Text
+  registration_step       Int                    @default(1)
+  registration_type       registration_type?
+  approved_by_owner       Int?
+  approved_at_owner       DateTime?
+  created_by              Int?
+  updated_by              Int?
+  deleted_by              Int?
+  created_at              DateTime               @default(now())
+  updated_at              DateTime               @updatedAt
+  deleted_at              DateTime?
+  user_approved_by_owner  m_user?                @relation("EmployeeApprovedBy", fields: [approved_by_owner], references: [user_id])
+  user_approved_employees m_user[]               @relation("EmployeeApprovedBy")
+  m_role                  m_role?                @relation(fields: [role_id], references: [role_id])
+  m_tenant                m_tenant?              @relation(fields: [tenant_id], references: [tenant_id])
+  s_email_verification    s_email_verification[]
+  s_password_reset        s_password_reset[]
+  s_registration_pin      s_registration_pin[]
+  s_registration_tenant   s_registration_tenant?
+  s_registration_user     s_registration_user?
+  s_user_session          s_user_session[]
+
+  @@index([role_id])
+  @@index([tenant_id])
+  @@index([is_active])
+  @@index([approved_by_owner])
+  @@map("m_user")
 }
 
-model emailverification {
-  id         Int       @id @default(autoincrement())
-  email      String
-  code       String
-  expiresAt  DateTime
-  verified   Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-  verifiedAt DateTime?
-  userId     Int
-  user       user      @relation(fields: [userId], references: [id], map: "EmailVerification_userId_fkey")
+model m_role {
+  role_id            Int                  @id @default(autoincrement())
+  role_name          String               @unique
+  role_code          String               @unique
+  role_description   String?
+  role_level         Int                  @default(0)
+  is_active          Boolean              @default(true)
+  is_system_role     Boolean              @default(false)
+  created_by         Int?
+  updated_by         Int?
+  deleted_by         Int?
+  created_at         DateTime             @default(now())
+  updated_at         DateTime             @updatedAt
+  deleted_at         DateTime?
+  m_user             m_user[]
+  s_registration_pin s_registration_pin[]
 
-  @@index([code, expiresAt], map: "EmailVerification_code_expiresAt_idx")
-  @@index([userId], map: "EmailVerification_userId_fkey")
+  @@map("m_role")
 }
 
-model passwordreset {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  code      String
-  user      user     @relation(fields: [userId], references: [id], map: "PasswordReset_userId_fkey")
+model m_brand {
+  brand_id        Int       @id @default(autoincrement())
+  brand_name      String    @unique
+  brand_description String? @db.Text
+  brand_logo_url  String?
+  tenant_id       Int
+  is_active       Boolean   @default(true)
+  created_by      Int?
+  updated_by      Int?
+  deleted_by      Int?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  deleted_at      DateTime?
+  m_tenant        m_tenant  @relation(fields: [tenant_id], references: [tenant_id])
+  m_category      m_category[]
+  m_product       m_product[]
 
-  @@index([code, expiresAt], map: "PasswordReset_code_expiresAt_idx")
-  @@index([userId], map: "PasswordReset_userId_fkey")
+  @@index([tenant_id])
+  @@index([is_active])
+  @@map("m_brand")
 }
 
-model product {
-  id              Int               @id @default(autoincrement())
-  name            String
-  price           Float
-  stock           Int               @default(0)
-  imageUrl        String?
-  createdAt       DateTime          @default(now())
-  brandId         Int?
-  updatedAt       DateTime          @updatedAt
-  brand           brand?            @relation(fields: [brandId], references: [id], map: "Product_brandId_fkey")
-  transactionitem transactionitem[]
+model m_category {
+  category_id          Int      @id @default(autoincrement())
+  category_name        String
+  category_description String?  @db.Text
+  brand_id             Int
+  tenant_id            Int
+  is_active            Boolean  @default(true)
+  created_by           Int?
+  updated_by           Int?
+  deleted_by           Int?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+  deleted_at           DateTime?
+  m_brand              m_brand  @relation(fields: [brand_id], references: [brand_id])
+  m_tenant             m_tenant @relation(fields: [tenant_id], references: [tenant_id])
+  m_product            m_product[]
 
-  @@index([brandId], map: "Product_brandId_fkey")
-  @@index([name], map: "Product_name_idx")
+  @@index([brand_id])
+  @@index([tenant_id])
+  @@index([is_active])
+  @@map("m_category")
 }
 
-model registrationpin {
-  id          Int       @id @default(autoincrement())
-  code        String    @unique(map: "RegistrationPin_code_key")
-  expiresAt   DateTime
-  used        Boolean   @default(false)
-  createdById Int
-  createdAt   DateTime  @default(now())
-  usedAt      DateTime?
-  revokedAt   DateTime?
-  revokedById Int?
-  user        user      @relation(fields: [createdById], references: [id], map: "RegistrationPin_createdById_fkey")
+model m_product {
+  product_id           Int     @id @default(autoincrement())
+  product_name         String
+  product_description  String? @db.Text
+  product_sku          String? @unique
+  brand_id             Int
+  category_id          Int
+  tenant_id            Int
+  product_price        Decimal @db.Decimal(10, 2)
+  product_cost         Decimal? @db.Decimal(10, 2)
+  product_stock        Int     @default(0)
+  product_min_stock    Int?    @default(5)
+  is_active            Boolean @default(true)
+  is_track_stock       Boolean @default(true)
+  is_sellable          Boolean @default(true)
+  created_by           Int?
+  updated_by           Int?
+  deleted_by           Int?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+  deleted_at           DateTime?
+  m_brand              m_brand @relation(fields: [brand_id], references: [brand_id])
+  m_category           m_category @relation(fields: [category_id], references: [category_id])
+  m_tenant             m_tenant @relation(fields: [tenant_id], references: [tenant_id])
 
-  @@index([createdById], map: "RegistrationPin_createdById_fkey")
+  @@index([brand_id])
+  @@index([category_id])
+  @@index([tenant_id])
+  @@index([product_sku])
+  @@index([is_active])
+  @@index([is_sellable])
+  @@map("m_product")
 }
 
-model transaction {
-  id              Int                @id @default(autoincrement())
-  cashierId       Int
-  total           Float
-  createdAt       DateTime           @default(now())
-  status          transaction_status @default(DRAFT)
-  changeAmount    Float?
-  completedAt     DateTime?
-  paymentAmount   Float?
-  paymentMethod   payment_method?    @default(CASH)
-  user            user               @relation(fields: [cashierId], references: [id], map: "Transaction_cashierId_fkey")
-  transactionitem transactionitem[]
+model s_email_verification {
+  id          Int               @id @default(autoincrement())
+  user_id     Int
+  email       String
+  code        String            @db.VarChar(10)
+  expires_at  DateTime
+  verified    Boolean           @default(false)
+  verified_at DateTime?
+  type        verification_type @default(REGISTRATION)
+  created_at  DateTime          @default(now())
+  updated_at  DateTime          @updatedAt
+  m_user      m_user            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@index([cashierId], map: "Transaction_cashierId_idx")
-  @@index([createdAt], map: "Transaction_createdAt_idx")
+  @@index([user_id])
+  @@index([code])
+  @@index([verified])
+  @@map("s_email_verification")
 }
 
-model transactionitem {
-  id            Int         @id @default(autoincrement())
-  transactionId Int
-  productId     Int
-  quantity      Int
-  price         Float
-  subtotal      Float
-  product       product     @relation(fields: [productId], references: [id], map: "TransactionItem_productId_fkey")
-  transaction   transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade, map: "TransactionItem_transactionId_fkey")
+model s_password_reset {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  code       String   @db.VarChar(10)
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  m_user     m_user   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@index([productId], map: "TransactionItem_productId_fkey")
-  @@index([transactionId], map: "TransactionItem_transactionId_idx")
+  @@index([user_id])
+  @@index([code])
+  @@map("s_password_reset")
 }
 
-model store {
+model s_registration_pin {
+  id                  Int                   @id @default(autoincrement())
+  code                String                @unique @db.VarChar(20)
+  expires_at          DateTime
+  used                Boolean               @default(false)
+  used_at             DateTime?
+  revoked_at          DateTime?
+  current_uses        Int                   @default(0)
+  max_uses            Int                   @default(1)
+  tenant_id           Int
+  invited_role_id     Int?
+  invitation_notes    String?               @db.Text
+  created_by          Int
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @updatedAt
+  m_user              m_user                @relation(fields: [created_by], references: [user_id])
+  m_role              m_role?               @relation(fields: [invited_role_id], references: [role_id])
+  m_tenant            m_tenant              @relation(fields: [tenant_id], references: [tenant_id])
+  s_registration_user s_registration_user[]
+
+  @@index([tenant_id])
+  @@index([code])
+  @@index([created_by], map: "s_registration_pin_created_by_fkey")
+  @@index([invited_role_id], map: "s_registration_pin_invited_role_id_fkey")
+  @@map("s_registration_pin")
+}
+
+model s_registration_tenant {
+  id                   Int       @id @default(autoincrement())
+  user_id              Int       @unique
+  tenant_id            Int       @unique
+  current_step         Int       @default(1)
+  temp_tenant_data     Json?
+  temp_user_data       Json?
+  registration_done    Boolean   @default(false)
+  registration_done_at DateTime?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+  m_tenant             m_tenant  @relation(fields: [tenant_id], references: [tenant_id], onDelete: Cascade)
+  m_user               m_user    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([tenant_id])
+  @@map("s_registration_tenant")
+}
+
+model s_registration_user {
+  id                   Int                @id @default(autoincrement())
+  user_id              Int                @unique
+  registration_pin_id  Int
+  current_step         Int                @default(1)
+  temp_user_data       Json?
+  registration_done    Boolean            @default(false)
+  registration_done_at DateTime?
+  created_at           DateTime           @default(now())
+  updated_at           DateTime           @updatedAt
+  s_registration_pin   s_registration_pin @relation(fields: [registration_pin_id], references: [id])
+  m_user               m_user             @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([registration_pin_id])
+  @@map("s_registration_user")
+}
+
+model s_user_session {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  token         String   @unique @db.VarChar(500)
+  refresh_token String?  @unique @db.VarChar(500)
+  expires_at    DateTime
+  device_id     String?  @db.VarChar(255)
+  device_name   String?
+  device_os     String?
+  app_version   String?
+  session_ip    String?
+  user_agent    String?
+  is_active     Boolean  @default(true)
+  last_activity DateTime @default(now())
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  m_user        m_user   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([token])
+  @@map("s_user_session")
+}
+
+model s_audit_log {
   id          Int      @id @default(autoincrement())
-  name        String   @default("KasirGO")
-  address     String?  @db.Text
-  phone       String?
-  email       String?
-  logoUrl     String?
-  description String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  user_id     Int?
+  tenant_id   Int?
+  action      String   @db.VarChar(50)
+  entity_type String   @db.VarChar(50)
+  entity_id   Int?
+  old_values  Json?
+  new_values  Json?
+  ip_address  String?
+  user_agent  String?
+  device_info Json?
+  created_at  DateTime @default(now())
+
+  @@index([user_id])
+  @@index([tenant_id])
+  @@index([entity_type, entity_id])
+  @@index([action])
+  @@map("s_audit_log")
 }
 
-model user {
-  id                Int                 @id @default(autoincrement())
-  email             String              @unique(map: "User_email_key")
-  password          String?
-  role              user_role           @default(CASHIER)
-  isVerified        Boolean             @default(false)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  userName          String              @unique(map: "User_userName_key")
-  emailverification emailverification[]
-  passwordreset     passwordreset[]
-  registrationpin   registrationpin[]
-  transaction       transaction[]
+enum tenant_status {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
 }
 
-enum transaction_status {
-  DRAFT
-  LOCKED
-  COMPLETED
+enum request_status {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
-enum payment_method {
-  CASH
-  QRIS
-  DEBIT
+enum registration_type {
+  OWNER
+  EMPLOYEE
 }
 
-enum user_role {
-  ADMIN
-  CASHIER
+enum verification_type {
+  REGISTRATION
+  PASSWORD_RESET
+  EMAIL_CHANGE
 }

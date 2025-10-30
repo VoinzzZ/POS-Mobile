@@ -96,10 +96,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   // Filter brands based on selected category
   useEffect(() => {
     if (categoryId) {
-      const filtered = brands.filter(b => b.categoryId === categoryId);
+      const filtered = brands.filter(b => b.brand_category_id === categoryId);
       setFilteredBrands(filtered);
       // Reset brand selection if current brand is not in filtered list
-      if (brandId && !filtered.find(b => b.id === brandId)) {
+      if (brandId && !filtered.find(b => b.brand_id === brandId)) {
         setBrandId(null);
       }
     } else {
@@ -186,10 +186,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     try {
       // Prepare product data
       const productData: any = {
-        name: name.trim(),
-        price: Number(price),
-        stock: Number(stock),
-        brandId: brandId || null,
+        product_name: name.trim(),
+        product_price: Number(price),
+        product_stock: Number(stock),
+        product_brand_id: brandId || null,
       };
 
       // Add image if selected
@@ -430,21 +430,21 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   </TouchableOpacity>
                   {categories.map((cat) => (
                     <TouchableOpacity
-                      key={cat.id}
-                      onPress={() => setCategoryId(cat.id)}
+                      key={cat.category_id}
+                      onPress={() => setCategoryId(cat.category_id)}
                       style={[
                         styles.dropdownChip,
-                        categoryId === cat.id && { backgroundColor: colors.primary },
+                        categoryId === cat.category_id && { backgroundColor: colors.primary },
                         { borderColor: colors.border },
                       ]}
                     >
                       <Text
                         style={[
                           styles.dropdownChipText,
-                          { color: categoryId === cat.id ? "#fff" : colors.text },
+                          { color: categoryId === cat.category_id ? "#fff" : colors.text },
                         ]}
                       >
-                        {cat.name}
+                        {cat.category_name}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -496,12 +496,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   </TouchableOpacity>
                   {filteredBrands.map((brand) => (
                     <TouchableOpacity
-                      key={brand.id}
-                      onPress={() => setBrandId(brand.id)}
+                      key={brand.brand_id}
+                      onPress={() => setBrandId(brand.brand_id)}
                       disabled={!categoryId}
                       style={[
                         styles.dropdownChip,
-                        brandId === brand.id && { backgroundColor: colors.primary },
+                        brandId === brand.brand_id && { backgroundColor: colors.primary },
                         { borderColor: colors.border },
                         !categoryId && { opacity: 0.5 },
                       ]}
@@ -509,10 +509,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                       <Text
                         style={[
                           styles.dropdownChipText,
-                          { color: brandId === brand.id ? "#fff" : colors.text },
+                          { color: brandId === brand.brand_id ? "#fff" : colors.text },
                         ]}
                       >
-                        {brand.name}
+                        {brand.brand_name}
                       </Text>
                     </TouchableOpacity>
                   ))}

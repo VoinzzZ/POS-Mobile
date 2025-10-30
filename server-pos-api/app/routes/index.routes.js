@@ -1,21 +1,23 @@
 const express = require('express');
-
 const authRoutes = require('./auth.routes');
-const adminRoutes = require('./admin.routes');
-const productRoutes = require('./product.route');
-const brandRoutes = require('./brand.routes');
+const userRoutes = require('./user.routes');
+const systemRoutes = require('./system.routes');
+const registrationRoutes = require('./registration.route');
+const approvalRoutes = require('./approval.routes');
 const categoryRoutes = require('./category.routes');
-const transactionRoutes = require('./transactions.routes');
-const storeRoutes = require('./store.routes');
+const brandRoutes = require('./brand.routes');
+const productRoutes = require('./product.routes');
 
 const router = express.Router();
 
+// Authentication & User Management
 router.use('/auth', authRoutes);
-router.use('/admin', adminRoutes);
-router.use('/product', productRoutes);
-router.use('/brand', brandRoutes);
-router.use('/category', categoryRoutes);
-router.use('/transactions', transactionRoutes);
-router.use('/store', storeRoutes);
+router.use('/registration', registrationRoutes);
+router.use('/users', userRoutes);
+router.use('/system', systemRoutes);
+router.use('/approvals', approvalRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/brands', brandRoutes);
+router.use('/products', productRoutes);
 
 module.exports = router;

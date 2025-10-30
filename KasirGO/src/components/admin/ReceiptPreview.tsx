@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from "re
 import { Receipt, Info, CheckCircle } from "lucide-react-native";
 import { getStoreSettings, Store } from "../../api/store";
 import { useTheme } from "../../context/ThemeContext";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function ReceiptPreview() {
   const { colors } = useTheme();
@@ -34,6 +35,13 @@ export default function ReceiptPreview() {
   useEffect(() => {
     loadStoreData();
   }, []);
+
+  // Auto-refresh when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadStoreData();
+    }, [])
+  );
 
   const loadStoreData = async () => {
     try {
@@ -81,31 +89,31 @@ export default function ReceiptPreview() {
           <View style={styles.receipt}>
             {/* Store Header */}
             <View style={styles.receiptHeader}>
-              {storeData?.logoUrl && (
+              {storeData?.store_logo_url && (
                 <Image
-                  source={{ uri: storeData.logoUrl }}
+                  source={{ uri: storeData.store_logo_url }}
                   style={styles.logo}
                   resizeMode="contain"
                 />
               )}
                 <Text style={[styles.storeName, { color: "#000000" }]}>
-                {storeData?.name || "Nama Toko"}
+                {storeData?.store_name || "Nama Toko"}
               </Text>
-              {storeData?.description && (
+              {storeData?.store_description && (
                 <Text style={[styles.storeDescription, { color: "#666666" }]}>
-                  {storeData.description}
+                  {storeData.store_description}
                 </Text>
               )}
-              {storeData?.address && (
+              {storeData?.store_address && (
                 <Text style={[styles.storeInfo, { color: "#666666" }]}>
-                  {storeData.address}
+                  {storeData.store_address}
                 </Text>
               )}
-              {(storeData?.phone || storeData?.email) && (
+              {(storeData?.store_phone || storeData?.store_email) && (
                 <Text style={[styles.storeInfo, { color: "#666666" }]}>
-                  {storeData?.phone && `Telp: ${storeData.phone}`}
-                  {storeData?.phone && storeData?.email && " | "}
-                  {storeData?.email && `Email: ${storeData.email}`}
+                  {storeData?.store_phone && `Telp: ${storeData.store_phone}`}
+                  {storeData?.store_phone && storeData?.store_email && " | "}
+                  {storeData?.store_email && `Email: ${storeData.store_email}`}
                 </Text>
               )}
             </View>
@@ -235,19 +243,19 @@ export default function ReceiptPreview() {
               <Text style={[styles.infoBoxTitle, { color: "#10b981" }]}>Data Toko Saat Ini</Text>
               <View style={styles.dataList}>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Nama: {storeData?.name || "-"}
+                  • Nama: {storeData?.store_name || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Alamat: {storeData?.address || "-"}
+                  • Alamat: {storeData?.store_address || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Telepon: {storeData?.phone || "-"}
+                  • Telepon: {storeData?.store_phone || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Email: {storeData?.email || "-"}
+                  • Email: {storeData?.store_email || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Logo: {storeData?.logoUrl ? "✓ Tersedia" : "✗ Belum diset"}
+                  • Logo: {storeData?.store_logo_url ? "✓ Tersedia" : "✗ Belum diset"}
                 </Text>
               </View>
             </View>

@@ -34,7 +34,7 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
 
   useEffect(() => {
     if (category) {
-      setName(category.name);
+      setName(category.category_name);
     }
   }, [category]);
 
@@ -49,7 +49,7 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
 
     setLoading(true);
     try {
-      const response = await updateCategory(category.id, name.trim());
+      const response = await updateCategory(category.category_id, name.trim());
 
       if (response.success) {
         Alert.alert("Berhasil!", "Kategori berhasil diupdate", [

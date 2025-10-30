@@ -100,8 +100,8 @@ const AddBrandModal: React.FC<AddBrandModalProps> = ({
 
   const getSelectedCategoryName = () => {
     if (!categoryId) return "Pilih Kategori (Opsional)";
-    const category = categories.find(c => c.id === categoryId);
-    return category ? category.name : "Pilih Kategori (Opsional)";
+    const category = categories.find(c => c.category_id === categoryId);
+    return category ? category.category_name : "Pilih Kategori (Opsional)";
   };
 
   return (
@@ -175,18 +175,18 @@ const AddBrandModal: React.FC<AddBrandModalProps> = ({
                 </TouchableOpacity>
                 {categories.map((category) => (
                   <TouchableOpacity
-                    key={category.id}
+                    key={category.category_id}
                     style={[
                       styles.pickerItem,
-                      categoryId === category.id && { backgroundColor: colors.primary + "20" },
+                      categoryId === category.category_id && { backgroundColor: colors.primary + "20" },
                     ]}
                     onPress={() => {
-                      setCategoryId(category.id);
+                      setCategoryId(category.category_id);
                       setShowCategoryPicker(false);
                     }}
                   >
                     <Text style={[styles.pickerItemText, { color: colors.text }]}>
-                      {category.name}
+                      {category.category_name}
                     </Text>
                   </TouchableOpacity>
                 ))}

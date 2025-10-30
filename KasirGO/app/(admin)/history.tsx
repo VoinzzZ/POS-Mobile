@@ -139,7 +139,7 @@ export default function HistoryScreen() {
 
   const handleTransactionPress = (transaction: Transaction) => {
     const cashierInfo = transaction.cashier ? `\nKasir: ${transaction.cashier.userName}` : '';
-    const items = transaction.items?.map(item => 
+    const items = transaction.items?.map(item =>
       `${item.product.name} (${item.quantity}x) - ${formatCurrency(item.subtotal)}`
     ).join('\n') || '';
     

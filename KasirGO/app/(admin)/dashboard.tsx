@@ -49,7 +49,7 @@ export default function AdminDashboard() {
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <View>
           <Text style={[styles.greeting, { color: colors.textSecondary }]}>Selamat Datang Kembali,</Text>
-          <Text style={[styles.userName, { color: colors.text }]}>{user?.userName || "Admin"}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{user?.user_name || "Admin"}</Text>
         </View>
         <TouchableOpacity 
           onPress={() => router.push("/(admin)/settings")} 

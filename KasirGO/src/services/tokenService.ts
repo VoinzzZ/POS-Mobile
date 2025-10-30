@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { refreshTokenApi, isTokenExpiringSoon } from '../api/auth';
+import { refreshTokenApi } from '../api/auth';
 
 interface Tokens {
   accessToken: string;
@@ -15,6 +15,21 @@ interface StoredTokens extends Tokens {
 
 export class TokenService {
   private static refreshPromise: Promise<Tokens> | null = null;
+
+  /**
+   * Check if access token is about to expire (within 2 minutes)
+   * @param expires_in - Token expiration time in seconds
+   * @param issuedAt - Token issued timestamp (optional, defaults to current time)
+   */
+  static isTokenExpiringSoon = (expires_in: number, issuedAt?: number): boolean => {
+    const now = Math.floor(Date.now() / 1000);
+    const tokenIssuedAt = issuedAt || now;
+    const expirationTime = tokenIssuedAt + expires_in;
+    const timeUntilExpiration = expirationTime - now;
+
+    // Return true if token expires within 2 minutes (120 seconds)
+    return timeUntilExpiration <= 120;
+  };
 
   /**
    * Get stored tokens from AsyncStorage
@@ -61,7 +76,7 @@ export class TokenService {
       }
 
       // Check if token is expiring soon (within 2 minutes)
-      return !isTokenExpiringSoon(tokens.expiresIn, tokens.issuedAt);
+      return !this.isTokenExpiringSoon(tokens.expiresIn, tokens.issuedAt);
     } catch (error) {
       console.error('❌ Error checking token validity:', error);
       return false;
@@ -80,7 +95,7 @@ export class TokenService {
       }
 
       // If access token is still valid, return it
-      if (!isTokenExpiringSoon(tokens.expiresIn, tokens.issuedAt)) {
+      if (!this.isTokenExpiringSoon(tokens.expiresIn, tokens.issuedAt)) {
         return tokens.accessToken;
       }
 

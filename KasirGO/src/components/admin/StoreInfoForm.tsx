@@ -1,41 +1,83 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from "react-native";
 import { Store, Building2, Mail, Phone, Image as ImageIcon, FileText, Upload, Trash2 } from "lucide-react-native";
-import { getStoreSettings, updateStoreSettings, uploadStoreLogo, deleteStoreLogo, UpdateStoreData } from "../../api/store";
+import { updateStoreSettings, uploadStoreLogo, deleteStoreLogo, UpdateStoreData, Store as StoreType, getStoreSettings } from "../../api/store";
 import { useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "../../context/ThemeContext";
 
-export default function StoreInfoForm() {
+interface StoreInfoFormProps {
+  store?: StoreType | null;
+  onStoreUpdate?: () => void;
+}
+
+export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: StoreInfoFormProps = {}) {
+  const [internalStore, setInternalStore] = useState<StoreType | null>(null);
+  const store = externalStore || internalStore;
+  const updateStore = (newStore: StoreType) => {
+    setInternalStore(newStore);
+    onStoreUpdate?.();
+  };
   const { colors } = useTheme();
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [deletingLogo, setDeletingLogo] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   
   const [formData, setFormData] = useState<UpdateStoreData>({
-    name: "",
-    address: "",
-    phone: "",
-    email: "",
-    logoUrl: "",
-    description: "",
+    store_name: "",
+    store_address: "",
+    store_phone: "",
+    store_email: "",
+    store_logo_url: "",
+    store_description: "",
   });
   
   const originalData = useRef<UpdateStoreData>({});
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Load store data
+  const loadStoreData = async () => {
+    if (externalStore) {
+      return; // Use external store if provided
+    }
+
+    try {
+      const response = await getStoreSettings();
+      if (response.success && response.data) {
+        setInternalStore(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading store data:', error);
+    }
+  };
+
   useEffect(() => {
     loadStoreData();
-  }, []);
+  }, [externalStore]);
+
+  useEffect(() => {
+    if (store) {
+      const storeData = {
+        store_name: store.store_name || "",
+        store_address: store.store_address || "",
+        store_phone: store.store_phone || "",
+        store_email: store.store_email || "",
+        store_logo_url: store.store_logo_url || "",
+        store_description: store.store_description || "",
+      };
+      setFormData(storeData);
+      originalData.current = { ...storeData };
+      setHasChanges(false);
+    }
+  }, [store]);
 
   // Auto-save when leaving the screen
   useFocusEffect(
     React.useCallback(() => {
       return () => {
         // This runs when the screen loses focus (user navigates away)
-        if (hasChanges && formData.name && formData.name.trim() !== "") {
+        if (hasChanges && formData.store_name && formData.store_name.trim() !== "") {
           // Clear any pending timeout
           if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
@@ -56,31 +98,6 @@ export default function StoreInfoForm() {
     };
   }, []);
 
-  const loadStoreData = async () => {
-    try {
-      setLoading(true);
-      const response = await getStoreSettings();
-      if (response.success && response.data) {
-        const storeData = {
-          name: response.data.name || "",
-          address: response.data.address || "",
-          phone: response.data.phone || "",
-          email: response.data.email || "",
-          logoUrl: response.data.logoUrl || "",
-          description: response.data.description || "",
-        };
-        setFormData(storeData);
-        originalData.current = { ...storeData };
-        setHasChanges(false);
-      }
-    } catch (error) {
-      console.error("Error loading store data:", error);
-      Alert.alert("Error", "Gagal memuat data toko");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Check if data has changed
   const checkForChanges = (newData: UpdateStoreData) => {
     const changed = JSON.stringify(newData) !== JSON.stringify(originalData.current);
@@ -92,7 +109,7 @@ export default function StoreInfoForm() {
   const autoSave = async (dataToSave?: UpdateStoreData) => {
     const saveData = dataToSave || formData;
     
-    if (!saveData.name || saveData.name.trim() === "") {
+    if (!saveData.store_name || saveData.store_name.trim() === "") {
       return; // Don't save if name is empty
     }
 
@@ -103,6 +120,8 @@ export default function StoreInfoForm() {
         originalData.current = { ...saveData };
         setHasChanges(false);
         console.log("✅ Data toko berhasil disimpan otomatis");
+        updateStore(response.data); // Update internal store state
+        onStoreUpdate?.(); // Notify parent component
       }
     } catch (error: any) {
       console.error("Error auto-saving store data:", error);
@@ -155,11 +174,13 @@ export default function StoreInfoForm() {
         const response = await uploadStoreLogo(imageAsset);
         if (response.success) {
           // Update form data and original data
-          const updatedData = { ...formData, logoUrl: response.data.logoUrl };
+          const updatedData = { ...formData, store_logo_url: response.data.logo_url };
           setFormData(updatedData);
           originalData.current = { ...updatedData };
           setHasChanges(false);
           Alert.alert('Sukses', 'Logo berhasil diupload!');
+          updateStore(response.data.store); // Update internal store state
+          onStoreUpdate?.(); // Notify parent component
         }
       } catch (error: any) {
         console.error('Error uploading logo:', error);
@@ -188,11 +209,13 @@ export default function StoreInfoForm() {
               const response = await deleteStoreLogo();
               if (response.success) {
                 // Update form data and original data
-                const updatedData = { ...formData, logoUrl: null };
+                const updatedData = { ...formData, store_logo_url: null };
                 setFormData(updatedData);
                 originalData.current = { ...updatedData };
                 setHasChanges(false);
                 Alert.alert('Sukses', 'Logo berhasil dihapus');
+                updateStore(response.data); // Update internal store state
+                onStoreUpdate?.(); // Notify parent component
               }
             } catch (error: any) {
               console.error('Error deleting logo:', error);
@@ -209,7 +232,7 @@ export default function StoreInfoForm() {
     );
   };
 
-  if (loading) {
+  if (!store) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.card }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -245,8 +268,8 @@ export default function StoreInfoForm() {
               <Store size={20} color={colors.textSecondary} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                value={formData.name}
-                onChangeText={(text) => updateFormData({ name: text })}
+                value={formData.store_name}
+                onChangeText={(text) => updateFormData({ store_name: text })}
                 placeholder="Contoh: Toko Berkah"
                 placeholderTextColor={colors.textSecondary}
               />
@@ -260,8 +283,8 @@ export default function StoreInfoForm() {
               <Building2 size={20} color={colors.textSecondary} style={styles.iconTop} />
               <TextInput
                 style={[styles.input, styles.textArea, { color: colors.text }]}
-                value={formData.address || ""}
-                onChangeText={(text) => updateFormData({ address: text })}
+                value={formData.store_address || ""}
+                onChangeText={(text) => updateFormData({ store_address: text })}
                 placeholder="Jl. Contoh No. 123, Kota"
                 placeholderTextColor={colors.textSecondary}
                 multiline
@@ -277,8 +300,8 @@ export default function StoreInfoForm() {
               <Phone size={20} color={colors.textSecondary} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                value={formData.phone || ""}
-                onChangeText={(text) => updateFormData({ phone: text })}
+                value={formData.store_phone || ""}
+                onChangeText={(text) => updateFormData({ store_phone: text })}
                 placeholder="0812-3456-7890"
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="phone-pad"
@@ -293,8 +316,8 @@ export default function StoreInfoForm() {
               <Mail size={20} color={colors.textSecondary} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                value={formData.email || ""}
-                onChangeText={(text) => updateFormData({ email: text })}
+                value={formData.store_email || ""}
+                onChangeText={(text) => updateFormData({ store_email: text })}
                 placeholder="toko@example.com"
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="email-address"
@@ -308,10 +331,10 @@ export default function StoreInfoForm() {
             <Text style={[styles.label, { color: colors.text }]}>Logo Toko</Text>
             
             {/* Current Logo Display */}
-            {formData.logoUrl && (
+            {formData.store_logo_url && (
               <View style={[styles.logoContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Image
-                  source={{ uri: formData.logoUrl }}
+                  source={{ uri: formData.store_logo_url }}
                   style={styles.logoPreview}
                   resizeMode="contain"
                 />
@@ -362,8 +385,8 @@ export default function StoreInfoForm() {
               <FileText size={20} color={colors.textSecondary} style={styles.iconTop} />
               <TextInput
                 style={[styles.input, styles.textArea, { color: colors.text }]}
-                value={formData.description || ""}
-                onChangeText={(text) => updateFormData({ description: text })}
+                value={formData.store_description || ""}
+                onChangeText={(text) => updateFormData({ store_description: text })}
                 placeholder="Melayani dengan sepenuh hati"
                 placeholderTextColor={colors.textSecondary}
                 multiline

@@ -1,13 +1,63 @@
 const express = require('express');
-const AuthMiddleware = require('../middlewares/auth.middleware');
-const categoryController = require('../controllers/category.controller');
-
 const router = express.Router();
+const CategoryController = require('../controllers/category.controller');
+const { verifyToken } = require('../middlewares/verifyToken');
+const { requireRole } = require('../middlewares/verifyRole');
 
-router.get('/', AuthMiddleware.verifyToken, AuthMiddleware.requireCashierOrAdmin, categoryController.getAllCategories);
-router.get('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireCashierOrAdmin, categoryController.getCategoryById);
-router.post('/', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, categoryController.createCategory);
-router.put('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, categoryController.updateCategory);
-router.delete('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, categoryController.deleteCategory);
+// Create new category
+router.post(
+  '/',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN']),
+  CategoryController.createCategory
+);
+
+// Get all categories with filtering and pagination
+router.get(
+  '/',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  CategoryController.getCategories
+);
+
+// Get category by ID
+router.get(
+  '/:categoryId',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  CategoryController.getCategoryById
+);
+
+// Update category
+router.put(
+  '/:categoryId',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN']),
+  CategoryController.updateCategory
+);
+
+// Delete category (soft delete)
+router.delete(
+  '/:categoryId',
+  verifyToken,
+  requireRole(['OWNER']),
+  CategoryController.deleteCategory
+);
+
+// Get categories by brand
+router.get(
+  '/brand/:brandId',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  CategoryController.getCategoriesByBrand
+);
+
+// Toggle category status (activate/deactivate)
+router.patch(
+  '/:categoryId/toggle-status',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN']),
+  CategoryController.toggleCategoryStatus
+);
 
 module.exports = router;

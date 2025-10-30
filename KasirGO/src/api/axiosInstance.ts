@@ -48,7 +48,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    console.log('🚨 Axios Error:', {
+    console.log('Axios Error:', {
       message: error.message,
       code: error.code,
       response: error.response?.status,
@@ -65,26 +65,26 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        console.log('🔄 Attempting to refresh token using TokenService...');
+        console.log('Attempting to refresh token using TokenService...');
         
         // Use TokenService to refresh token
         const newTokens = await TokenService.refreshAccessToken();
         
         if (newTokens && newTokens.accessToken) {
-          console.log('✅ Token refreshed successfully via TokenService');
+          console.log('Token refreshed successfully via TokenService');
           
           // Update original request with new access token
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
           }
           
-          console.log('🔄 Retrying original request...');
+          console.log('Retrying original request...');
           return api(originalRequest);
         } else {
           throw new Error('Failed to refresh token');
         }
       } catch (refreshError: any) {
-        console.log('❌ Token refresh failed:', {
+        console.log('Token refresh failed:', {
           message: refreshError.message,
           response: refreshError.response?.data,
           status: refreshError.response?.status

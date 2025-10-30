@@ -32,7 +32,7 @@ export const generateReceiptHTML = (data: ReceiptData): string => {
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Receipt #${transaction.id}</title>
+      <title>Receipt #${transaction.transaction_id}</title>
       <style>
         * {
           margin: 0;
@@ -149,25 +149,25 @@ export const generateReceiptHTML = (data: ReceiptData): string => {
       <div class="transaction-info">
         <div>
           <span>Transaction ID:</span>
-          <span>#${transaction.id}</span>
+          <span>#${transaction.transaction_id}</span>
         </div>
         <div>
           <span>Date:</span>
-          <span>${formatDate(transaction.completedAt || transaction.createdAt)}</span>
+          <span>${formatDate(transaction.transaction_completed_at || transaction.transaction_created_at)}</span>
         </div>
         <div>
           <span>Cashier:</span>
-          <span>${transaction.cashier?.userName || 'N/A'}</span>
+          <span>${transaction.cashier?.user_name || 'N/A'}</span>
         </div>
       </div>
       
       <div class="items">
         ${transaction.items.map(item => `
           <div class="item">
-            <div class="item-name">${item.product.name}</div>
+            <div class="item-name">${item.product.product_name}</div>
             <div class="item-details">
-              <span>${formatCurrency(item.price)} x ${item.quantity}</span>
-              <span>${formatCurrency(item.subtotal)}</span>
+              <span>${formatCurrency(item.transaction_item_price)} x ${item.transaction_item_quantity}</span>
+              <span>${formatCurrency(item.transaction_item_subtotal)}</span>
             </div>
           </div>
         `).join('')}
@@ -176,23 +176,23 @@ export const generateReceiptHTML = (data: ReceiptData): string => {
       <div class="totals">
         <div class="total-row">
           <span>Subtotal:</span>
-          <span>${formatCurrency(transaction.total)}</span>
+          <span>${formatCurrency(transaction.transaction_total)}</span>
         </div>
         <div class="total-row grand-total">
           <span>TOTAL:</span>
-          <span>${formatCurrency(transaction.total)}</span>
+          <span>${formatCurrency(transaction.transaction_total)}</span>
         </div>
       </div>
       
-      ${transaction.paymentAmount ? `
+      ${transaction.transaction_payment_amount ? `
         <div class="payment-info">
           <div class="total-row">
             <span>Payment:</span>
-            <span>${formatCurrency(transaction.paymentAmount)}</span>
+            <span>${formatCurrency(transaction.transaction_payment_amount)}</span>
           </div>
           <div class="total-row">
             <span>Change:</span>
-            <span>${formatCurrency(transaction.changeAmount || 0)}</span>
+            <span>${formatCurrency(transaction.transaction_change_amount || 0)}</span>
           </div>
         </div>
       ` : ''}

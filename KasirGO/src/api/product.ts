@@ -1,50 +1,51 @@
 import api from "./axiosInstance";
+import { transformProducts, transformCategories, transformBrands, transformStore } from "../utils/dataTransform";
 
 export interface Product {
-  id: number;
-  name: string;
-  price: number;
-  stock: number;
-  imageUrl: string | null;
-  brandId: number | null;
-  brand?: {
-    id: number;
-    name: string;
-    categoryId: number | null;
-    category?: {
-      id: number;
-      name: string;
+  product_id: number;
+  product_name: string;
+  product_price: number;
+  product_stock: number;
+  product_image_url: string | null;
+  product_brand_id: number | null;
+  m_brand?: {
+    brand_id: number;
+    brand_name: string;
+    brand_category_id: number | null;
+    m_category?: {
+      category_id: number;
+      category_name: string;
     } | null;
   } | null;
-  createdAt: string;
-  updatedAt: string;
+  product_created_at: string;
+  product_updated_at: string;
 }
 
 export interface Category {
-  id: number;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
+  category_id: number;
+  category_name: string;
+  category_created_at: string;
+  category_updated_at: string;
 }
 
 export interface Brand {
-  id: number;
-  name: string;
-  categoryId: number | null;
-  category?: {
-    id: number;
-    name: string;
+  brand_id: number;
+  brand_name: string;
+  brand_category_id: number | null;
+  m_category?: {
+    category_id: number;
+    category_name: string;
   } | null;
-  createdAt: string;
-  updatedAt: string;
+  brand_created_at: string;
+  brand_updated_at: string;
 }
 
 export interface CreateProductData {
-  name: string;
-  price: number;
-  stock: number;
-  imageUrl?: string | null;
-  brandId?: number | null;
+  product_name: string;
+  product_price: number;
+  product_stock: number;
+  product_image_url?: string | null;
+  product_brand_id?: number | null;
   image?: any;
 }
 
@@ -58,20 +59,30 @@ export interface ApiResponse<T = any> {
 /**
  * Get all products with optional filters
  * @param search - Search term for product name
- * @param categoryId - Filter by category ID
- * @param brandId - Filter by brand ID
+ * @param category_id - Filter by category ID
+ * @param brand_id - Filter by brand ID
  */
 export const getAllProducts = async (
   search?: string,
-  categoryId?: number,
-  brandId?: number
+  category_id?: number,
+  brand_id?: number
 ): Promise<ApiResponse<Product[]>> => {
   const params: any = {};
   if (search) params.search = search;
-  if (categoryId) params.categoryId = categoryId;
-  if (brandId) params.brandId = brandId;
+  if (category_id) params.category_id = category_id;
+  if (brand_id) params.brand_id = brand_id;
 
   const res = await api.get("/product", { params });
+
+  // Transform the server data to add camelCase aliases
+  if (res.data.success && res.data.data) {
+    const transformedData = {
+      ...res.data,
+      data: transformProducts(res.data.data)
+    };
+    return transformedData;
+  }
+
   return res.data;
 };
 
@@ -96,10 +107,10 @@ export const createProduct = async (
   // If image is provided, use FormData
   if (data.image) {
     const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('price', data.price.toString());
-    formData.append('stock', data.stock.toString());
-    if (data.brandId) formData.append('brandId', data.brandId.toString());
+    formData.append('product_name', data.product_name);
+    formData.append('product_price', data.product_price.toString());
+    formData.append('product_stock', data.product_stock.toString());
+    if (data.product_brand_id) formData.append('brand_id', data.product_brand_id.toString());
     formData.append('image', data.image);
     
     const res = await api.post("/product", formData, {
@@ -127,10 +138,10 @@ export const updateProduct = async (
   // If image is provided, use FormData
   if (data.image) {
     const formData = new FormData();
-    if (data.name) formData.append('name', data.name);
-    if (data.price) formData.append('price', data.price.toString());
-    if (data.stock) formData.append('stock', data.stock.toString());
-    if (data.brandId) formData.append('brandId', data.brandId.toString());
+    if (data.product_name) formData.append('product_name', data.product_name);
+    if (data.product_price) formData.append('product_price', data.product_price.toString());
+    if (data.product_stock) formData.append('product_stock', data.product_stock.toString());
+    if (data.product_brand_id) formData.append('brand_id', data.product_brand_id.toString());
     formData.append('image', data.image);
     
     const res = await api.put(`/product/${id}`, formData, {
@@ -162,6 +173,16 @@ export const deleteProduct = async (
  */
 export const getAllCategories = async (): Promise<ApiResponse<Category[]>> => {
   const res = await api.get("/category");
+
+  // Transform the server data to add camelCase aliases
+  if (res.data.success && res.data.data) {
+    const transformedData = {
+      ...res.data,
+      data: transformCategories(res.data.data)
+    };
+    return transformedData;
+  }
+
   return res.data;
 };
 
@@ -170,6 +191,16 @@ export const getAllCategories = async (): Promise<ApiResponse<Category[]>> => {
  */
 export const getAllBrands = async (): Promise<ApiResponse<Brand[]>> => {
   const res = await api.get("/brand");
+
+  // Transform the server data to add camelCase aliases
+  if (res.data.success && res.data.data) {
+    const transformedData = {
+      ...res.data,
+      data: transformBrands(res.data.data)
+    };
+    return transformedData;
+  }
+
   return res.data;
 };
 
@@ -180,7 +211,7 @@ export const getAllBrands = async (): Promise<ApiResponse<Brand[]>> => {
 export const createCategory = async (
   name: string
 ): Promise<ApiResponse<Category>> => {
-  const res = await api.post("/category", { name });
+  const res = await api.post("/category", { category_name: name });
   return res.data;
 };
 
@@ -193,7 +224,7 @@ export const updateCategory = async (
   id: number,
   name: string
 ): Promise<ApiResponse<Category>> => {
-  const res = await api.put(`/category/${id}`, { name });
+  const res = await api.put(`/category/${id}`, { category_name: name });
   return res.data;
 };
 
@@ -211,13 +242,13 @@ export const deleteCategory = async (
 /**
  * Create new brand
  * @param name - Brand name
- * @param categoryId - Optional category ID
+ * @param category_id - Optional category ID
  */
 export const createBrand = async (
   name: string,
-  categoryId?: number | null
+  category_id?: number | null
 ): Promise<ApiResponse<Brand>> => {
-  const res = await api.post("/brand", { name, categoryId });
+  const res = await api.post("/brand", { brand_name: name, brand_category_id: category_id });
   return res.data;
 };
 
@@ -225,14 +256,14 @@ export const createBrand = async (
  * Update brand
  * @param id - Brand ID
  * @param name - New brand name
- * @param categoryId - Optional category ID
+ * @param category_id - Optional category ID
  */
 export const updateBrand = async (
   id: number,
   name: string,
-  categoryId?: number | null
+  category_id?: number | null
 ): Promise<ApiResponse<Brand>> => {
-  const res = await api.put(`/brand/${id}`, { name, categoryId });
+  const res = await api.put(`/brand/${id}`, { brand_name: name, brand_category_id: category_id });
   return res.data;
 };
 
@@ -249,22 +280,22 @@ export const deleteBrand = async (
 
 /**
  * Get products by category ID
- * @param categoryId - Category ID to filter by
+ * @param category_id - Category ID to filter by
  */
 export const getProductsByCategory = async (
-  categoryId: number
+  category_id: number
 ): Promise<ApiResponse<Product[]>> => {
-  return getAllProducts(undefined, categoryId);
+  return getAllProducts(undefined, category_id);
 };
 
 /**
  * Get products by brand ID
- * @param brandId - Brand ID to filter by
+ * @param brand_id - Brand ID to filter by
  */
 export const getProductsByBrand = async (
-  brandId: number
+  brand_id: number
 ): Promise<ApiResponse<Product[]>> => {
-  return getAllProducts(undefined, undefined, brandId);
+  return getAllProducts(undefined, undefined, brand_id);
 };
 
 /**

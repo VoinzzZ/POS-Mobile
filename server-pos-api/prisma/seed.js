@@ -6,90 +6,110 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting seed...');
 
-  // Create Admin User
-  const hashedPassword = await bcrypt.hash('Admin123!', 10);
-  
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@pos.com' },
+  // Create System Roles
+  console.log('👥 Creating system roles...');
+
+  const ownerRole = await prisma.m_role.upsert({
+    where: { role_name: 'OWNER' },
     update: {},
     create: {
-      userName: 'admin',
-      email: 'admin@pos.com',
-      password: hashedPassword,
-      role: 'ADMIN',
-      isVerified: true,
+      role_name: 'OWNER',
+      role_code: 'OWNER',
+      role_description: 'Pemilik toko dengan akses penuh ke tenant-nya',
+      role_level: 1,
+      is_system_role: true,
+      is_active: true
     },
   });
 
-  console.log('✅ Admin user created:', {
-    id: admin.id,
-    userName: admin.userName,
-    email: admin.email,
-    role: admin.role,
+  const adminRole = await prisma.m_role.upsert({
+    where: { role_name: 'ADMIN' },
+    update: {},
+    create: {
+      role_name: 'ADMIN',
+      role_code: 'ADMIN',
+      role_description: 'Admin toko dengan akses manajemen',
+      role_level: 2,
+      is_system_role: true,
+      is_active: true
+    },
   });
 
-  // Create some sample categories
-  const categories = [
-    { name: 'Minuman' },
-    { name: 'Makanan' },
-    { name: 'Snack' },
-  ];
+  const cashierRole = await prisma.m_role.upsert({
+    where: { role_name: 'CASHIER' },
+    update: {},
+    create: {
+      role_name: 'CASHIER',
+      role_code: 'CASHIER',
+      role_description: 'Kasir untuk transaksi harian',
+      role_level: 3,
+      is_system_role: true,
+      is_active: true
+    },
+  });
 
-  console.log('🏷️  Creating categories...');
-  for (const category of categories) {
-    const created = await prisma.category.upsert({
-      where: { name: category.name },
-      update: {},
-      create: category,
-    });
-    console.log(`   ✓ ${created.name}`);
-  }
+  const inventoryRole = await prisma.m_role.upsert({
+    where: { role_name: 'INVENTORY' },
+    update: {},
+    create: {
+      role_name: 'INVENTORY',
+      role_code: 'INVENTORY',
+      role_description: 'Staf inventory untuk mengelola stok dan produk',
+      role_level: 4,
+      is_system_role: true,
+      is_active: true
+    },
+  });
 
-  // Create some sample brands
-  const brands = [
-    { name: 'Coca-Cola', categoryId: 1 }, // Minuman
-    { name: 'Pepsi', categoryId: 1 },     // Minuman
-    { name: 'Indomie', categoryId: 2 },   // Makanan
-    { name: 'Chitato', categoryId: 3 },   // Snack
-  ];
+  console.log('   ✓ OWNER role created');
+  console.log('   ✓ ADMIN role created');
+  console.log('   ✓ CASHIER role created');
+  console.log('   ✓ INVENTORY role created');
 
-  console.log('🏪 Creating brands...');
-  for (const brand of brands) {
-    const created = await prisma.brand.upsert({
-      where: { name: brand.name },
-      update: {},
-      create: brand,
-    });
-    console.log(`   ✓ ${created.name}`);
-  }
+  // Create Super Admin User
+  console.log('🔧 Creating Super Admin user...');
+  const hashedPassword = await bcrypt.hash('Admin123!', 10);
 
-  // Create some sample products
-  const products = [
-    { name: 'Coca-Cola 330ml', price: 5000, stock: 100, brandId: 1 },
-    { name: 'Coca-Cola 1L', price: 12000, stock: 50, brandId: 1 },
-    { name: 'Pepsi 330ml', price: 5000, stock: 80, brandId: 2 },
-    { name: 'Indomie Goreng', price: 3000, stock: 200, brandId: 3 },
-    { name: 'Indomie Soto', price: 3000, stock: 150, brandId: 3 },
-    { name: 'Chitato Sapi Panggang', price: 8000, stock: 60, brandId: 4 },
-  ];
+  const superAdmin = await prisma.m_user.upsert({
+    where: { user_email: 'admin@kasirgo.com' },
+    update: {},
+    create: {
+      user_name: 'admin',
+      user_email: 'admin@kasirgo.com',
+      user_password: hashedPassword,
+      role_id: null, // Super admin doesn't need role
+      is_sa: true, // Super Admin flag
+      user_is_verified: true,
+      is_active: true,
+      created_by: null
+    },
+  });
 
-  console.log('📦 Creating products...');
-  for (const product of products) {
-    const created = await prisma.product.create({
-      data: product,
-    });
-    console.log(`   ✓ ${created.name} - Rp ${created.price}`);
-  }
+  console.log('✅ Super Admin user created:', {
+    id: superAdmin.user_id,
+    userName: superAdmin.user_name,
+    email: superAdmin.user_email,
+    isSa: superAdmin.is_sa,
+  });
 
   console.log('');
   console.log('✨ Seed completed successfully!');
   console.log('');
   console.log('═════════════════════════════════════');
-  console.log('  Admin Credentials');
+  console.log('  Super Admin Credentials');
   console.log('═════════════════════════════════════');
-  console.log('  Email:    admin@pos.com');
+  console.log('  Email:    admin@kasirgo.com');
   console.log('  Password: Admin123!');
-  console.log('  Role:     ADMIN');
+  console.log('  Role:     SUPER ADMIN');
+  console.log('  SA Flag:  true');
+  console.log('  Status:   Active & Verified');
+  console.log('═════════════════════════════════════');
+  console.log('');
+  console.log('Available System Roles:');
+  console.log('  • OWNER (Level 1) - Pemilik toko');
+  console.log('  • ADMIN (Level 2) - Admin toko');
+  console.log('  • CASHIER (Level 3) - Kasir');
+  console.log('  • INVENTORY (Level 4) - Staf inventory');
   console.log('═════════════════════════════════════');
 }
 

@@ -1,13 +1,55 @@
 const express = require('express');
-const AuthMiddleware = require('../middlewares/auth.middleware');
-const brandController = require('../controllers/brand.controller');
-
 const router = express.Router();
+const BrandController = require('../controllers/brand.controller');
+const { verifyToken } = require('../middlewares/verifyToken');
+const { requireRole } = require('../middlewares/verifyRole');
 
-router.get('/', AuthMiddleware.verifyToken, AuthMiddleware.requireCashierOrAdmin, brandController.getAllBrands);
-router.get('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireCashierOrAdmin, brandController.getBrandById);
-router.post('/', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, brandController.createBrand);
-router.put('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, brandController.updateBrand);
-router.delete('/:id', AuthMiddleware.verifyToken, AuthMiddleware.requireAdmin, brandController.deleteBrand);
+// Create new brand
+router.post(
+  '/',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN']),
+  BrandController.createBrand
+);
+
+// Get all brands with filtering
+router.get(
+  '/',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  BrandController.getBrands
+);
+
+// Get brand by ID
+router.get(
+  '/:brandId',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  BrandController.getBrandById
+);
+
+// Update brand
+router.put(
+  '/:brandId',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN']),
+  BrandController.updateBrand
+);
+
+// Delete brand (soft delete)
+router.delete(
+  '/:brandId',
+  verifyToken,
+  requireRole(['OWNER']),
+  BrandController.deleteBrand
+);
+
+// Toggle brand status (activate/deactivate)
+router.patch(
+  '/:brandId/toggle-status',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN']),
+  BrandController.toggleBrandStatus
+);
 
 module.exports = router;

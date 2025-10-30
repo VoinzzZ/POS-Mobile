@@ -44,8 +44,8 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
 
   useEffect(() => {
     if (brand) {
-      setName(brand.name);
-      setCategoryId(brand.categoryId || null);
+      setName(brand.brand_name);
+      setCategoryId(brand.brand_category_id || null);
     }
   }, [brand]);
 
@@ -71,7 +71,7 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
 
     setLoading(true);
     try {
-      const response = await updateBrand(brand.id, name.trim(), categoryId);
+      const response = await updateBrand(brand.brand_id, name.trim(), categoryId);
 
       if (response.success) {
         Alert.alert("Berhasil!", "Brand berhasil diupdate", [
@@ -108,8 +108,8 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
 
   const getSelectedCategoryName = () => {
     if (!categoryId) return "Pilih Kategori (Opsional)";
-    const category = categories.find(c => c.id === categoryId);
-    return category ? category.name : "Pilih Kategori (Opsional)";
+    const category = categories.find(c => c.category_id === categoryId);
+    return category ? category.category_name : "Pilih Kategori (Opsional)";
   };
 
   if (!brand) return null;
@@ -185,18 +185,18 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
                 </TouchableOpacity>
                 {categories.map((category) => (
                   <TouchableOpacity
-                    key={category.id}
+                    key={category.category_id}
                     style={[
                       styles.pickerItem,
-                      categoryId === category.id && { backgroundColor: colors.primary + "20" },
+                      categoryId === category.category_id && { backgroundColor: colors.primary + "20" },
                     ]}
                     onPress={() => {
-                      setCategoryId(category.id);
+                      setCategoryId(category.category_id);
                       setShowCategoryPicker(false);
                     }}
                   >
                     <Text style={[styles.pickerItemText, { color: colors.text }]}>
-                      {category.name}
+                      {category.category_name}
                     </Text>
                   </TouchableOpacity>
                 ))}

@@ -12,16 +12,32 @@ import {
   verifyEmailOTPApi,
   setPasswordApi,
   getProfileApi,
+  registerTenantApi,
+  sendOwnerVerificationEmailApi,
+  confirmEmailOtpApi,
+  completeOwnerRegistrationApi,
+  registerEmployeeWithPinApi,
+  TenantRegistrationData,
+  OwnerEmailData,
+  EmployeeRegistrationData,
 } from "../api/auth";
 import TokenService from "../services/tokenService";
 
 // ========== TYPES ==========
+
+// Extended User interface to support multi-tenant
 interface User {
+  id?: number; // For backward compatibility
   user_id: number;
   user_name: string;
   user_email: string;
-  user_role: string;
+  user_role: "OWNER" | "ADMIN" | "CASHIER" | "INVENTORY";
   user_is_verified: boolean;
+  tenantId?: number;
+  tenantName?: string;
+  roleId?: number;
+  isSA?: boolean;
+  lastLogin?: string;
 }
 
 interface Tokens {
@@ -31,12 +47,16 @@ interface Tokens {
   refresh_expires_in: number;
 }
 
+// Registration data types are imported from auth API
+
 interface AuthContextType {
   user: User | null;
   tokens: Tokens | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+
+  // Legacy registration (for backward compatibility)
   register: (
     user_name: string,
     pin: string,
@@ -44,6 +64,16 @@ interface AuthContextType {
   ) => Promise<{ user_id: number }>;
   verifyEmail: (user_id: number, otp_code: string) => Promise<void>;
   setPassword: (user_id: number, new_password: string) => Promise<void>;
+
+  // New owner registration flow
+  registerOwnerTenant: (tenantData: TenantRegistrationData) => Promise<{ registration_id: number; tenant_id: number }>;
+  sendOwnerEmailVerification: (emailData: OwnerEmailData) => Promise<void>;
+  confirmEmailVerification: (registration_id: number, otp_code: string) => Promise<void>;
+  completeOwnerRegistration: (registration_id: number, password: string) => Promise<void>;
+
+  // New employee registration flow
+  registerEmployeeWithPin: (employeeData: EmployeeRegistrationData) => Promise<{ registration_id: number }>;
+
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -57,6 +87,11 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => ({ user_id: 0 }),
   verifyEmail: async () => {},
   setPassword: async () => {},
+  registerOwnerTenant: async () => ({ registration_id: 0, tenant_id: 0 }),
+  sendOwnerEmailVerification: async () => {},
+  confirmEmailVerification: async () => {},
+  completeOwnerRegistration: async () => {},
+  registerEmployeeWithPin: async () => ({ registration_id: 0 }),
   logout: async () => {},
   refreshProfile: async () => {},
 });
@@ -200,6 +235,87 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await clearAuthFromStorage();
   };
 
+  // ========== OWNER REGISTRATION FLOW ==========>
+
+  /**
+   * Step 1: Create tenant registration
+   */
+  const registerOwnerTenant = async (tenantData: TenantRegistrationData): Promise<{ registration_id: number; tenant_id: number }> => {
+    try {
+      const response = await registerTenantApi(tenantData);
+      if (!response.success) {
+        throw new Error(response.message || "Failed to create tenant registration");
+      }
+      return response.data!;
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || "Failed to create tenant registration";
+      throw new Error(message);
+    }
+  };
+
+  /**
+   * Step 2: Send email verification for owner
+   */
+  const sendOwnerEmailVerification = async (emailData: OwnerEmailData): Promise<void> => {
+    try {
+      const response = await sendOwnerVerificationEmailApi(emailData);
+      if (!response.success) {
+        throw new Error(response.message || "Failed to send email verification");
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || "Failed to send email verification";
+      throw new Error(message);
+    }
+  };
+
+  /**
+   * Step 3: Confirm email verification (shared for owner and employee)
+   */
+  const confirmEmailVerification = async (registration_id: number, otp_code: string): Promise<void> => {
+    try {
+      const response = await confirmEmailOtpApi(registration_id, otp_code);
+      if (!response.success) {
+        throw new Error(response.message || "Email verification failed");
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || "Email verification failed";
+      throw new Error(message);
+    }
+  };
+
+  /**
+   * Step 4: Complete owner registration
+   */
+  const completeOwnerRegistration = async (registration_id: number, password: string): Promise<void> => {
+    try {
+      const response = await completeOwnerRegistrationApi(registration_id, password);
+      if (!response.success) {
+        throw new Error(response.message || "Failed to complete registration");
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || "Failed to complete registration";
+      throw new Error(message);
+    }
+  };
+
+  // ========== EMPLOYEE REGISTRATION FLOW ==========>
+
+  /**
+   * Register employee with PIN
+   */
+  const registerEmployeeWithPin = async (employeeData: EmployeeRegistrationData): Promise<{ registration_id: number }> => {
+    try {
+      const response = await registerEmployeeWithPinApi(employeeData);
+      if (!response.success) {
+        throw new Error(response.message || "Failed to register employee");
+      }
+      return response.data!;
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || "Failed to register employee";
+      throw new Error(message);
+    }
+  };
+
   // ========== REFRESH PROFILE ==========>
   const refreshProfile = async (): Promise<void> => {
     try {
@@ -226,6 +342,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         register,
         verifyEmail,
         setPassword,
+        registerOwnerTenant,
+        sendOwnerEmailVerification,
+        confirmEmailVerification,
+        completeOwnerRegistration,
+        registerEmployeeWithPin,
         logout,
         refreshProfile,
       }}

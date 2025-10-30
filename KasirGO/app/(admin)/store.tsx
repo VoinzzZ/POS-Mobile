@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput } from "react-native";
 import PagerView from "react-native-pager-view";
 import { useAuth } from "../../src/context/AuthContext";
 import { Store as StoreIcon, Users as UsersIcon, Receipt, Settings, Search, Key } from "lucide-react-native";
@@ -21,9 +21,11 @@ export default function StoreManagement() {
   const [activeTab, setActiveTab] = useState<TabType>("store");
   const [activeTabIndex, setActiveTabIndex] = useState(0); // For PagerView
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [allUsers, setAllUsers] = useState<User[]>([]); // For search functionality
+  const [loading, setLoading] = useState(false); // Changed to false to avoid initial loading
   const [refreshing, setRefreshing] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const pagerRef = useRef<PagerView>(null);
   
@@ -45,10 +47,11 @@ export default function StoreManagement() {
   ];
   
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    adminCount: 0,
-    cashierCount: 0,
-    verifiedUsers: 0,
+    total_users: 0,
+    admin_count: 0,
+    cashier_count: 0,
+    verified_users: 0,
+    unverified_users: 0,
   });
   
   // Helper functions for tab switching
@@ -76,6 +79,7 @@ export default function StoreManagement() {
       const response = await getAllUsers('CASHIER');
       if (response.success) {
         setUsers(response.data.users);
+        setAllUsers(response.data.users);
       }
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -116,6 +120,19 @@ export default function StoreManagement() {
   const getStatusColor = (verified: boolean) => {
     return verified ? "#10b981" : "#f59e0b";
   };
+
+  // Search functionality
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setUsers(allUsers);
+    } else {
+      const filtered = allUsers.filter(user =>
+        user.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.userEmail.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setUsers(filtered);
+    }
+  }, [searchQuery, allUsers]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -165,7 +182,13 @@ export default function StoreManagement() {
       >
         {/* Page 1: Store Info */}
         <View key="store" style={styles.page}>
-          <StoreInfoForm />
+          <StoreInfoForm
+            store={null}
+            onStoreUpdate={() => {
+              // Refresh store data when updated
+              console.log('Store data updated');
+            }}
+          />
         </View>
         
         {/* Page 2: Cashiers */}
@@ -174,13 +197,13 @@ export default function StoreManagement() {
             style={styles.scrollView} 
             showsVerticalScrollIndicator={false}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4ECDC4" />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
             }
           >
             {/* Stats Cards */}
             <View style={styles.statsContainer}>
               <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>{stats.cashierCount}</Text>
+                <Text style={[styles.statValue, { color: colors.primary }]}>{stats.cashier_count}</Text>
                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Kasir</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card }]}>
@@ -205,7 +228,13 @@ export default function StoreManagement() {
             {/* Search Bar */}
             <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
               <Search size={20} color={colors.textSecondary} />
-              <Text style={[styles.searchPlaceholder, { color: colors.textSecondary }]}>Cari pengguna...</Text>
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                placeholder="Cari pengguna..."
+                placeholderTextColor={colors.textSecondary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
             </View>
 
             {/* Users List */}
@@ -230,7 +259,7 @@ export default function StoreManagement() {
                     </View>
                     <View style={styles.userInfo}>
                       <Text style={[styles.userName, { color: colors.text }]}>{userItem.userName}</Text>
-                      <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{userItem.email}</Text>
+                      <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{userItem.userEmail}</Text>
                       <View style={styles.badges}>
                         <View style={[styles.badge, { backgroundColor: getRoleBadgeColor(userItem.role) + "20" }]}>
                           <Text style={[styles.badgeText, { color: getRoleBadgeColor(userItem.role) }]}>
@@ -350,12 +379,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#4ECDC4",
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 11,
-    color: "#64748b",
   },
   generatePinButton: {
     flexDirection: "row",
@@ -383,9 +410,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 12,
   },
-  searchPlaceholder: {
+  searchInput: {
+    flex: 1,
     fontSize: 14,
-    color: "#64748b",
   },
   section: {
     paddingHorizontal: 20,
@@ -420,12 +447,10 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#ffffff",
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 12,
-    color: "#64748b",
     marginBottom: 8,
   },
   badges: {
@@ -446,7 +471,6 @@ const styles = StyleSheet.create({
   },
   moreBtnText: {
     fontSize: 20,
-    color: "#64748b",
     fontWeight: "700",
   },
   loadingContainer: {
@@ -456,7 +480,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: "#64748b",
     marginTop: 12,
   },
   emptyContainer: {
@@ -468,13 +491,11 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: "#ffffff",
     marginTop: 16,
     fontWeight: "600",
   },
   emptySubtext: {
     fontSize: 12,
-    color: "#64748b",
     marginTop: 4,
   },
   pagerView: {

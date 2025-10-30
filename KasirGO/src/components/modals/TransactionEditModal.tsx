@@ -17,11 +17,11 @@ import { getAllProducts, Product } from "../../api/product";
 import SlideModal from "./SlideModal";
 
 interface CartItem {
-  productId: number;
+  product_id: number;
   name: string;
   price: number;
   quantity: number;
-  imageUrl?: string;
+  image_url?: string;
 }
 
 interface TransactionEditModalProps {
@@ -68,11 +68,11 @@ export default function TransactionEditModal({
 
         // Convert transaction items to cart items
         const cartItems: CartItem[] = transactionResponse.data.items.map((item) => ({
-          productId: item.productId,
-          name: item.product.name,
-          price: item.price,
-          quantity: item.quantity,
-          imageUrl: item.product.imageUrl,
+          product_id: item.transaction_item_product_id,
+          name: item.product.product_name,
+          price: item.transaction_item_price,
+          quantity: item.transaction_item_quantity,
+          image_url: item.product.product_image_url,
         }));
         setCart(cartItems);
       }
@@ -95,13 +95,13 @@ export default function TransactionEditModal({
   };
 
   const addToCart = (product: Product) => {
-    const existingItem = cart.find((item) => item.productId === product.id);
+    const existingItem = cart.find((item) => item.product_id === product.product_id);
 
     if (existingItem) {
       // Increase quantity
       setCart(
         cart.map((item) =>
-          item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.product_id === product.product_id ? { ...item, quantity: item.quantity + 1 } : item
         )
       );
     } else {
@@ -109,11 +109,11 @@ export default function TransactionEditModal({
       setCart([
         ...cart,
         {
-          productId: product.id,
-          name: product.name,
-          price: product.price,
+          product_id: product.product_id,
+          name: product.product_name,
+          price: product.product_price,
           quantity: 1,
-          imageUrl: product.imageUrl,
+          image_url: product.product_image_url,
         },
       ]);
     }
@@ -123,7 +123,7 @@ export default function TransactionEditModal({
     setCart(
       cart
         .map((item) => {
-          if (item.productId === productId) {
+          if (item.product_id === productId) {
             const newQuantity = item.quantity + change;
             return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
           }
@@ -134,7 +134,7 @@ export default function TransactionEditModal({
   };
 
   const removeFromCart = (productId: number) => {
-    setCart(cart.filter((item) => item.productId !== productId));
+    setCart(cart.filter((item) => item.product_id !== productId));
   };
 
   const calculateTotal = () => {
@@ -152,7 +152,7 @@ export default function TransactionEditModal({
 
       const payload = {
         items: cart.map((item) => ({
-          productId: item.productId,
+          product_id: item.product_id,
           quantity: item.quantity,
         })),
       };
@@ -181,7 +181,7 @@ export default function TransactionEditModal({
   };
 
   const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+    product.product_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -227,7 +227,7 @@ export default function TransactionEditModal({
                 ) : (
                   cart.map((item) => (
                     <View
-                      key={item.productId}
+                      key={item.product_id}
                       style={[styles.cartItem, { borderBottomColor: colors.border }]}
                     >
                       <View style={styles.cartItemInfo}>
@@ -242,7 +242,7 @@ export default function TransactionEditModal({
                       <View style={styles.cartItemActions}>
                         <View style={styles.quantityControls}>
                           <TouchableOpacity
-                            onPress={() => updateQuantity(item.productId, -1)}
+                            onPress={() => updateQuantity(item.product_id, -1)}
                             style={[styles.quantityButton, { backgroundColor: colors.background }]}
                           >
                             <Minus size={16} color={colors.text} />
@@ -251,7 +251,7 @@ export default function TransactionEditModal({
                             {item.quantity}
                           </Text>
                           <TouchableOpacity
-                            onPress={() => updateQuantity(item.productId, 1)}
+                            onPress={() => updateQuantity(item.product_id, 1)}
                             style={[styles.quantityButton, { backgroundColor: colors.background }]}
                           >
                             <Plus size={16} color={colors.text} />
@@ -259,7 +259,7 @@ export default function TransactionEditModal({
                         </View>
 
                         <TouchableOpacity
-                          onPress={() => removeFromCart(item.productId)}
+                          onPress={() => removeFromCart(item.product_id)}
                           style={styles.deleteButton}
                         >
                           <Trash2 size={16} color="#ef4444" />
