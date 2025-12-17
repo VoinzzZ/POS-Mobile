@@ -75,6 +75,11 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     loadTheme();
   }, []);
 
+  // Set initial StatusBar configuration
+  useEffect(() => {
+    StatusBar.setTranslucent(true);
+  }, []);
+
   // Toggle and persist theme
   const toggleTheme = async () => {
     try {
@@ -90,10 +95,8 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     if (!isReady) return;
 
-    const currentColors = theme === "light" ? lightColors : darkColors;
     StatusBar.setBarStyle(theme === "light" ? "dark-content" : "light-content");
-    StatusBar.setBackgroundColor(currentColors.background);
-    StatusBar.setTranslucent(false);
+    StatusBar.setTranslucent(true);
   }, [theme, isReady]);
 
   // Avoid flicker before theme is loaded

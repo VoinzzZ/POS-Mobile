@@ -88,12 +88,11 @@ export default function OwnerPasswordSetupContent({
 
     setLoading(true);
     try {
-      // Mock registration completion for UI testing
-      console.log('Mock completing owner registration...');
+      await completeOwnerRegistration(parseInt(params.registration_id as string), password);
 
       const combinedData = {
         ...params,
-        password: password,
+        registration_completed: 'true',
       };
 
       router.push({

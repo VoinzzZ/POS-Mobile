@@ -144,8 +144,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     width: '100%',
-    maxWidth: 500,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 20,
@@ -156,15 +155,15 @@ const styles = StyleSheet.create({
     width: '100%',
     flex: 1,
     justifyContent: 'center',
-    maxHeight: '85%',
+    maxHeight: "100%"
   },
   optionCard: {
     borderRadius: 20,
-    padding: 32,
+    padding: 24,
     borderWidth: 2,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'flex-start',
-    minHeight: 280,
+    minHeight: 260,
   },
   optionHeader: {
     flexDirection: 'row',

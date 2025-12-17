@@ -8,6 +8,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -77,21 +78,20 @@ export default function OwnerRegistrationContent({ onBackToRegisterType }: Owner
   };
 
   const handleNext = async () => {
-    // Skip validation for UI testing
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
     try {
-      // Mock response for UI testing
-      const mockResponse = {
-        registration_id: Date.now(), // Use timestamp as mock ID
-        tenant_id: Date.now() + 1, // Use timestamp + 1 as mock tenant ID
-      };
+      const response = await registerOwnerTenant(tenantData);
 
       router.push({
         pathname: '/auth/register/owner/data',
         params: {
           ...tenantData,
-          registration_id: mockResponse.registration_id,
-          tenant_id: mockResponse.tenant_id,
+          registration_id: response.registration_id.toString(),
+          tenant_id: response.tenant_id.toString(),
         }
       } as any);
     } catch (error: any) {
@@ -107,191 +107,199 @@ export default function OwnerRegistrationContent({ onBackToRegisterType }: Owner
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
-        <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
-                <Ionicons name="business" size={32} color={colors.primary} />
+        <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.headerContent}>
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="business" size={32} color={colors.primary} />
+                </View>
+                <Text style={[styles.title, { color: colors.text }]}>
+                  Buat Toko Baru
+                </Text>
+                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                  Masukkan informasi dasar toko Anda
+                </Text>
               </View>
-              <Text style={[styles.title, { color: colors.text }]}>
-                Buat Toko Baru
-              </Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                Masukkan informasi dasar toko Anda
-              </Text>
             </View>
-          </View>
-
-          {/* Progress Indicator */}
-          <View style={styles.progressContainer}>
-            <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
-          </View>
-
-          {/* Form */}
-          <View style={styles.formContainer}>
-            {/* Tenant Name */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Nama Toko
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: errors.tenant_name ? colors.error : colors.border,
-                    color: colors.text
-                  }
-                ]}
-                value={tenantData.tenant_name}
-                onChangeText={(value) => handleInputChange('tenant_name', value)}
-                placeholder="Masukkan nama toko"
-                placeholderTextColor={colors.textSecondary}
-                autoCapitalize="words"
-                maxLength={100}
-              />
-              {errors.tenant_name && (
-                <Text style={[styles.errorText, { color: colors.error }]}>
-                  {errors.tenant_name}
-                </Text>
-              )}
+            {/* Progress Indicator */}
+            <View style={styles.progressContainer}>
+              <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
+              <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
+              <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
+              <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
+              <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
+              <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
+              <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
             </View>
-
-            {/* Phone */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Nomor Telepon
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: errors.tenant_phone ? colors.error : colors.border,
-                    color: colors.text
-                  }
-                ]}
-                value={tenantData.tenant_phone}
-                onChangeText={(value) => handleInputChange('tenant_phone', value)}
-                placeholder="Contoh: 08123456789"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="phone-pad"
-                maxLength={15}
-              />
-              {errors.tenant_phone && (
-                <Text style={[styles.errorText, { color: colors.error }]}>
-                  {errors.tenant_phone}
-                </Text>
-              )}
-            </View>
-
-            {/* Email */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Email Toko
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: errors.tenant_email ? colors.error : colors.border,
-                    color: colors.text
-                  }
-                ]}
-                value={tenantData.tenant_email}
-                onChangeText={(value) => handleInputChange('tenant_email', value)}
-                placeholder="toko@email.com"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                maxLength={100}
-              />
-              {errors.tenant_email && (
-                <Text style={[styles.errorText, { color: colors.error }]}>
-                  {errors.tenant_email}
-                </Text>
-              )}
-            </View>
-
-            {/* Address */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Alamat
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    color: colors.text
-                  }
-                ]}
-                value={tenantData.tenant_address}
-                onChangeText={(value) => handleInputChange('tenant_address', value)}
-                placeholder="Masukkan alamat lengkap toko"
-                placeholderTextColor={colors.textSecondary}
-                multiline
-                numberOfLines={3}
-                maxLength={200}
-              />
-            </View>
-
-            {/* Description */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Deskripsi Toko
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: errors.tenant_description ? colors.error : colors.border,
-                    color: colors.text
-                  }
-                ]}
-                value={tenantData.tenant_description}
-                onChangeText={(value) => handleInputChange('tenant_description', value)}
-                placeholder="Ceritakan tentang toko Anda (opsional)"
-                placeholderTextColor={colors.textSecondary}
-                multiline
-                numberOfLines={4}
-                maxLength={500}
-              />
-              {errors.tenant_description && (
-                <Text style={[styles.errorText, { color: colors.error }]}>
-                  {errors.tenant_description}
-                </Text>
-              )}
-            </View>
-          </View>
-
-          {/* Action Button */}
-          <TouchableOpacity
-            style={[
-              styles.nextButton,
-              loading && styles.buttonDisabled,
-              { backgroundColor: loading ? colors.disabled : colors.primary }
-            ]}
-            onPress={handleNext}
-            disabled={loading}
+          {/* Scrollable Content Area */}
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <Text style={[styles.nextButtonText, { color: colors.background }]}>
-              {loading ? 'Memproses...' : 'Lanjutkan'}
-            </Text>
-            <Ionicons name="arrow-forward" size={20} color="white" style={styles.buttonIcon} />
-          </TouchableOpacity>
+            {/* Form */}
+            <View style={styles.formContainer}>
+              {/* Tenant Name */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Nama Toko
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: errors.tenant_name ? colors.error : colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  value={tenantData.tenant_name}
+                  onChangeText={(value) => handleInputChange('tenant_name', value)}
+                  placeholder="Masukkan nama toko"
+                  placeholderTextColor={colors.textSecondary}
+                  autoCapitalize="words"
+                  maxLength={100}
+                />
+                {errors.tenant_name && (
+                  <Text style={[styles.errorText, { color: colors.error }]}>
+                    {errors.tenant_name}
+                  </Text>
+                )}
+              </View>
+
+              {/* Phone */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Nomor Telepon
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: errors.tenant_phone ? colors.error : colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  value={tenantData.tenant_phone}
+                  onChangeText={(value) => handleInputChange('tenant_phone', value)}
+                  placeholder="Contoh: 08123456789"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="phone-pad"
+                  maxLength={15}
+                />
+                {errors.tenant_phone && (
+                  <Text style={[styles.errorText, { color: colors.error }]}>
+                    {errors.tenant_phone}
+                  </Text>
+                )}
+              </View>
+
+              {/* Email */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Email Toko
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: errors.tenant_email ? colors.error : colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  value={tenantData.tenant_email}
+                  onChangeText={(value) => handleInputChange('tenant_email', value)}
+                  placeholder="toko@email.com"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  maxLength={100}
+                />
+                {errors.tenant_email && (
+                  <Text style={[styles.errorText, { color: colors.error }]}>
+                    {errors.tenant_email}
+                  </Text>
+                )}
+              </View>
+
+              {/* Address */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Alamat
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.textArea,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  value={tenantData.tenant_address}
+                  onChangeText={(value) => handleInputChange('tenant_address', value)}
+                  placeholder="Masukkan alamat lengkap toko"
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={3}
+                  maxLength={200}
+                />
+              </View>
+
+              {/* Description */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Deskripsi Toko
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.textArea,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: errors.tenant_description ? colors.error : colors.border,
+                      color: colors.text
+                    }
+                  ]}
+                  value={tenantData.tenant_description}
+                  onChangeText={(value) => handleInputChange('tenant_description', value)}
+                  placeholder="Ceritakan tentang toko Anda (opsional)"
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                  maxLength={500}
+                />
+                {errors.tenant_description && (
+                  <Text style={[styles.errorText, { color: colors.error }]}>
+                    {errors.tenant_description}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Fixed Button at Bottom - Original Theme Style */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.nextButton,
+                loading && styles.buttonDisabled,
+                { backgroundColor: loading ? colors.disabled : colors.primary }
+              ]}
+              onPress={handleNext}
+              disabled={loading}
+            >
+              <Text style={[styles.nextButtonText, { color: colors.background }]}>
+                {loading ? 'Memproses...' : 'Lanjutkan'}
+              </Text>
+              <Ionicons name="arrow-forward" size={20} color="white" style={styles.buttonIcon} />
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -302,15 +310,19 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     paddingTop: 80,
-    paddingBottom: 40,
   },
   keyboardAvoid: {
     flex: 1,
   },
-  content: {
+  container: {
     flex: 1,
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 24,
-    paddingTop: 40,
+    paddingTop: 20,
   },
   header: {
     marginBottom: 24,
@@ -382,6 +394,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
     marginTop: 4,
+  },
+  buttonContainer: {
+    padding: 10,
+    paddingTop: 2,
+    backgroundColor: 'transparent',
   },
   nextButton: {
     borderRadius: 12,

@@ -4,6 +4,7 @@ import {
   StatusBar,
   ImageBackground,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -16,7 +17,7 @@ interface OwnerEmailData {
   user_name: string;
   user_full_name: string;
   user_phone: string;
-  registration_id?: number;
+  registration_id?: string; // Keep as string for consistency with router params
 }
 
 export default function OwnerEmailSetupScreen() {
@@ -38,12 +39,37 @@ export default function OwnerEmailSetupScreen() {
     router.back();
   };
 
+  // Handle registration recovery when registration_id is invalid
+  const handleRegistrationRecovery = () => {
+    Alert.alert(
+      'Mulai Ulang Registrasi',
+      'Data registrasi Anda tidak valid. Apakah Anda ingin memulai registrasi dari awal?',
+      [
+        {
+          text: 'Batal',
+          style: 'cancel',
+        },
+        {
+          text: 'Mulai dari Awal',
+          style: 'destructive',
+          onPress: () => router.replace('/auth/registerSelectType')
+        }
+      ]
+    );
+  };
+
   useEffect(() => {
-    // Pre-fill email if it was provided in tenant data
-    if (params.tenant_email) {
-      setEmailData(prev => ({ ...prev, user_email: params.tenant_email as string }));
+    // Pre-fill all data that was provided from previous step or when returning from OTP verification
+    if (params) {
+      setEmailData(prev => ({
+        ...prev,
+        user_email: params.user_email || params.tenant_email || prev.user_email,
+        user_name: params.user_name || prev.user_name,
+        user_full_name: params.user_full_name || prev.user_full_name,
+        user_phone: params.user_phone || prev.user_phone,
+      }));
     }
-  }, [params]);
+  }, [params.user_email, params.user_name, params.user_full_name, params.user_phone, params.tenant_email]);
 
   // Light mode - use light background image
   if (theme === "light") {

@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, ImageBackground, TouchableOpacity, StatusBar, TextInput } from 'react-native';
+import { View, StyleSheet, ImageBackground, TouchableOpacity, StatusBar, TextInput, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
+import { useAuth } from '@/src/context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import ThemeToggle from '@/src/components/shared/ThemeToggle';
 import EmailVerificationContent from '@/src/components/auth/owner/EmailVerificationContent';
@@ -10,6 +11,7 @@ export default function OwnerVerificationScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { colors, theme } = useTheme();
+  const { confirmEmailVerification, sendOwnerEmailVerification } = useAuth();
 
   // OTP states
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
@@ -64,11 +66,61 @@ export default function OwnerVerificationScreen() {
   };
 
   const handleVerifyOtp = async (code?: string) => {
-    // Mock implementation
+    const finalCode = code || otpCode.join('');
+
+    if (finalCode.length !== 6) {
+      Alert.alert('Error', 'Masukkan kode OTP 6 digit');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await confirmEmailVerification(parseInt(params.registration_id as string), finalCode);
+
+      const combinedData = {
+        ...params,
+        otp_code: finalCode,
+      };
+
+      router.push({
+        pathname: '/auth/register/owner/password',
+        params: combinedData
+      });
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Kode OTP tidak valid. Silakan coba lagi.');
+      setOtpCode(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResendOtp = async () => {
-    // Mock implementation
+    if (!canResend || resendLoading) return;
+
+    setResendLoading(true);
+    try {
+      const requestData = {
+        registration_id: parseInt(params.registration_id as string),
+        user_email: params.user_email as string,
+        user_name: params.user_name as string,
+        user_full_name: params.user_full_name as string,
+        user_phone: params.user_phone as string,
+      };
+
+      await sendOwnerEmailVerification(requestData);
+
+      setTimeLeft(600);
+      setCanResend(false);
+      setOtpCode(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+
+      Alert.alert('Berhasil', 'Kode OTP baru telah dikirim ke email Anda.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Gagal mengirim ulang kode OTP. Silakan coba lagi.');
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   const handlePasteOtp = (pastedText: string) => {
@@ -96,14 +148,6 @@ export default function OwnerVerificationScreen() {
         resizeMode="cover"
         style={styles.background}
       >
-        {/* Back Button - Top Left Corner */}
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: colors.card }]}
-          onPress={handleBackToData}
-        >
-          <Ionicons name="arrow-back" size={20} color={colors.text} />
-        </TouchableOpacity>
-
         {/* Theme Toggle - Top Right Corner */}
         <ThemeToggle />
 
@@ -121,7 +165,8 @@ export default function OwnerVerificationScreen() {
           setResendLoading={setResendLoading}
           params={params}
           router={router}
-          confirmEmailVerification={() => {}}
+          confirmEmailVerification={confirmEmailVerification}
+          sendOwnerEmailVerification={sendOwnerEmailVerification}
           inputRefs={inputRefs}
           handleOtpChange={handleOtpChange}
           handleKeyPress={handleKeyPress}
@@ -141,20 +186,5 @@ const styles = StyleSheet.create({
   },
   background: {
     flex: 1,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 60,
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    zIndex: 10,
   },
 });

@@ -31,6 +31,7 @@ interface OwnerEmailVerificationContentProps {
   params: any;
   router: any;
   confirmEmailVerification: any;
+  sendOwnerEmailVerification: any;
   inputRefs: React.MutableRefObject<(TextInput | null)[]>;
   handleOtpChange: (value: string, index: number) => void;
   handleKeyPress: (e: any, index: number) => void;
@@ -55,6 +56,7 @@ export default function OwnerEmailVerificationContent({
   params,
   router,
   confirmEmailVerification,
+  sendOwnerEmailVerification,
   inputRefs,
   handleOtpChange,
   handleKeyPress,
@@ -64,7 +66,7 @@ export default function OwnerEmailVerificationContent({
   formatTime
 }: OwnerEmailVerificationContentProps) {
 
-  // Skip API call for UI testing
+  // Real API verification
   const handleVerifyOtpUI = async (code?: string) => {
     const finalCode = code || otpCode.join('');
 
@@ -73,10 +75,25 @@ export default function OwnerEmailVerificationContent({
       return;
     }
 
+    // Validate registration_id before verification
+    if (!params.registration_id || isNaN(parseInt(params.registration_id as string))) {
+      Alert.alert(
+        'Error Registration',
+        'Data registrasi tidak valid. Silakan mulai registrasi dari awal.',
+        [
+          {
+            text: 'Mulai dari Awal',
+            onPress: () => router.replace('/auth/registerSelectType')
+          }
+        ]
+      );
+      return;
+    }
+
     setLoading(true);
     try {
-      // Mock verification for UI testing
-      console.log('Mock verifying OTP:', finalCode);
+      const registrationId = parseInt(params.registration_id as string);
+      await confirmEmailVerification(registrationId, finalCode);
 
       const combinedData = {
         ...params,
@@ -100,17 +117,42 @@ export default function OwnerEmailVerificationContent({
   const handleResendOtpUI = async () => {
     if (!canResend || resendLoading) return;
 
+    // Validate registration_id before resending
+    if (!params.registration_id || isNaN(parseInt(params.registration_id as string))) {
+      Alert.alert(
+        'Error Registration',
+        'Data registrasi tidak valid. Silakan mulai registrasi dari awal.',
+        [
+          {
+            text: 'Mulai dari Awal',
+            onPress: () => router.replace('/auth/registerSelectType')
+          }
+        ]
+      );
+      return;
+    }
+
     setResendLoading(true);
     try {
-      // Mock resend for UI testing
+      const registrationId = parseInt(params.registration_id as string);
+      const requestData = {
+        registration_id: registrationId,
+        user_email: params.user_email as string,
+        user_name: params.user_name as string,
+        user_full_name: params.user_full_name as string,
+        user_phone: params.user_phone as string,
+      };
+
+      await sendOwnerEmailVerification(requestData);
+
       setTimeLeft(600); // Reset timer to 10 minutes
       setCanResend(false);
       setOtpCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
 
       Alert.alert('Berhasil', 'Kode OTP baru telah dikirim ke email Anda.');
-    } catch (error) {
-      Alert.alert('Error', 'Gagal mengirim ulang kode OTP. Silakan coba lagi.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Gagal mengirim ulang kode OTP. Silakan coba lagi.');
     } finally {
       setResendLoading(false);
     }
@@ -125,6 +167,7 @@ export default function OwnerEmailVerificationContent({
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          style={styles.scrollContainer}
         >
           {/* Header */}
           <View style={styles.header}>
@@ -160,6 +203,34 @@ export default function OwnerEmailVerificationContent({
             <Text style={[styles.emailText, { color: colors.text }]}>
               {params.user_email || 'email@example.com'}
             </Text>
+            <TouchableOpacity
+              style={styles.changeEmailButton}
+              onPress={() => {
+                // Validate registration_id before navigation
+                if (!params.registration_id || isNaN(parseInt(params.registration_id as string))) {
+                  Alert.alert(
+                    'Error Registration',
+                    'Data registrasi tidak valid. Silakan mulai registrasi dari awal.',
+                    [
+                      {
+                        text: 'Mulai dari Awal',
+                        onPress: () => router.replace('/auth/registerSelectType')
+                      }
+                    ]
+                  );
+                  return;
+                }
+
+                router.push({
+                  pathname: '/auth/register/owner/data',
+                  params: params
+                });
+              }}
+            >
+              <Text style={[styles.changeEmailText, { color: colors.primary }]}>
+                Salah email?
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* OTP Input */}
@@ -231,14 +302,18 @@ export default function OwnerEmailVerificationContent({
             <Text style={[styles.infoCardText, { color: colors.textSecondary }]}>
               • Periksa folder spam/promosi jika tidak menerima email{'\n'}
               • Kode OTP berlaku selama 10 menit{'\n'}
-              • Pastikan email yang Anda masukkan benar
+              • Jika email salah, klik tombol "Salah email?" di atas{'\n'}
+              • Pastikan email yang Anda masukkan dapat diakses
             </Text>
           </View>
+        </ScrollView>
 
-          {/* Manual Verify Button */}
+        {/* Fixed Verify Button at Bottom */}
+        <View style={styles.fixedButtonContainer}>
           <TouchableOpacity
             style={[
               styles.verifyButton,
+              styles.fixedButton,
               loading && styles.buttonDisabled,
               { backgroundColor: loading ? colors.disabled : colors.primary }
             ]}
@@ -249,7 +324,7 @@ export default function OwnerEmailVerificationContent({
               {loading ? 'Memverifikasi...' : 'Verifikasi OTP'}
             </Text>
           </TouchableOpacity>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -258,13 +333,17 @@ export default function OwnerEmailVerificationContent({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingTop: 80,
-    paddingBottom: 40,
   },
   keyboardAvoid: {
     flex: 1,
+    width: '100%',
+  },
+  scrollContainer: {
+    flex: 1,
+    width: '100%',
   },
   scrollContent: {
     flexGrow: 1,
@@ -273,6 +352,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     justifyContent: 'center',
     paddingVertical: 20,
+    paddingBottom: 100, // Extra padding for fixed button
   },
   header: {
     marginBottom: 24,
@@ -330,6 +410,16 @@ const styles = StyleSheet.create({
   emailText: {
     fontSize: 16,
     fontFamily: 'Inter_600SemiBold',
+    marginBottom: 8,
+  },
+  changeEmailButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  changeEmailText: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    textDecorationLine: 'underline',
   },
   otpContainer: {
     marginBottom: 24,
@@ -405,6 +495,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  fixedButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+    padding: 20,
+    paddingBottom: 30,
+  },
+  fixedButton: {
+    width: '100%',
+    maxWidth: 500,
+    alignSelf: 'center',
   },
   buttonDisabled: {
     opacity: 0.5,

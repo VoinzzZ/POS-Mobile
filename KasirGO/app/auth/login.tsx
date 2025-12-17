@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, StyleSheet, ImageBackground, StatusBar } from "react-native";
+import { View, StyleSheet, ImageBackground } from "react-native";
 import LoginForm from "@/src/components/auth/LoginForm";
 import { useAuth } from "@/src/context/AuthContext";
 import { useTheme } from "@/src/context/ThemeContext";
@@ -29,13 +29,6 @@ const LoginScreen = () => {
       }
     }
   }, [isAuthenticated, user, router]);
-
-  // Set transparent StatusBar for login screen
-  useEffect(() => {
-    StatusBar.setBarStyle("light-content");
-    StatusBar.setBackgroundColor("transparent");
-    StatusBar.setTranslucent(true);
-  }, []);
   const backgroundAsset = theme === "light"
     ? require("../../assets/images/backgroundAuthLight.png")
     : require("../../assets/images/backgroundAuth.png");

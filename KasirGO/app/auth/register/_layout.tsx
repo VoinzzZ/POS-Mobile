@@ -2,11 +2,9 @@ import React from "react";
 import { Stack } from "expo-router";
 
 const RegisterLayout = () => {
-  // Layout for registration screens - no automatic redirect needed
-  // Navigation will be handled by the individual screens and user actions
+  // Layout for registration screens - handles owner and employee registration flows
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="registerSelectType" />
       <Stack.Screen name="owner" />
       <Stack.Screen name="employee" />
     </Stack>

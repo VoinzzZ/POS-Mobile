@@ -8,8 +8,6 @@ import {
   ScrollView,
   SafeAreaView,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   StatusBar,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -22,7 +20,7 @@ interface OwnerEmailData {
   user_name: string;
   user_full_name: string;
   user_phone: string;
-  registration_id?: number;
+  registration_id?: string; // Keep as string for consistency with router params
 }
 
 interface DataContentProps {
@@ -50,6 +48,26 @@ export default function DataContent({
   sendOwnerEmailVerification,
   router
 }: DataContentProps) {
+
+  // Check if user is returning from OTP verification (email editing flow)
+  const isEditingEmail = params && Object.keys(params).length > 5; // More than basic OTP params
+
+  // Validate registration_id exists when component mounts or params change
+  useEffect(() => {
+    if (!params.registration_id || isNaN(parseInt(params.registration_id as string))) {
+      Alert.alert(
+        'Error Registration',
+        'Data registrasi tidak valid. Silakan mulai registrasi dari awal.',
+        [
+          {
+            text: 'Mulai dari Awal',
+            onPress: () => router.replace('/auth/registerSelectType')
+          }
+        ]
+      );
+      return;
+    }
+  }, [params.registration_id, router]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<OwnerEmailData> = {};
@@ -89,15 +107,57 @@ export default function DataContent({
   };
 
   const handleNext = async () => {
-    // Skip validation for UI testing
+    if (!validateForm()) {
+      return;
+    }
+
+    // Validate registration_id exists
+    if (!params.registration_id) {
+      Alert.alert(
+        'Error Registration',
+        'ID registrasi tidak ditemukan. Silakan mulai registrasi dari awal.',
+        [
+          {
+            text: 'Mulai dari Awal',
+            onPress: () => router.replace('/auth/registerSelectType')
+          }
+        ]
+      );
+      return;
+    }
+
+    // Convert registration_id to number and validate
+    const registrationId = parseInt(params.registration_id as string);
+    if (isNaN(registrationId) || registrationId <= 0) {
+      Alert.alert(
+        'Error Registration',
+        'ID registrasi tidak valid. Silakan mulai registrasi dari awal.',
+        [
+          {
+            text: 'Mulai dari Awal',
+            onPress: () => router.replace('/auth/registerSelectType')
+          }
+        ]
+      );
+      return;
+    }
+
     setLoading(true);
     try {
-      // Mock response for UI testing
-      console.log('Mock sending email verification...');
+      const requestData = {
+        registration_id: registrationId,
+        user_email: emailData.user_email,
+        user_name: emailData.user_name,
+        user_full_name: emailData.user_full_name,
+        user_phone: emailData.user_phone,
+      };
+
+      await sendOwnerEmailVerification(requestData);
 
       const combinedData = {
-        ...params, // tenant data from previous step
-        ...emailData, // user email data
+        ...params,
+        ...emailData,
+        registration_id: registrationId.toString(),
       };
 
       router.push({
@@ -105,7 +165,25 @@ export default function DataContent({
         params: combinedData
       });
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Gagal mengirim email verifikasi. Silakan coba lagi.');
+      // Handle specific API errors
+      if (error.message && error.message.includes('registration_id')) {
+        Alert.alert(
+          'Error Registration',
+          'ID registrasi tidak valid atau telah kadaluarsa. Silakan mulai registrasi dari awal.',
+          [
+            {
+              text: 'Mulai dari Awal',
+              onPress: () => router.replace('/auth/registerSelectType')
+            },
+            {
+              text: 'Coba Lagi',
+              onPress: () => {}
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Error', error.message || 'Gagal mengirim email verifikasi. Silakan coba lagi.');
+      }
     } finally {
       setLoading(false);
     }
@@ -113,174 +191,180 @@ export default function DataContent({
 
   return (
     <View style={styles.overlay}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}
+      {/* Simple Full Screen Scroll */}
+      <ScrollView
+        contentContainerStyle={styles.fullScrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        style={styles.fullScrollContainer}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
-                <Ionicons name="mail" size={32} color={colors.primary} />
-              </View>
-              <Text style={[styles.title, { color: colors.text }]}>
-                Informasi Pemilik
-              </Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                Masukkan data diri Anda sebagai pemilik toko
-              </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="mail" size={32} color={colors.primary} />
             </View>
-          </View>
-
-          {/* Progress Indicator */}
-          <View style={styles.progressContainer}>
-            <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
-          </View>
-
-          {/* Info Card */}
-          <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.infoCardTitle, { color: colors.primary }]}>
-              Email Verifikasi
+            <Text style={[styles.title, { color: colors.text }]}>
+              Informasi Pemilik
             </Text>
-            <Text style={[styles.infoCardText, { color: colors.textSecondary }]}>
-              Kami akan mengirimkan kode OTP ke email Anda untuk verifikasi. Pastikan email yang Anda masukkan dapat diakses.
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Masukkan data diri Anda sebagai pemilik toko
             </Text>
           </View>
+        </View>
 
-          {/* Form */}
-          <View style={styles.formContainer}>
-            {/* Email */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Email
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: errors.user_email ? colors.error : colors.border,
-                    color: colors.text
-                  }
-                ]}
-                value={emailData.user_email}
-                onChangeText={(value) => handleInputChange('user_email', value)}
-                placeholder="email@example.com"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-              />
-              {errors.user_email && (
-                <Text style={[styles.errorText, { color: colors.error }]}>
-                  {errors.user_email}
-                </Text>
-              )}
-            </View>
+        {/* Progress Indicator */}
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
+          <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
+          <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
+          <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
+          <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
+          <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
+          <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
+        </View>
 
-            {/* Username */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Nama pengguna
+        {/* Info Card */}
+        <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.infoCardTitle, { color: colors.primary }]}>
+            Email Verifikasi
+          </Text>
+          <Text style={[styles.infoCardText, { color: colors.textSecondary }]}>
+            Kami akan mengirimkan kode OTP ke email Anda untuk verifikasi. Pastikan email yang Anda masukkan dapat diakses.
+          </Text>
+        </View>
+        {/* Form */}
+        <View style={styles.formContainer}>
+          {/* Email */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.text }]}>
+              Email
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: errors.user_email ? colors.error : colors.border,
+                  color: colors.text
+                }
+              ]}
+              value={emailData.user_email}
+              onChangeText={(value) => handleInputChange('user_email', value)}
+              placeholder="email@example.com"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+            />
+            {errors.user_email && (
+              <Text style={[styles.errorText, { color: colors.error }]}>
+                {errors.user_email}
               </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: errors.user_name ? colors.error : colors.border,
-                    color: colors.text
-                  }
-                ]}
-                value={emailData.user_name}
-                onChangeText={(value) => handleInputChange('user_name', value)}
-                placeholder="Masukan nama pengguna"
-                placeholderTextColor={colors.textSecondary}
-                autoCapitalize="none"
-                autoComplete="username"
-                maxLength={50}
-              />
-              {errors.user_name && (
-                <Text style={[styles.errorText, { color: colors.error }]}>
-                  {errors.user_name}
-                </Text>
-              )}
-              <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-                Hanya huruf, angka, dan underscore
-              </Text>
-            </View>
-
-            {/* Full Name */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Nama Lengkap
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: errors.user_full_name ? colors.error : colors.border,
-                    color: colors.text
-                  }
-                ]}
-                value={emailData.user_full_name}
-                onChangeText={(value) => handleInputChange('user_full_name', value)}
-                placeholder="Masukkan nama lengkap"
-                placeholderTextColor={colors.textSecondary}
-                autoCapitalize="words"
-                maxLength={100}
-              />
-              {errors.user_full_name && (
-                <Text style={[styles.errorText, { color: colors.error }]}>
-                  {errors.user_full_name}
-                </Text>
-              )}
-            </View>
-
-            {/* Phone */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Nomor Telepon
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: errors.user_phone ? colors.error : colors.border,
-                    color: colors.text
-                  }
-                ]}
-                value={emailData.user_phone}
-                onChangeText={(value) => handleInputChange('user_phone', value)}
-                placeholder="Contoh: 08123456789"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="phone-pad"
-                maxLength={15}
-              />
-              {errors.user_phone && (
-                <Text style={[styles.errorText, { color: colors.error }]}>
-                  {errors.user_phone}
-                </Text>
-              )}
-            </View>
+            )}
+            <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+              Pastikan email dapat diakses untuk menerima kode verifikasi
+            </Text>
           </View>
 
-          {/* Action Button */}
+          {/* Username */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.text }]}>
+              Nama pengguna
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: errors.user_name ? colors.error : colors.border,
+                  color: colors.text
+                }
+              ]}
+              value={emailData.user_name}
+              onChangeText={(value) => handleInputChange('user_name', value)}
+              placeholder="Masukan nama pengguna"
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="none"
+              autoComplete="username"
+              maxLength={50}
+            />
+            {errors.user_name && (
+              <Text style={[styles.errorText, { color: colors.error }]}>
+                {errors.user_name}
+              </Text>
+            )}
+            <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+              Hanya huruf, angka, dan underscore
+            </Text>
+          </View>
+
+          {/* Full Name */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.text }]}>
+              Nama Lengkap
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: errors.user_full_name ? colors.error : colors.border,
+                  color: colors.text
+                }
+              ]}
+              value={emailData.user_full_name}
+              onChangeText={(value) => handleInputChange('user_full_name', value)}
+              placeholder="Masukkan nama lengkap"
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="words"
+              maxLength={100}
+            />
+            {errors.user_full_name && (
+              <Text style={[styles.errorText, { color: colors.error }]}>
+                {errors.user_full_name}
+              </Text>
+            )}
+          </View>
+
+          {/* Phone */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: colors.text }]}>
+              Nomor Telepon
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: errors.user_phone ? colors.error : colors.border,
+                  color: colors.text
+                }
+              ]}
+              value={emailData.user_phone}
+              onChangeText={(value) => handleInputChange('user_phone', value)}
+              placeholder="Contoh: 08123456789"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="phone-pad"
+              maxLength={15}
+            />
+            {errors.user_phone && (
+              <Text style={[styles.errorText, { color: colors.error }]}>
+                {errors.user_phone}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Spacer for button */}
+        <View style={styles.bottomSpacer} />
+
+        {/* Fixed Button at Bottom */}
+        <View style={styles.fixedButtonContainer}>
           <TouchableOpacity
             style={[
               styles.nextButton,
+              styles.fixedButton,
               loading && styles.buttonDisabled,
               { backgroundColor: loading ? colors.disabled : colors.primary }
             ]}
@@ -292,8 +376,8 @@ export default function DataContent({
             </Text>
             <Ionicons name="arrow-forward" size={20} color="white" style={styles.buttonIcon} />
           </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -301,24 +385,28 @@ export default function DataContent({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingTop: 80,
-    paddingBottom: 40,
   },
-  keyboardAvoid: {
+  fullScrollContainer: {
     flex: 1,
+    width: '100%',
   },
-  scrollContent: {
-    flexGrow: 1,
+  fullScrollContent: {
     width: '100%',
     maxWidth: 500,
+    alignSelf: 'center',
     paddingHorizontal: 24,
-    justifyContent: 'center',
     paddingVertical: 20,
+    paddingBottom: 30,
+  },
+  bottomSpacer: {
+    height: 100, // Space for fixed button
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
+    alignItems: 'center',
   },
   headerContent: {
     alignItems: 'center',
@@ -347,7 +435,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   progressDot: {
     width: 8,
@@ -416,6 +504,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  fixedButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+    padding: 20,
+    paddingBottom: 30,
+  },
+  fixedButton: {
+    width: '100%',
+    maxWidth: 500,
+    alignSelf: 'center',
   },
   buttonDisabled: {
     opacity: 0.5,

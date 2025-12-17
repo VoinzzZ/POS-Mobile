@@ -7,6 +7,8 @@ const OwnerRegisterLayout = () => {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="data" />
+      <Stack.Screen name="verify" />
+      <Stack.Screen name="password" />
       <Stack.Screen name="completion" />
     </Stack>
   );

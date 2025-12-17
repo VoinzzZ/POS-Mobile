@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ImageBackground, StatusBar, BackHandler, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
+import { useAuth } from '@/src/context/AuthContext';
 import ThemeToggle from '@/src/components/shared/ThemeToggle';
 import PasswordSetupContent from '@/src/components/auth/owner/PasswordSetupContent';
 
@@ -9,6 +10,7 @@ export default function OwnerPasswordScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { colors, theme } = useTheme();
+  const { completeOwnerRegistration } = useAuth();
 
   // Password states
   const [password, setPassword] = useState('');
@@ -72,7 +74,7 @@ export default function OwnerPasswordScreen() {
           loading={loading}
           setLoading={setLoading}
           params={params}
-          completeOwnerRegistration={() => {}}
+          completeOwnerRegistration={completeOwnerRegistration}
           router={router}
         />
       </ImageBackground>

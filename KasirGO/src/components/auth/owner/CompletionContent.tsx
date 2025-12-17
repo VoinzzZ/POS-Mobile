@@ -29,6 +29,7 @@ export default function CompletionContent({
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.overlay}>
+        <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerContent}>
@@ -46,7 +47,7 @@ export default function CompletionContent({
             </View>
           </View>
 
-    
+
           {/* Tenant Info Card */}
           <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.cardHeader}>
@@ -93,7 +94,6 @@ export default function CompletionContent({
             </View>
           </View>
 
-  
           {/* Go to Login Button */}
           <TouchableOpacity
             style={[styles.loginButton, { backgroundColor: colors.primary }]}
@@ -104,29 +104,28 @@ export default function CompletionContent({
               Kembali ke Login
             </Text>
           </TouchableOpacity>
+        </View>
 
-          {/* Help Text */}
-          <View style={styles.helpContainer}>
-            <Text style={[styles.helpText, { color: colors.textSecondary }]}>
-              Butuh bantuan?{' '}
-              <Text
-                style={[styles.helpLink, { color: colors.primary }]}
-                onPress={() => {
-                  // You can customize this email address
-                  const email = 'support@kasirgo.com';
-                  const subject = 'Bantuan Pendaftaran Akun';
-                  const body = `Halo Tim Support KasirGO,\n\nSaya membutuhkan bantuan untuk pendaftaran akun dengan detail berikut:\nNama Toko: ${params.tenant_name || 'N/A'}\nEmail: ${params.user_email || 'N/A'}\n\nTerima kasih.`;
+        {/* Help Text - Fixed at bottom with 10px margin */}
+        <View style={styles.helpContainer}>
+          <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+            Butuh bantuan?{' '}
+            <Text
+              style={[styles.helpLink, { color: colors.primary }]}
+              onPress={() => {
+                const email = 'support@kasirgo.com';
+                const subject = 'Bantuan Pendaftaran Akun';
+                const body = `Halo Tim Support KasirGO,\n\nSaya membutuhkan bantuan untuk pendaftaran akun dengan detail berikut:\nNama Toko: ${params.tenant_name || 'N/A'}\nEmail: ${params.user_email || 'N/A'}\n\nTerima kasih.`;
 
-                  // Open email client
-                  if (typeof window !== 'undefined' && window.open) {
-                    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-                  }
-                }}
-              >
-                Hubungi tim support kami
-              </Text>
+                if (typeof window !== 'undefined' && window.open) {
+                  window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                }
+              }}
+            >
+              Hubungi tim support kami
             </Text>
-          </View>
+          </Text>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -142,6 +141,10 @@ const styles = StyleSheet.create({
     maxWidth: 500,
     alignSelf: 'center',
     paddingHorizontal: 24,
+    justifyContent: 'center',
+  },
+  content: {
+    flex: 1,
     justifyContent: 'center',
     gap: 24,
   },
@@ -249,6 +252,8 @@ const styles = StyleSheet.create({
   },
   helpContainer: {
     alignItems: 'center',
+    marginBottom: 10, // 10px from bottom edge
+    paddingBottom: 10, // Additional padding for safe area
   },
   helpText: {
     fontSize: 14,

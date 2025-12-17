@@ -170,7 +170,7 @@ const LoginForm = (props: LoginFormProps) => {
         Belum punya akun?{" "}
         <Text
           style={[styles.linkInline, dynamicStyles.link]}
-          onPress={() => router.push("/auth/register")}
+          onPress={() => router.push("/auth/registerSelectType")}
         >
           Daftar Sekarang
         </Text>
