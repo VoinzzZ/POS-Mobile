@@ -6,11 +6,7 @@ const EmailService = require('./email.service.js');
 const emailService = new EmailService();
 
 class UserService {
-  /**
-   * Generate PIN registration untuk employee
-   * Hanya owner tenant yang bisa generate PIN
-   */
-  static async generateEmployeePin(tenantId, generatedBy) {
+    static async generateEmployeePin(tenantId, generatedBy) {
     try {
       // Verify user is owner of tenant
       const user = await prisma.m_user.findFirst({
@@ -81,15 +77,11 @@ class UserService {
       };
 
     } catch (error) {
-      console.error('Error generating employee PIN:', error);
-      throw error;
+            throw error;
     }
   }
 
-  /**
-   * Validate PIN registration
-   */
-  static async validatePin(pin, tenantId) {
+    static async validatePin(pin, tenantId) {
     try {
       const pinRecord = await prisma.registration_pins.findFirst({
         where: {
@@ -121,15 +113,11 @@ class UserService {
       };
 
     } catch (error) {
-      console.error('Error validating PIN:', error);
-      throw error;
+            throw error;
     }
   }
 
-  /**
-   * Get all employees in tenant
-   */
-  static async getEmployeesByTenant(tenantId, options = {}) {
+    static async getEmployeesByTenant(tenantId, options = {}) {
     try {
       const {
         page = 1,
@@ -203,8 +191,7 @@ class UserService {
       };
 
     } catch (error) {
-      console.error('Error getting employees:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -257,8 +244,7 @@ class UserService {
       };
 
     } catch (error) {
-      console.error('Error updating employee status:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -300,8 +286,7 @@ class UserService {
       };
 
     } catch (error) {
-      console.error('Error deleting employee:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -367,8 +352,7 @@ class UserService {
       };
 
     } catch (error) {
-      console.error('Error getting employee stats:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -396,8 +380,7 @@ class UserService {
       };
 
     } catch (error) {
-      console.error('Error cleaning up expired PINs:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -819,8 +802,7 @@ class UserService {
     };
   }
 
-  // ==================== OWNER APPROVAL FOR EMPLOYEE ====================
-
+  
   /**
    * Get pending employee approvals for owner's tenant
    */
@@ -944,8 +926,7 @@ class UserService {
           `
         });
       } catch (emailError) {
-        console.error('Error sending approval email:', emailError);
-      }
+              }
 
       return {
         user_id,
@@ -1026,8 +1007,7 @@ class UserService {
           `
         });
       } catch (emailError) {
-        console.error('Error sending rejection email:', emailError);
-      }
+              }
 
       return {
         user_id,

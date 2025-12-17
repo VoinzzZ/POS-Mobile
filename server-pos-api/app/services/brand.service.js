@@ -29,8 +29,7 @@ const createBrand = async (brandData) => {
     });
     return brand;
   } catch (error) {
-    console.error('Error creating brand:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -77,8 +76,7 @@ const getBrands = async (filters = {}) => {
 
     return brands;
   } catch (error) {
-    console.error('Error getting brands:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -105,8 +103,7 @@ const getBrandById = async (brand_id, includeRelations = true) => {
     });
     return brand;
   } catch (error) {
-    console.error('Error getting brand by ID:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -149,8 +146,7 @@ const updateBrand = async (brand_id, updateData) => {
     });
     return brand;
   } catch (error) {
-    console.error('Error updating brand:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -188,8 +184,7 @@ const deleteBrand = async (brand_id, deleted_by = null) => {
     });
     return brand;
   } catch (error) {
-    console.error('Error deleting brand:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -204,8 +199,7 @@ const getBrandByName = async (brand_name, tenant_id) => {
     });
     return brand;
   } catch (error) {
-    console.error('Error getting brand by name:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -239,8 +233,7 @@ const toggleBrandStatus = async (brand_id, updated_by = null) => {
     });
     return brand;
   } catch (error) {
-    console.error('Error toggling brand status:', error);
-    throw error;
+        throw error;
   }
 };
 

@@ -31,10 +31,10 @@ model m_tenant {
   created_at            DateTime               @default(now())
   updated_at            DateTime               @updatedAt
   deleted_at            DateTime?
-  m_user                m_user[]
   m_brand               m_brand[]
   m_category            m_category[]
   m_product             m_product[]
+  m_user                m_user[]
   s_registration_pin    s_registration_pin[]
   s_registration_tenant s_registration_tenant?
 
@@ -112,21 +112,21 @@ model m_role {
 }
 
 model m_brand {
-  brand_id        Int       @id @default(autoincrement())
-  brand_name      String    @unique
-  brand_description String? @db.Text
-  brand_logo_url  String?
-  tenant_id       Int
-  is_active       Boolean   @default(true)
-  created_by      Int?
-  updated_by      Int?
-  deleted_by      Int?
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
-  deleted_at      DateTime?
-  m_tenant        m_tenant  @relation(fields: [tenant_id], references: [tenant_id])
-  m_category      m_category[]
-  m_product       m_product[]
+  brand_id          Int          @id @default(autoincrement())
+  brand_name        String       @unique
+  brand_description String?      @db.Text
+  brand_logo_url    String?
+  tenant_id         Int
+  is_active         Boolean      @default(true)
+  created_by        Int?
+  updated_by        Int?
+  deleted_by        Int?
+  created_at        DateTime     @default(now())
+  updated_at        DateTime     @updatedAt
+  deleted_at        DateTime?
+  m_tenant          m_tenant     @relation(fields: [tenant_id], references: [tenant_id])
+  m_category        m_category[]
+  m_product         m_product[]
 
   @@index([tenant_id])
   @@index([is_active])
@@ -134,20 +134,20 @@ model m_brand {
 }
 
 model m_category {
-  category_id          Int      @id @default(autoincrement())
+  category_id          Int         @id @default(autoincrement())
   category_name        String
-  category_description String?  @db.Text
+  category_description String?     @db.Text
   brand_id             Int
   tenant_id            Int
-  is_active            Boolean  @default(true)
+  is_active            Boolean     @default(true)
   created_by           Int?
   updated_by           Int?
   deleted_by           Int?
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
+  created_at           DateTime    @default(now())
+  updated_at           DateTime    @updatedAt
   deleted_at           DateTime?
-  m_brand              m_brand  @relation(fields: [brand_id], references: [brand_id])
-  m_tenant             m_tenant @relation(fields: [tenant_id], references: [tenant_id])
+  m_brand              m_brand     @relation(fields: [brand_id], references: [brand_id])
+  m_tenant             m_tenant    @relation(fields: [tenant_id], references: [tenant_id])
   m_product            m_product[]
 
   @@index([brand_id])
@@ -157,29 +157,29 @@ model m_category {
 }
 
 model m_product {
-  product_id           Int     @id @default(autoincrement())
-  product_name         String
-  product_description  String? @db.Text
-  product_sku          String? @unique
-  brand_id             Int
-  category_id          Int
-  tenant_id            Int
-  product_price        Decimal @db.Decimal(10, 2)
-  product_cost         Decimal? @db.Decimal(10, 2)
-  product_stock        Int     @default(0)
-  product_min_stock    Int?    @default(5)
-  is_active            Boolean @default(true)
-  is_track_stock       Boolean @default(true)
-  is_sellable          Boolean @default(true)
-  created_by           Int?
-  updated_by           Int?
-  deleted_by           Int?
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
-  deleted_at           DateTime?
-  m_brand              m_brand @relation(fields: [brand_id], references: [brand_id])
-  m_category           m_category @relation(fields: [category_id], references: [category_id])
-  m_tenant             m_tenant @relation(fields: [tenant_id], references: [tenant_id])
+  product_id          Int        @id @default(autoincrement())
+  product_name        String
+  product_description String?    @db.Text
+  product_sku         String?    @unique
+  brand_id            Int
+  category_id         Int
+  tenant_id           Int
+  product_price       Decimal    @db.Decimal(10, 2)
+  product_cost        Decimal?   @db.Decimal(10, 2)
+  product_stock       Int        @default(0)
+  product_min_stock   Int?       @default(5)
+  is_active           Boolean    @default(true)
+  is_track_stock      Boolean    @default(true)
+  is_sellable         Boolean    @default(true)
+  created_by          Int?
+  updated_by          Int?
+  deleted_by          Int?
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+  deleted_at          DateTime?
+  m_brand             m_brand    @relation(fields: [brand_id], references: [brand_id])
+  m_category          m_category @relation(fields: [category_id], references: [category_id])
+  m_tenant            m_tenant   @relation(fields: [tenant_id], references: [tenant_id])
 
   @@index([brand_id])
   @@index([category_id])
@@ -337,12 +337,6 @@ enum tenant_status {
   APPROVED
   REJECTED
   SUSPENDED
-}
-
-enum request_status {
-  PENDING
-  APPROVED
-  REJECTED
 }
 
 enum registration_type {

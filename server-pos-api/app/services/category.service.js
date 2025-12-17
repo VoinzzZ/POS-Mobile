@@ -24,8 +24,7 @@ const createCategory = async (categoryData) => {
     });
     return category;
   } catch (error) {
-    console.error('Error creating category:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -79,8 +78,7 @@ const getCategories = async (filters = {}) => {
 
     return categories;
   } catch (error) {
-    console.error('Error getting categories:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -113,8 +111,7 @@ const getCategoryById = async (category_id, includeRelations = true) => {
     });
     return category;
   } catch (error) {
-    console.error('Error getting category by ID:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -157,8 +154,7 @@ const updateCategory = async (category_id, updateData) => {
     });
     return category;
   } catch (error) {
-    console.error('Error updating category:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -195,8 +191,7 @@ const deleteCategory = async (category_id, deleted_by = null) => {
     });
     return category;
   } catch (error) {
-    console.error('Error deleting category:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -225,8 +220,7 @@ const getCategoriesByBrand = async (brand_id, tenant_id, isActiveOnly = true) =>
     });
     return categories;
   } catch (error) {
-    console.error('Error getting categories by brand:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -242,8 +236,7 @@ const getCategoryByName = async (category_name, tenant_id, brand_id) => {
     });
     return category;
   } catch (error) {
-    console.error('Error getting category by name:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -277,8 +270,7 @@ const toggleCategoryStatus = async (category_id, updated_by = null) => {
     });
     return category;
   } catch (error) {
-    console.error('Error toggling category status:', error);
-    throw error;
+        throw error;
   }
 };
 

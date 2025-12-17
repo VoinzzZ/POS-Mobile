@@ -3,12 +3,8 @@ const { checkValidate } = require('../utils/checkValidate');
 const { createProductValidation, updateProductValidation } = require('../validation/product.validation');
 
 class ProductController {
-  /**
-   * Create a new product
-   */
   static async createProduct(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(createProductValidation, req);
       if (error) {
         return res.status(400).json({
@@ -26,7 +22,6 @@ class ProductController {
         updated_by: userId
       };
 
-      // Check if product SKU already exists for the same tenant
       if (productData.product_sku) {
         const existingProduct = await productService.getProductBySku(
           productData.product_sku,
@@ -49,7 +44,6 @@ class ProductController {
         data: product
       });
     } catch (error) {
-      console.error('Create product error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -57,9 +51,6 @@ class ProductController {
     }
   }
 
-  /**
-   * Get all products with filtering and pagination
-   */
   static async getProducts(req, res) {
     try {
       const { tenantId } = req.user;
@@ -106,7 +97,6 @@ class ProductController {
         ...result
       });
     } catch (error) {
-      console.error('Get products error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -114,9 +104,6 @@ class ProductController {
     }
   }
 
-  /**
-   * Get products with infinite scroll (optimized for frontend)
-   */
   static async getProductsInfinite(req, res) {
     try {
       const { tenantId } = req.user;
@@ -159,7 +146,6 @@ class ProductController {
         ...result
       });
     } catch (error) {
-      console.error('Get products infinite error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -167,9 +153,6 @@ class ProductController {
     }
   }
 
-  /**
-   * Search products with infinite scroll
-   */
   static async searchProductsInfinite(req, res) {
     try {
       const { tenantId } = req.user;
@@ -205,7 +188,6 @@ class ProductController {
         ...result
       });
     } catch (error) {
-      console.error('Search products infinite error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -213,9 +195,6 @@ class ProductController {
     }
   }
 
-  /**
-   * Get products optimized for mobile (20 items per request)
-   */
   static async getProductsMobile(req, res) {
     try {
       const { tenantId } = req.user;
@@ -258,7 +237,6 @@ class ProductController {
         ...result
       });
     } catch (error) {
-      console.error('Get mobile products error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -266,9 +244,6 @@ class ProductController {
     }
   }
 
-  /**
-   * Search products optimized for mobile (20 items per request)
-   */
   static async searchProductsMobile(req, res) {
     try {
       const { tenantId } = req.user;
@@ -304,7 +279,6 @@ class ProductController {
         ...result
       });
     } catch (error) {
-      console.error('Search mobile products error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -312,9 +286,6 @@ class ProductController {
     }
   }
 
-  /**
-   * Quick load products for mobile - minimal data only
-   */
   static async getProductsQuickLoad(req, res) {
     try {
       const { tenantId } = req.user;
@@ -337,7 +308,6 @@ class ProductController {
         ...result
       });
     } catch (error) {
-      console.error('Quick load products error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -345,9 +315,6 @@ class ProductController {
     }
   }
 
-  /**
-   * Get product by ID
-   */
   static async getProductById(req, res) {
     try {
       const { productId } = req.params;
@@ -362,7 +329,6 @@ class ProductController {
         });
       }
 
-      // Check if product belongs to the user's tenant
       if (product.tenant_id !== tenantId) {
         return res.status(403).json({
           success: false,
@@ -376,7 +342,6 @@ class ProductController {
         data: product
       });
     } catch (error) {
-      console.error('Get product by ID error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -384,12 +349,8 @@ class ProductController {
     }
   }
 
-  /**
-   * Update product
-   */
   static async updateProduct(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(updateProductValidation, req);
       if (error) {
         return res.status(400).json({
@@ -406,7 +367,6 @@ class ProductController {
         updated_by: userId
       };
 
-      // Check if product exists and belongs to tenant
       const existingProduct = await productService.getProductById(productId, false);
       if (!existingProduct) {
         return res.status(404).json({
@@ -422,7 +382,6 @@ class ProductController {
         });
       }
 
-      // Check if product SKU already exists (if updating SKU)
       if (updateData.product_sku && updateData.product_sku !== existingProduct.product_sku) {
         const duplicateProduct = await productService.getProductBySku(
           updateData.product_sku,
@@ -445,8 +404,6 @@ class ProductController {
         data: product
       });
     } catch (error) {
-      console.error('Update product error:', error);
-
       if (error.message === 'Product not found') {
         return res.status(404).json({
           success: false,
@@ -461,15 +418,11 @@ class ProductController {
     }
   }
 
-  /**
-   * Delete product (soft delete)
-   */
   static async deleteProduct(req, res) {
     try {
       const { productId } = req.params;
       const { tenantId, userId } = req.user;
 
-      // Check if product exists and belongs to tenant
       const existingProduct = await productService.getProductById(productId, false);
       if (!existingProduct) {
         return res.status(404).json({
@@ -493,8 +446,6 @@ class ProductController {
         data: product
       });
     } catch (error) {
-      console.error('Delete product error:', error);
-
       if (error.message === 'Product not found') {
         return res.status(404).json({
           success: false,
@@ -509,9 +460,6 @@ class ProductController {
     }
   }
 
-  /**
-   * Get products by category
-   */
   static async getProductsByCategory(req, res) {
     try {
       const { categoryId } = req.params;
@@ -531,7 +479,6 @@ class ProductController {
         data: products
       });
     } catch (error) {
-      console.error('Get products by category error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -539,9 +486,6 @@ class ProductController {
     }
   }
 
-  /**
-   * Get products by brand
-   */
   static async getProductsByBrand(req, res) {
     try {
       const { brandId } = req.params;
@@ -561,7 +505,6 @@ class ProductController {
         data: products
       });
     } catch (error) {
-      console.error('Get products by brand error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -569,15 +512,11 @@ class ProductController {
     }
   }
 
-  /**
-   * Toggle product status (active/inactive)
-   */
   static async toggleProductStatus(req, res) {
     try {
       const { productId } = req.params;
       const { tenantId, userId } = req.user;
 
-      // Check if product exists and belongs to tenant
       const existingProduct = await productService.getProductById(productId, false);
       if (!existingProduct) {
         return res.status(404).json({
@@ -601,8 +540,6 @@ class ProductController {
         data: product
       });
     } catch (error) {
-      console.error('Toggle product status error:', error);
-
       if (error.message === 'Product not found') {
         return res.status(404).json({
           success: false,
@@ -617,15 +554,11 @@ class ProductController {
     }
   }
 
-  /**
-   * Toggle product sellable status
-   */
   static async toggleProductSellableStatus(req, res) {
     try {
       const { productId } = req.params;
       const { tenantId, userId } = req.user;
 
-      // Check if product exists and belongs to tenant
       const existingProduct = await productService.getProductById(productId, false);
       if (!existingProduct) {
         return res.status(404).json({
@@ -649,8 +582,6 @@ class ProductController {
         data: product
       });
     } catch (error) {
-      console.error('Toggle product sellable status error:', error);
-
       if (error.message === 'Product not found') {
         return res.status(404).json({
           success: false,
@@ -665,14 +596,11 @@ class ProductController {
     }
   }
 
-  /**
-   * Update product stock
-   */
   static async updateProductStock(req, res) {
     try {
       const { productId } = req.params;
       const { tenantId, userId } = req.user;
-      const { stock, operation = 'set' } = req.body; // operation: 'set', 'add', 'subtract'
+      const { stock, operation = 'set' } = req.body;
 
       if (!stock || isNaN(stock)) {
         return res.status(400).json({
@@ -681,7 +609,6 @@ class ProductController {
         });
       }
 
-      // Check if product exists and belongs to tenant
       const existingProduct = await productService.getProductById(productId, false);
       if (!existingProduct) {
         return res.status(404).json({
@@ -705,8 +632,6 @@ class ProductController {
         data: product
       });
     } catch (error) {
-      console.error('Update product stock error:', error);
-
       if (error.message === 'Product not found') {
         return res.status(404).json({
           success: false,

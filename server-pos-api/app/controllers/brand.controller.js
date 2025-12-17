@@ -3,12 +3,8 @@ const { checkValidate } = require('../utils/checkValidate');
 const { createBrandValidation, updateBrandValidation } = require('../validation/brand.validation');
 
 class BrandController {
-  /**
-   * Create a new brand
-   */
   static async createBrand(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(createBrandValidation, req);
       if (error) {
         return res.status(400).json({
@@ -26,7 +22,6 @@ class BrandController {
         updated_by: userId
       };
 
-      // Check if brand name already exists for the same tenant
       const existingBrand = await brandService.getBrandByName(
         brandData.brand_name,
         brandData.tenant_id
@@ -47,17 +42,12 @@ class BrandController {
         data: brand
       });
     } catch (error) {
-      console.error('Create brand error:', error);
       res.status(500).json({
         success: false,
         message: error.message
       });
     }
   }
-
-  /**
-   * Get all brands with filtering
-   */
   static async getBrands(req, res) {
     try {
       const { tenantId } = req.user;
@@ -80,7 +70,6 @@ class BrandController {
         data: brands
       });
     } catch (error) {
-      console.error('Get brands error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -88,9 +77,6 @@ class BrandController {
     }
   }
 
-  /**
-   * Get brand by ID
-   */
   static async getBrandById(req, res) {
     try {
       const { brandId } = req.params;
@@ -105,7 +91,6 @@ class BrandController {
         });
       }
 
-      // Check if brand belongs to the user's tenant
       if (brand.tenant_id !== tenantId) {
         return res.status(403).json({
           success: false,
@@ -119,7 +104,6 @@ class BrandController {
         data: brand
       });
     } catch (error) {
-      console.error('Get brand by ID error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -127,12 +111,8 @@ class BrandController {
     }
   }
 
-  /**
-   * Update brand
-   */
   static async updateBrand(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(updateBrandValidation, req);
       if (error) {
         return res.status(400).json({
@@ -149,7 +129,6 @@ class BrandController {
         updated_by: userId
       };
 
-      // Check if brand exists and belongs to tenant
       const existingBrand = await brandService.getBrandById(brandId, false);
       if (!existingBrand) {
         return res.status(404).json({
@@ -165,7 +144,6 @@ class BrandController {
         });
       }
 
-      // Check if brand name already exists (if updating name)
       if (updateData.brand_name && updateData.brand_name !== existingBrand.brand_name) {
         const duplicateBrand = await brandService.getBrandByName(
           updateData.brand_name,
@@ -188,8 +166,6 @@ class BrandController {
         data: brand
       });
     } catch (error) {
-      console.error('Update brand error:', error);
-
       if (error.message === 'Brand not found') {
         return res.status(404).json({
           success: false,
@@ -204,15 +180,11 @@ class BrandController {
     }
   }
 
-  /**
-   * Delete brand (soft delete)
-   */
   static async deleteBrand(req, res) {
     try {
       const { brandId } = req.params;
       const { tenantId, userId } = req.user;
 
-      // Check if brand exists and belongs to tenant
       const existingBrand = await brandService.getBrandById(brandId, false);
       if (!existingBrand) {
         return res.status(404).json({
@@ -236,8 +208,6 @@ class BrandController {
         data: brand
       });
     } catch (error) {
-      console.error('Delete brand error:', error);
-
       if (error.message === 'Brand not found') {
         return res.status(404).json({
           success: false,
@@ -259,15 +229,11 @@ class BrandController {
     }
   }
 
-  /**
-   * Toggle brand status (active/inactive)
-   */
   static async toggleBrandStatus(req, res) {
     try {
       const { brandId } = req.params;
       const { tenantId, userId } = req.user;
 
-      // Check if brand exists and belongs to tenant
       const existingBrand = await brandService.getBrandById(brandId, false);
       if (!existingBrand) {
         return res.status(404).json({
@@ -291,8 +257,6 @@ class BrandController {
         data: brand
       });
     } catch (error) {
-      console.error('Toggle brand status error:', error);
-
       if (error.message === 'Brand not found') {
         return res.status(404).json({
           success: false,

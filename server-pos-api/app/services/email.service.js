@@ -10,11 +10,9 @@ class EmailService {
     async verifyConnection() {
         try {
             await this.transporter.verify();
-            console.log(' Email Server connection verified');
-            return true;
+                        return true;
         } catch (error) {
-            console.log(' Email Server connection failed', error.message);
-            return false;
+                        return false;
         }
     }
 
@@ -33,11 +31,9 @@ class EmailService {
             };
 
             const result = await this.transporter.sendMail(mailOptions);
-            console.log(` Email sent to ${to}: `, result.messageId);
-            return { success: true, messageId: result.messageId };
+                        return { success: true, messageId: result.messageId };
         } catch (error) {
-            console.error('nodemailer error: ', error);
-            return { success: false, error: error.message };
+                        return { success: false, error: error.message };
         }
     }
 
@@ -49,8 +45,7 @@ class EmailService {
         });
     }
 
-    //otp send forgot password
-    async sendForgotPasswordOtp(to, otpCode, userName) {
+        async sendForgotPasswordOtp(to, otpCode, userName) {
         return this.sendEmail({
             to,
             subject: "Reset Password - Kode Verifikasi",
@@ -61,8 +56,7 @@ class EmailService {
     close() {
         if (this.transporter) {
             this.transporter.close();
-            console.log('📧 Email transporter connection closed');
-        }
+                    }
     }
 }
 

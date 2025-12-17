@@ -2,7 +2,6 @@ const prisma = require('../config/mysql.db.js');
 const AuthService = require('../services/auth.service');
 
 class AuthController {
-  // ==================== AUTHENTICATION ====================
 
   static async login(req, res) {
     try {
@@ -22,8 +21,6 @@ class AuthController {
         }
       });
     } catch (error) {
-      console.error('Login error:', error);
-
       res.status(401).json({
         success: false,
         message: error.message || 'Login gagal'
@@ -43,8 +40,6 @@ class AuthController {
         data: result
       });
     } catch (error) {
-      console.error('Refresh token error:', error);
-
       res.status(401).json({
         success: false,
         message: error.message || 'Refresh token gagal'
@@ -54,15 +49,11 @@ class AuthController {
 
   static async logout(req, res) {
     try {
-      // For now, just return success
-      // In production, you might want to invalidate tokens
       res.status(200).json({
         success: true,
         message: 'Logout berhasil'
       });
     } catch (error) {
-      console.error('Logout error:', error);
-
       res.status(500).json({
         success: false,
         message: error.message || 'Logout gagal'
@@ -82,8 +73,6 @@ class AuthController {
         data: result
       });
     } catch (error) {
-      console.error('Get profile error:', error);
-
       res.status(500).json({
         success: false,
         message: error.message || 'Gagal mengambil profile'
@@ -128,8 +117,6 @@ class AuthController {
         data: tenant
       });
     } catch (error) {
-      console.error('Get tenant info error:', error);
-
       res.status(500).json({
         success: false,
         message: error.message || 'Gagal mengambil tenant info'

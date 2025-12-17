@@ -8,13 +8,6 @@ const employeeRejectionTemplate = require('../templates/employeeRejectionTemplat
 const emailService = new EmailService();
 
 class ApprovalService {
-  // ==================== SA APPROVAL FOR OWNER/TENANT ====================
-  
-  /**
-   * SA Approve Owner and Tenant
-   * Input: user_id (owner), approved_by (SA user_id)
-   * Output: owner and tenant activated
-   */
   static async saApproveOwner(data) {
     const { user_id, approved_by, notes } = data;
 
@@ -82,7 +75,6 @@ class ApprovalService {
           html: tenantApprovalTemplate(owner.user_full_name, owner.m_tenant.tenant_name, notes)
         });
       } catch (emailError) {
-        console.error('Error sending approval email:', emailError);
       }
 
       return {
@@ -95,12 +87,7 @@ class ApprovalService {
     });
   }
 
-  /**
-   * SA Reject Owner and Tenant
-   * Input: user_id (owner), rejected_by (SA user_id), rejection_reason
-   * Output: owner and tenant rejected
-   */
-  static async saRejectOwner(data) {
+    static async saRejectOwner(data) {
     const { user_id, rejected_by, rejection_reason } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -167,7 +154,6 @@ class ApprovalService {
           html: tenantRejectionTemplate(owner.user_full_name, owner.m_tenant?.tenant_name, rejection_reason)
         });
       } catch (emailError) {
-        console.error('Error sending rejection email:', emailError);
       }
 
       return {
@@ -180,14 +166,7 @@ class ApprovalService {
     });
   }
 
-  // ==================== OWNER APPROVAL FOR EMPLOYEE ====================
-
-  /**
-   * Owner Approve Employee (with role assignment)
-   * Input: user_id (employee), role_id, approved_by (owner user_id)
-   * Output: employee activated with assigned role
-   */
-  static async ownerApproveEmployee(data) {
+    static async ownerApproveEmployee(data) {
     const { user_id, role_id, approved_by, notes } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -263,7 +242,6 @@ class ApprovalService {
           html: employeeApprovalTemplate(employee.user_full_name, employee.m_tenant.tenant_name, role.role_name, notes)
         });
       } catch (emailError) {
-        console.error('Error sending approval email:', emailError);
       }
 
       return {
@@ -277,12 +255,7 @@ class ApprovalService {
     });
   }
 
-  /**
-   * Owner Reject Employee
-   * Input: user_id (employee), rejected_by (owner user_id), rejection_reason
-   * Output: employee rejected
-   */
-  static async ownerRejectEmployee(data) {
+    static async ownerRejectEmployee(data) {
     const { user_id, rejected_by, rejection_reason } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -340,7 +313,6 @@ class ApprovalService {
           html: employeeRejectionTemplate(employee.user_full_name, employee.m_tenant.tenant_name, rejection_reason)
         });
       } catch (emailError) {
-        console.error('Error sending rejection email:', emailError);
       }
 
       return {
@@ -352,12 +324,7 @@ class ApprovalService {
     });
   }
 
-  // ==================== GET PENDING APPROVALS ====================
-
-  /**
-   * Get all pending owner approvals (for SA)
-   */
-  static async getPendingOwnerApprovals() {
+    static async getPendingOwnerApprovals() {
     const pendingOwners = await prisma.m_user.findMany({
       where: {
         registration_type: 'OWNER',
@@ -401,10 +368,7 @@ class ApprovalService {
     }));
   }
 
-  /**
-   * Get pending employee approvals for owner's tenant
-   */
-  static async getPendingEmployeeApprovals(tenant_id) {
+    static async getPendingEmployeeApprovals(tenant_id) {
     const pendingEmployees = await prisma.m_user.findMany({
       where: {
         tenant_id,

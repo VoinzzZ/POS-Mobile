@@ -1,12 +1,10 @@
 const ApprovalService = require('../services/approval.service');
 
 class ApprovalController {
-  // ==================== SA APPROVAL ====================
-
   static async saApproveOwner(req, res) {
     try {
       const { user_id, notes } = req.body;
-      const approved_by = req.user.userId; // From auth middleware
+      const approved_by = req.user.userId;
 
       const result = await ApprovalService.saApproveOwner({
         user_id,
@@ -25,8 +23,6 @@ class ApprovalController {
         }
       });
     } catch (error) {
-      console.error('SA approve owner error:', error);
-
       res.status(400).json({
         success: false,
         message: error.message || 'Approval gagal'
@@ -56,8 +52,6 @@ class ApprovalController {
         }
       });
     } catch (error) {
-      console.error('SA reject owner error:', error);
-
       res.status(400).json({
         success: false,
         message: error.message || 'Rejection gagal'
@@ -75,16 +69,12 @@ class ApprovalController {
         data: result
       });
     } catch (error) {
-      console.error('Get pending owners error:', error);
-
       res.status(500).json({
         success: false,
         message: error.message || 'Gagal mengambil pending owners'
       });
     }
   }
-
-  // ==================== OWNER APPROVAL ====================
 
   static async ownerApproveEmployee(req, res) {
     try {
@@ -110,8 +100,6 @@ class ApprovalController {
         }
       });
     } catch (error) {
-      console.error('Owner approve employee error:', error);
-
       res.status(400).json({
         success: false,
         message: error.message || 'Approval employee gagal'
@@ -140,8 +128,6 @@ class ApprovalController {
         }
       });
     } catch (error) {
-      console.error('Owner reject employee error:', error);
-
       res.status(400).json({
         success: false,
         message: error.message || 'Rejection employee gagal'
@@ -151,7 +137,7 @@ class ApprovalController {
 
   static async getPendingEmployees(req, res) {
     try {
-      const tenant_id = req.user.tenantId; // From auth middleware
+      const tenant_id = req.user.tenantId;
 
       const result = await ApprovalService.getPendingEmployeeApprovals(tenant_id);
 
@@ -161,8 +147,6 @@ class ApprovalController {
         data: result
       });
     } catch (error) {
-      console.error('Get pending employees error:', error);
-
       res.status(500).json({
         success: false,
         message: error.message || 'Gagal mengambil pending employees'

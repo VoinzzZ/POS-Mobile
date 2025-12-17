@@ -3,11 +3,6 @@ const PasswordService = require('../utils/passwordService.js');
 const JWTService = require('../utils/jwtService.js');
 
 class AuthService {
-  // ==================== AUTHENTICATION ====================
-  
-  /**
-   * User login
-   */
   static async loginUser({ email, password }) {
     if (!email || !password) {
       throw new Error("Email dan password wajib diisi");
@@ -86,14 +81,7 @@ class AuthService {
       }
     });
 
-    // Debug user data
-    console.log('🔑 Auth Service Debug - User data for JWT:', {
-      userId: user.user_id,
-      email: user.user_email,
-      is_sa: user.is_sa,
-      role: user.m_role?.role_name || 'SA'
-    });
-
+  
     // Generate tokens
     const accessToken = JWTService.generateAccessToken({
       userId: user.user_id,
@@ -104,8 +92,7 @@ class AuthService {
       is_sa: user.is_sa
     });
 
-    console.log('🔑 Auth Service Debug - JWT Payload created with is_sa:', user.is_sa);
-
+    
     const refreshToken = JWTService.generateRefreshToken({
       userId: user.user_id,
       email: user.user_email
@@ -133,10 +120,7 @@ class AuthService {
     });
   }
 
-  /**
-   * Refresh access token
-   */
-  static async refreshAccessToken(refreshToken) {
+    static async refreshAccessToken(refreshToken) {
     if (!refreshToken) {
       throw new Error("Refresh token diperlukan");
     }
@@ -185,10 +169,7 @@ class AuthService {
     }
   }
 
-  /**
-   * Get user profile
-   */
-  static async getUserProfile(userId) {
+    static async getUserProfile(userId) {
     const user = await prisma.m_user.findFirst({
     where: {
       user_id: userId,

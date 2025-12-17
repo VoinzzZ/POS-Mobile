@@ -49,7 +49,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-// 🔥 Ganti banyak require() jadi satu baris
 app.use(`/api/${API_VERSION}`, routes);
 
 app.get('/docs', (req, res) => {

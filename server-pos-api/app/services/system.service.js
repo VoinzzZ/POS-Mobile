@@ -4,11 +4,7 @@ const EmailService = require('./email.service.js');
 const emailService = new EmailService();
 
 class SystemService {
-  /**
-   * Get system overview statistics
-   * Hanya Super Admin yang bisa akses
-   */
-  static async getSystemOverview() {
+    static async getSystemOverview() {
     try {
       const [
         totalTenants,
@@ -80,8 +76,7 @@ class SystemService {
       };
 
     } catch (error) {
-      console.error('Error getting system overview:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -168,8 +163,7 @@ class SystemService {
       };
 
     } catch (error) {
-      console.error('Error getting all tenants:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -217,8 +211,7 @@ class SystemService {
       };
 
     } catch (error) {
-      console.error('Error suspending tenant:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -266,8 +259,7 @@ class SystemService {
       };
 
     } catch (error) {
-      console.error('Error reactivating tenant:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -379,8 +371,7 @@ class SystemService {
       };
 
     } catch (error) {
-      console.error('Error getting tenant details:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -479,8 +470,7 @@ class SystemService {
       };
 
     } catch (error) {
-      console.error('Error getting all users:', error);
-      throw error;
+            throw error;
     }
   }
 
@@ -567,8 +557,7 @@ class SystemService {
       };
 
     } catch (error) {
-      console.error('Error getting activity logs:', error);
-      throw error;
+            throw error;
     }
   }
 }

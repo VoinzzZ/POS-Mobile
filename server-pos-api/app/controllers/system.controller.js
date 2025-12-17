@@ -1,9 +1,6 @@
 const SystemService = require('../services/system.service');
 
 class SystemController {
-  /**
-   * Get system overview statistics
-   */
   static async getSystemOverview(req, res) {
     try {
       const result = await SystemService.getSystemOverview();
@@ -14,7 +11,6 @@ class SystemController {
         data: result
       });
     } catch (error) {
-      console.error('Get system overview error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -22,9 +18,6 @@ class SystemController {
     }
   }
 
-  /**
-   * Get all tenants
-   */
   static async getAllTenants(req, res) {
     try {
       const {
@@ -53,7 +46,6 @@ class SystemController {
         data: result
       });
     } catch (error) {
-      console.error('Get all tenants error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -61,9 +53,6 @@ class SystemController {
     }
   }
 
-  /**
-   * Suspend tenant
-   */
   static async suspendTenant(req, res) {
     try {
       const { tenantId } = req.params;
@@ -89,7 +78,6 @@ class SystemController {
         data: result.tenant
       });
     } catch (error) {
-      console.error('Suspend tenant error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -97,9 +85,6 @@ class SystemController {
     }
   }
 
-  /**
-   * Reactivate tenant
-   */
   static async reactivateTenant(req, res) {
     try {
       const { tenantId } = req.params;
@@ -116,7 +101,6 @@ class SystemController {
         data: result.tenant
       });
     } catch (error) {
-      console.error('Reactivate tenant error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -124,9 +108,6 @@ class SystemController {
     }
   }
 
-  /**
-   * Get tenant details
-   */
   static async getTenantDetails(req, res) {
     try {
       const { tenantId } = req.params;
@@ -139,7 +120,6 @@ class SystemController {
         data: result
       });
     } catch (error) {
-      console.error('Get tenant details error:', error);
       res.status(404).json({
         success: false,
         message: error.message
@@ -147,9 +127,6 @@ class SystemController {
     }
   }
 
-  /**
-   * Get all users across all tenants
-   */
   static async getAllUsers(req, res) {
     try {
       const {
@@ -180,7 +157,6 @@ class SystemController {
         data: result
       });
     } catch (error) {
-      console.error('Get all users error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -188,9 +164,6 @@ class SystemController {
     }
   }
 
-  /**
-   * Get activity logs
-   */
   static async getActivityLogs(req, res) {
     try {
       const {
@@ -219,7 +192,6 @@ class SystemController {
         data: result
       });
     } catch (error) {
-      console.error('Get activity logs error:', error);
       res.status(500).json({
         success: false,
         message: error.message

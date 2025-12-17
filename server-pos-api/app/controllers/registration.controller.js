@@ -11,10 +11,8 @@ const prisma = require('../config/mysql.db.js');
 
 class RegistrationController {
 
-  // Step 1: Create Tenant Registration
   static async createTenant(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(createTenantSchema, req);
       if (error) {
         return res.status(400).json({
@@ -24,7 +22,6 @@ class RegistrationController {
         });
       }
 
-      // Call existing service method
       const result = await RegistrationService.ownerRegisterStep1(value);
 
       res.status(201).json({
@@ -39,8 +36,6 @@ class RegistrationController {
         }
       });
     } catch (error) {
-      console.error('Create tenant error:', error);
-
       let statusCode = 400;
       let message = error.message || 'Failed to create tenant registration';
 
@@ -55,10 +50,8 @@ class RegistrationController {
     }
   }
 
-  // Employee Registration with PIN
   static async registerEmployeeWithPin(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(registerEmployeeWithPinSchema, req);
       if (error) {
         return res.status(400).json({
@@ -90,8 +83,6 @@ class RegistrationController {
         }
       });
     } catch (error) {
-      console.error('Register employee with PIN error:', error);
-
       let statusCode = 400;
       let message = error.message || 'Failed to register employee';
 
@@ -110,10 +101,8 @@ class RegistrationController {
     }
   }
 
-  // Step 2: Send Email Verification (for owner and employee)
   static async sendEmailVerification(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(sendEmailVerificationSchema, req);
       if (error) {
         return res.status(400).json({
@@ -123,14 +112,12 @@ class RegistrationController {
         });
       }
 
-      // Determine registration type based on registration_id
       const registration = await prisma.s_registration_tenant.findUnique({
         where: { id: value.registration_id },
         include: { m_user: true }
       });
 
       if (!registration) {
-        // Check if it's employee registration
         const employeeReg = await prisma.s_registration_user.findUnique({
           where: { id: value.registration_id },
           include: { m_user: true }
@@ -143,7 +130,6 @@ class RegistrationController {
           });
         }
 
-        // Handle employee email verification
         const result = await RegistrationService.employeeRegisterStep1({
           registration_pin_code: employeeReg.registration_pin_id,
           user_name: employeeReg.m_user?.user_name || value.user_name,
@@ -164,7 +150,6 @@ class RegistrationController {
         });
       }
 
-      // Handle owner email verification
       const result = await RegistrationService.ownerRegisterStep2({
         registration_tenant_id: value.registration_id,
         user_name: value.user_name || registration.m_user?.user_name,
@@ -184,8 +169,6 @@ class RegistrationController {
         }
       });
     } catch (error) {
-      console.error('Send email verification error:', error);
-
       let statusCode = 400;
       let message = error.message || 'Failed to send verification email';
 
@@ -201,10 +184,8 @@ class RegistrationController {
     }
   }
 
-  // Step 3: Confirm Email Verification (for both owner and employee)
   static async confirmEmailVerification(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(confirmEmailVerificationSchema, req);
       if (error) {
         return res.status(400).json({
@@ -214,7 +195,6 @@ class RegistrationController {
         });
       }
 
-      // Try owner verification first
       try {
         const result = await RegistrationService.ownerRegisterStep3({
           user_id: value.registration_id,
@@ -231,7 +211,6 @@ class RegistrationController {
           }
         });
       } catch (ownerError) {
-        // If owner verification fails, try employee verification
         try {
           const result = await RegistrationService.employeeRegisterStep2({
             user_id: value.registration_id,
@@ -248,12 +227,10 @@ class RegistrationController {
             }
           });
         } catch (employeeError) {
-          throw employeeError; // Throw the employee error if both fail
+          throw employeeError;
         }
       }
     } catch (error) {
-      console.error('Confirm email verification error:', error);
-
       let statusCode = 400;
       let message = error.message || 'Failed to verify email';
 
@@ -269,10 +246,8 @@ class RegistrationController {
     }
   }
 
-  // Step 4: Complete Registration (Set Password) - for both owner and employee
   static async completeRegistration(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(completeRegistrationSchema, req);
       if (error) {
         return res.status(400).json({
@@ -282,7 +257,6 @@ class RegistrationController {
         });
       }
 
-      // Try owner completion first
       try {
         const result = await RegistrationService.ownerRegisterStep4({
           user_id: value.registration_id,
@@ -302,7 +276,6 @@ class RegistrationController {
           }
         });
       } catch (ownerError) {
-        // If owner completion fails, try employee completion
         try {
           const result = await RegistrationService.employeeRegisterStep3({
             user_id: value.registration_id,
@@ -322,12 +295,10 @@ class RegistrationController {
             }
           });
         } catch (employeeError) {
-          throw employeeError; // Throw the employee error if both fail
+          throw employeeError;
         }
       }
     } catch (error) {
-      console.error('Complete registration error:', error);
-
       let statusCode = 400;
       let message = error.message || 'Failed to complete registration';
 

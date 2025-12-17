@@ -1,10 +1,6 @@
 const UserService = require('../services/user.service');
 
 class UserController {
-  /**
-   * Generate PIN registration untuk employee
-   * Hanya owner tenant yang bisa generate PIN
-   */
   static async generateEmployeePin(req, res) {
     try {
       const { tenantId, userId } = req.user;
@@ -17,7 +13,6 @@ class UserController {
         data: result
       });
     } catch (error) {
-      console.error('Generate employee PIN error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -25,9 +20,6 @@ class UserController {
     }
   }
 
-  /**
-   * Get all employees for tenant
-   */
   static async getEmployees(req, res) {
     try {
       const { tenantId } = req.user;
@@ -53,7 +45,6 @@ class UserController {
         data: result
       });
     } catch (error) {
-      console.error('Get employees error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -61,9 +52,6 @@ class UserController {
     }
   }
 
-  /**
-   * Update employee status
-   */
   static async updateEmployeeStatus(req, res) {
     try {
       const { tenantId, userId } = req.user;
@@ -90,7 +78,6 @@ class UserController {
         data: result.employee
       });
     } catch (error) {
-      console.error('Update employee status error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -98,9 +85,6 @@ class UserController {
     }
   }
 
-  /**
-   * Delete employee
-   */
   static async deleteEmployee(req, res) {
     try {
       const { tenantId, userId } = req.user;
@@ -117,7 +101,6 @@ class UserController {
         message: result.message
       });
     } catch (error) {
-      console.error('Delete employee error:', error);
       res.status(400).json({
         success: false,
         message: error.message
@@ -125,9 +108,6 @@ class UserController {
     }
   }
 
-  /**
-   * Get employee statistics
-   */
   static async getEmployeeStats(req, res) {
     try {
       const { tenantId } = req.user;
@@ -140,7 +120,6 @@ class UserController {
         data: result
       });
     } catch (error) {
-      console.error('Get employee stats error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -148,9 +127,6 @@ class UserController {
     }
   }
 
-  /**
-   * Clean up expired PINs
-   */
   static async cleanupExpiredPins(req, res) {
     try {
       const result = await UserService.cleanupExpiredPins();
@@ -163,7 +139,6 @@ class UserController {
         }
       });
     } catch (error) {
-      console.error('Cleanup expired PINs error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -171,7 +146,6 @@ class UserController {
     }
   }
 
-  // Legacy methods converted to static
   static async getUsers(req, res) {
     try {
       const { page = 1, limit = 10, role, search } = req.query;
@@ -188,7 +162,6 @@ class UserController {
         data: result
       });
     } catch (error) {
-      console.error('Get users error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -207,8 +180,6 @@ class UserController {
         data: result
       });
     } catch (error) {
-      console.error('Get user error:', error);
-
       if (error.message === 'User not found') {
         return res.status(404).json({
           success: false,
@@ -240,8 +211,6 @@ class UserController {
         data: result.user
       });
     } catch (error) {
-      console.error('Update user error:', error);
-
       if (error.message === 'User not found' || error.message.includes('already exists') || error.message.includes('Invalid')) {
         return res.status(400).json({
           success: false,
@@ -270,8 +239,6 @@ class UserController {
         message: result.message
       });
     } catch (error) {
-      console.error('Delete user error:', error);
-
       if (error.message === 'User not found') {
         return res.status(404).json({
           success: false,
@@ -296,7 +263,6 @@ class UserController {
         data: result
       });
     } catch (error) {
-      console.error('Get roles error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -315,7 +281,6 @@ class UserController {
         data: result
       });
     } catch (error) {
-      console.error('Get users by role error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -347,8 +312,6 @@ class UserController {
         data: result.user
       });
     } catch (error) {
-      console.error('Change user role error:', error);
-
       if (error.message === 'User not found' || error.message === 'Role not found') {
         return res.status(404).json({
           success: false,

@@ -4,16 +4,12 @@ const EmailService = require('./email.service.js');
 
 const emailService = new EmailService();
 
-// Helper function untuk generate OTP
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 class RegistrationService {
-  // ==================== OWNER/TENANT REGISTRATION (4 STEPS) ====================
-  
-  // Step 1: Register Tenant Information
-  static async ownerRegisterStep1(data) {
+    static async ownerRegisterStep1(data) {
     const { tenant_name, tenant_phone, tenant_email, tenant_address, tenant_description } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -84,13 +80,11 @@ class RegistrationService {
   }
 
 
-  // Step 2: Register Owner User Information + Send OTP
-  static async ownerRegisterStep2(data) {
+    static async ownerRegisterStep2(data) {
     const { registration_tenant_id, user_name, user_email, user_full_name, user_phone } = data;
 
     return await prisma.$transaction(async (tx) => {
-      console.log('🔄 Starting ownerRegisterStep2 transaction...');
-      // Find registration
+            // Find registration
       const registration = await tx.s_registration_tenant.findUnique({
         where: { id: registration_tenant_id },
         include: { m_tenant: true, m_user: true }
@@ -186,13 +180,8 @@ class RegistrationService {
 
       // Send OTP via email
       try {
-        console.log('📧 Attempting to send OTP email...');
         await emailService.sendOtpEmail(user_email, otpCode);
-        console.log('✅ OTP email sent successfully');
       } catch (emailError) {
-        console.error('❌ Error sending OTP email:', emailError);
-        // Log OTP to console for development
-        console.log(`🔢 OTP for ${user_email}: ${otpCode}`);
       }
 
       return {
@@ -207,8 +196,7 @@ class RegistrationService {
     });
   }
 
-  // Step 3: Verify OTP
-  static async ownerRegisterStep3(data) {
+    static async ownerRegisterStep3(data) {
     const { user_id, otp_code } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -286,8 +274,7 @@ class RegistrationService {
     });
   }
 
-  // Step 4: Set Password & Complete Registration
-  static async ownerRegisterStep4(data) {
+    static async ownerRegisterStep4(data) {
     const { user_id, password } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -349,10 +336,8 @@ class RegistrationService {
     });
   }
 
-  // ==================== EMPLOYEE REGISTRATION (3 STEPS) ====================
-
-  // Step 1: Register Employee with PIN + Send OTP
-  static async employeeRegisterStep1(data) {
+  
+    static async employeeRegisterStep1(data) {
     const { pin: registration_pin_code, user_name, user_email, user_full_name, user_phone } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -457,9 +442,7 @@ class RegistrationService {
       try {
         await emailService.sendOtpEmail(user_email, otpCode);
       } catch (emailError) {
-        console.error('Error sending OTP email:', emailError);
-        console.log(`OTP for ${user_email}: ${otpCode}`);
-      }
+              }
 
       return {
         user_id: newEmployee.user_id,
@@ -474,8 +457,7 @@ class RegistrationService {
     });
   }
 
-  // Step 2: Verify OTP for Employee
-  static async employeeRegisterStep2(data) {
+    static async employeeRegisterStep2(data) {
     const { user_id, otp_code } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -554,8 +536,7 @@ class RegistrationService {
   }
 
 
-  // Step 3: Set Password & Complete Employee Registration
-  static async employeeRegisterStep3(data) {
+    static async employeeRegisterStep3(data) {
     const { user_id, password } = data;
 
     return await prisma.$transaction(async (tx) => {

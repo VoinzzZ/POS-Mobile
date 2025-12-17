@@ -3,12 +3,8 @@ const { checkValidate } = require('../utils/checkValidate');
 const { createCategoryValidation, updateCategoryValidation } = require('../validation/category.validation');
 
 class CategoryController {
-  /**
-   * Create a new category
-   */
   static async createCategory(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(createCategoryValidation, req);
       if (error) {
         return res.status(400).json({
@@ -26,7 +22,6 @@ class CategoryController {
         updated_by: userId
       };
 
-      // Check if category name already exists for the same brand and tenant
       const existingCategory = await categoryService.getCategoryByName(
         categoryData.category_name,
         categoryData.tenant_id,
@@ -48,7 +43,6 @@ class CategoryController {
         data: category
       });
     } catch (error) {
-      console.error('Create category error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -56,9 +50,6 @@ class CategoryController {
     }
   }
 
-  /**
-   * Get all categories with filtering
-   */
   static async getCategories(req, res) {
     try {
       const { tenantId } = req.user;
@@ -83,7 +74,6 @@ class CategoryController {
         data: categories
       });
     } catch (error) {
-      console.error('Get categories error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -91,9 +81,6 @@ class CategoryController {
     }
   }
 
-  /**
-   * Get category by ID
-   */
   static async getCategoryById(req, res) {
     try {
       const { categoryId } = req.params;
@@ -108,7 +95,6 @@ class CategoryController {
         });
       }
 
-      // Check if category belongs to the user's tenant
       if (category.tenant_id !== tenantId) {
         return res.status(403).json({
           success: false,
@@ -122,7 +108,6 @@ class CategoryController {
         data: category
       });
     } catch (error) {
-      console.error('Get category by ID error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -130,12 +115,8 @@ class CategoryController {
     }
   }
 
-  /**
-   * Update category
-   */
   static async updateCategory(req, res) {
     try {
-      // Validasi input
       const { error, value } = checkValidate(updateCategoryValidation, req);
       if (error) {
         return res.status(400).json({
@@ -152,7 +133,6 @@ class CategoryController {
         updated_by: userId
       };
 
-      // Check if category exists and belongs to tenant
       const existingCategory = await categoryService.getCategoryById(categoryId, false);
       if (!existingCategory) {
         return res.status(404).json({
@@ -168,7 +148,6 @@ class CategoryController {
         });
       }
 
-      // Check if category name already exists (if updating name)
       if (updateData.category_name && updateData.category_name !== existingCategory.category_name) {
         const duplicateCategory = await categoryService.getCategoryByName(
           updateData.category_name,
@@ -192,8 +171,6 @@ class CategoryController {
         data: category
       });
     } catch (error) {
-      console.error('Update category error:', error);
-
       if (error.message === 'Category not found') {
         return res.status(404).json({
           success: false,
@@ -208,15 +185,11 @@ class CategoryController {
     }
   }
 
-  /**
-   * Delete category (soft delete)
-   */
   static async deleteCategory(req, res) {
     try {
       const { categoryId } = req.params;
       const { tenantId, userId } = req.user;
 
-      // Check if category exists and belongs to tenant
       const existingCategory = await categoryService.getCategoryById(categoryId, false);
       if (!existingCategory) {
         return res.status(404).json({
@@ -240,8 +213,6 @@ class CategoryController {
         data: category
       });
     } catch (error) {
-      console.error('Delete category error:', error);
-
       if (error.message === 'Category not found') {
         return res.status(404).json({
           success: false,
@@ -263,9 +234,6 @@ class CategoryController {
     }
   }
 
-  /**
-   * Get categories by brand
-   */
   static async getCategoriesByBrand(req, res) {
     try {
       const { brandId } = req.params;
@@ -284,7 +252,6 @@ class CategoryController {
         data: categories
       });
     } catch (error) {
-      console.error('Get categories by brand error:', error);
       res.status(500).json({
         success: false,
         message: error.message
@@ -292,15 +259,11 @@ class CategoryController {
     }
   }
 
-  /**
-   * Toggle category status (active/inactive)
-   */
   static async toggleCategoryStatus(req, res) {
     try {
       const { categoryId } = req.params;
       const { tenantId, userId } = req.user;
 
-      // Check if category exists and belongs to tenant
       const existingCategory = await categoryService.getCategoryById(categoryId, false);
       if (!existingCategory) {
         return res.status(404).json({
@@ -324,8 +287,6 @@ class CategoryController {
         data: category
       });
     } catch (error) {
-      console.error('Toggle category status error:', error);
-
       if (error.message === 'Category not found') {
         return res.status(404).json({
           success: false,

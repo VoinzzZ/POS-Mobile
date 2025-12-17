@@ -31,14 +31,7 @@ function verifyToken(req, res, next) {
     setUser(req, decoded);
     next();
   } catch (error) {
-    console.error('🔴 Auth Middleware Error:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack?.split('\n').slice(0, 3)
-    });
-    
-    // Handle both JWT library errors and custom errors
-    if (error.name === 'TokenExpiredError' || 
+    if (error.name === 'TokenExpiredError' ||
         error.name === 'JsonWebTokenError' ||
         error.message?.includes('expired') ||
         error.message?.includes('invalid')) {

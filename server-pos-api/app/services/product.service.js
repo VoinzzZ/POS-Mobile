@@ -43,8 +43,7 @@ const createProduct = async (productData) => {
     });
     return product;
   } catch (error) {
-    console.error('Error creating product:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -228,8 +227,7 @@ const getProducts = async (filters = {}) => {
       }
     };
   } catch (error) {
-    console.error('Error getting products:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -264,8 +262,7 @@ const getProductById = async (product_id, includeRelations = true) => {
     });
     return product;
   } catch (error) {
-    console.error('Error getting product by ID:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -322,8 +319,7 @@ const updateProduct = async (product_id, updateData) => {
     });
     return product;
   } catch (error) {
-    console.error('Error updating product:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -350,8 +346,7 @@ const deleteProduct = async (product_id, deleted_by = null) => {
     });
     return product;
   } catch (error) {
-    console.error('Error deleting product:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -366,8 +361,7 @@ const getProductBySku = async (product_sku, tenant_id) => {
     });
     return product;
   } catch (error) {
-    console.error('Error getting product by SKU:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -406,8 +400,7 @@ const getProductsByCategory = async (category_id, tenant_id, isActiveOnly = true
     });
     return products;
   } catch (error) {
-    console.error('Error getting products by category:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -446,8 +439,7 @@ const getProductsByBrand = async (brand_id, tenant_id, isActiveOnly = true, isSe
     });
     return products;
   } catch (error) {
-    console.error('Error getting products by brand:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -487,8 +479,7 @@ const toggleProductStatus = async (product_id, updated_by = null) => {
     });
     return product;
   } catch (error) {
-    console.error('Error toggling product status:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -528,8 +519,7 @@ const toggleProductSellableStatus = async (product_id, updated_by = null) => {
     });
     return product;
   } catch (error) {
-    console.error('Error toggling product sellable status:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -584,8 +574,7 @@ const updateProductStock = async (product_id, stock, operation = 'set', updated_
     });
     return product;
   } catch (error) {
-    console.error('Error updating product stock:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -693,8 +682,7 @@ const getProductsInfinite = async (filters = {}) => {
       sort_order
     };
   } catch (error) {
-    console.error('Error getting products infinite:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -773,8 +761,7 @@ const searchProductsInfinite = async (searchTerm, filters = {}) => {
       totalResults: products.length // Note: This is not the total count, just current page count
     };
   } catch (error) {
-    console.error('Error searching products infinite:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -894,8 +881,7 @@ const getProductsMobile = async (filters = {}) => {
       loadedCount: finalProducts.length
     };
   } catch (error) {
-    console.error('Error getting mobile products:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -982,8 +968,7 @@ const searchProductsMobile = async (searchTerm, filters = {}) => {
       loadedCount: finalProducts.length
     };
   } catch (error) {
-    console.error('Error searching mobile products:', error);
-    throw error;
+        throw error;
   }
 };
 
@@ -1040,8 +1025,7 @@ const getProductsQuickLoad = async (filters = {}) => {
       loadedCount: finalProducts.length
     };
   } catch (error) {
-    console.error('Error quick loading products:', error);
-    throw error;
+        throw error;
   }
 };
 
