@@ -10,9 +10,9 @@ class EmailService {
     async verifyConnection() {
         try {
             await this.transporter.verify();
-                        return true;
+            return true;
         } catch (error) {
-                        return false;
+            return false;
         }
     }
 
@@ -31,9 +31,9 @@ class EmailService {
             };
 
             const result = await this.transporter.sendMail(mailOptions);
-                        return { success: true, messageId: result.messageId };
+            return { success: true, messageId: result.messageId };
         } catch (error) {
-                        return { success: false, error: error.message };
+            return { success: false, error: error.message };
         }
     }
 
@@ -56,7 +56,7 @@ class EmailService {
     close() {
         if (this.transporter) {
             this.transporter.close();
-                    }
+        }
     }
 }
 

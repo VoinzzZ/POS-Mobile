@@ -5,18 +5,19 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
   RefreshControl,
   Image,
   Alert,
-  useWindowDimensions,
+  TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import { useWindowDimensions } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../../src/context/AuthContext";
-import { Package, Search, Settings, Plus, Edit, Trash2, Tag, Folder, ChevronDown, ChevronRight } from "lucide-react-native";
-import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
-import { useRouter } from "expo-router";
+import { Package, Search, Settings, Plus, TrendingUp, TrendingDown, Eye, Image as ImageIcon, Edit, Trash2, Tag, Folder, ChevronDown, ChevronRight } from "lucide-react-native";
+import OwnerBottomNav from "../../src/components/navigation/OwnerBottomNav";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTheme } from "../../src/context/ThemeContext";
 import {
   getAllProducts,
@@ -38,11 +39,13 @@ import EditProductModal from "../../src/components/modals/EditProductModal";
 
 type TabType = "products" | "categories" | "brands";
 
-export default function AdminProducts() {
+
+export default function OwnerProducts() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const { colors } = useTheme();
   const layout = useWindowDimensions();
+  const params = useLocalSearchParams();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -59,15 +62,60 @@ export default function AdminProducts() {
   ]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Tab persistence and deep linking
+  useEffect(() => {
+    // Load saved tab or use URL parameter
+    const loadTabState = async () => {
+      try {
+        // Check URL parameter first
+        if (params.tab) {
+          const tabParam = params.tab.toString().toLowerCase();
+          const tabIndex = routes.findIndex(route => route.key === tabParam);
+          if (tabIndex !== -1) {
+            setIndex(tabIndex);
+            return;
+          }
+        }
+
+        // Fall back to saved state
+        const savedTab = await AsyncStorage.getItem('owner_products_active_tab');
+        if (savedTab !== null) {
+          const savedIndex = parseInt(savedTab, 10);
+          if (savedIndex >= 0 && savedIndex < routes.length) {
+            setIndex(savedIndex);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading tab state:', error);
+      }
+    };
+
+    loadTabState();
+  }, [params.tab, routes]);
+
+  // Save tab state when it changes
+  const handleIndexChange = useCallback((newIndex: number) => {
+    setIndex(newIndex);
+    // Save to AsyncStorage for persistence
+    AsyncStorage.setItem('owner_products_active_tab', newIndex.toString())
+      .catch(error => console.error('Error saving tab state:', error));
+
+    // Update URL if needed (without replacing the entire history)
+    const newTab = routes[newIndex].key;
+    if (params.tab !== newTab) {
+      router.replace({ pathname: '/(owner)/products', params: { tab: newTab } });
+    }
+  }, [routes, params.tab, router]);
+
   // Products state
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  
+
   // Categories state
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
-  
+
   // Brands state
   const [brands, setBrands] = useState<Brand[]>([]);
   const [filteredBrands, setFilteredBrands] = useState<Brand[]>([]);
@@ -148,7 +196,7 @@ export default function AdminProducts() {
 
   const handleSearch = (query: string) => {
     const lowerQuery = query.toLowerCase();
-    
+
     if (index === 0) {
       const filtered = products.filter(
         (p) =>
@@ -312,7 +360,7 @@ export default function AdminProducts() {
     const brandCount = categoryBrands.length;
     const productCount = products.filter(p => p.m_brand?.brand_category_id === category.category_id).length;
     const isExpanded = expandedCategories.has(category.category_id);
-    
+
     return (
       <View key={category.category_id} style={styles.categoryContainer}>
         {/* Category Header */}
@@ -334,7 +382,7 @@ export default function AdminProducts() {
               </Text>
             </View>
             {brandCount > 0 && (
-              isExpanded ? 
+              isExpanded ?
                 <ChevronDown size={20} color={colors.textSecondary} /> :
                 <ChevronRight size={20} color={colors.textSecondary} />
             )}
@@ -425,7 +473,7 @@ export default function AdminProducts() {
 
   const renderBrandCard = (brand: Brand) => {
     const productCount = products.filter(p => p.product_brand_id === brand.brand_id).length;
-    
+
     return (
       <TouchableOpacity
         key={brand.brand_id}
@@ -481,6 +529,12 @@ export default function AdminProducts() {
         </View>
       </TouchableOpacity>
     );
+  };
+
+  const getActiveTab = (): TabType => {
+    if (index === 0) return "products";
+    if (index === 1) return "categories";
+    return "brands";
   };
 
   const renderScene = ({ route }: any) => {
@@ -599,12 +653,6 @@ export default function AdminProducts() {
     />
   );
 
-  const getActiveTab = (): TabType => {
-    if (index === 0) return "products";
-    if (index === 1) return "categories";
-    return "brands";
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
@@ -618,7 +666,7 @@ export default function AdminProducts() {
           </Text>
         </View>
         <TouchableOpacity
-          onPress={() => router.push("/(admin)/settings")}
+          onPress={() => router.push("/(owner)/dashboard")}
           style={styles.settingsBtn}
         >
           <Settings size={24} color={colors.textSecondary} />
@@ -670,7 +718,7 @@ export default function AdminProducts() {
         navigationState={{ index, routes }}
         renderScene={renderScene}
         renderTabBar={renderTabBar}
-        onIndexChange={setIndex}
+        onIndexChange={handleIndexChange}
         initialLayout={{ width: layout.width }}
       />
 
@@ -687,7 +735,7 @@ export default function AdminProducts() {
       </TouchableOpacity>
 
       {/* Bottom Navigation */}
-      <AdminBottomNav />
+      <OwnerBottomNav />
 
       {/* Modals */}
       <AddProductModal

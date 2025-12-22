@@ -161,12 +161,12 @@ model m_product {
   product_name        String
   product_description String?    @db.Text
   product_sku         String?    @unique
-  brand_id            Int
-  category_id         Int
+  brand_id            Int?
+  category_id         Int?
   tenant_id           Int
   product_price       Decimal    @db.Decimal(10, 2)
   product_cost        Decimal?   @db.Decimal(10, 2)
-  product_stock       Int        @default(0)
+  product_qty         Int        @default(0)
   product_min_stock   Int?       @default(5)
   is_active           Boolean    @default(true)
   is_track_stock      Boolean    @default(true)
@@ -177,8 +177,8 @@ model m_product {
   created_at          DateTime   @default(now())
   updated_at          DateTime   @updatedAt
   deleted_at          DateTime?
-  m_brand             m_brand    @relation(fields: [brand_id], references: [brand_id])
-  m_category          m_category @relation(fields: [category_id], references: [category_id])
+  m_brand             m_brand?    @relation(fields: [brand_id], references: [brand_id])
+  m_category          m_category? @relation(fields: [category_id], references: [category_id])
   m_tenant            m_tenant   @relation(fields: [tenant_id], references: [tenant_id])
 
   @@index([brand_id])

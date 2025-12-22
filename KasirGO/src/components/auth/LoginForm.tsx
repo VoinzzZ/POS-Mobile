@@ -50,13 +50,13 @@ const LoginForm = (props: LoginFormProps) => {
 
     try {
       setIsLoading(true);
-      
+
       // Call login from AuthContext
       await login(email, password);
-      
-      // Login success - AuthContext will handle the redirect via index.tsx
-      // No need to manually redirect here
-      
+
+      // Login success - AuthContext state will update and trigger redirect
+      // The login screen useEffect will handle the redirect
+
     } catch (error: any) {
       console.error("Login error:", error);
       const errorMsg = error.message || "Email atau password salah. Silakan coba lagi.";

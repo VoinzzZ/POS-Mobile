@@ -18,12 +18,6 @@ const createBrand = async (brandData) => {
             tenant_id: true,
             tenant_name: true
           }
-        },
-        _count: {
-          select: {
-            m_category: true,
-            m_product: true
-          }
         }
       }
     });
@@ -60,12 +54,6 @@ const getBrands = async (filters = {}) => {
           select: {
             tenant_id: true,
             tenant_name: true
-          }
-        },
-        _count: {
-          select: {
-            m_category: true,
-            m_product: true
           }
         }
       },

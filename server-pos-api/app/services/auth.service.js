@@ -82,21 +82,26 @@ class AuthService {
     });
 
   
-    // Generate tokens
-    const accessToken = JWTService.generateAccessToken({
+    // Generate tokens using generateTokenPair for complete structure
+    const tokenPayload = {
       userId: user.user_id,
       email: user.user_email,
       role: user.m_role?.role_name || 'SA',
       name: user.user_full_name || user.user_name,
       tenantId: user.tenant_id,
       is_sa: user.is_sa
-    });
+    };
 
-    
-    const refreshToken = JWTService.generateRefreshToken({
-      userId: user.user_id,
-      email: user.user_email
-    });
+    const rawTokens = JWTService.generateTokenPair(tokenPayload);
+
+    // Transform to snake_case for frontend compatibility
+    const tokens = {
+      access_token: rawTokens.accessToken,
+      refresh_token: rawTokens.refreshToken,
+      expires_in: rawTokens.expiresIn,
+      refresh_expires_in: rawTokens.refreshExpiresIn,
+      tokenType: rawTokens.tokenType
+    };
 
       return {
         user: {
@@ -111,10 +116,7 @@ class AuthService {
           isVerified: user.user_is_verified,
           lastLogin: user.user_last_login
         },
-        tokens: {
-          accessToken,
-          refreshToken
-        },
+        tokens: tokens,
         message: "Login berhasil"
       };
     });
@@ -126,7 +128,14 @@ class AuthService {
     }
 
     try {
-    const decoded = JWTService.verifyRefreshToken(refreshToken);
+      console.log('🔍 Verifying refresh token...');
+      const decoded = JWTService.verifyRefreshToken(refreshToken);
+
+      console.log('✅ Refresh token verified:', {
+        userId: decoded.userId,
+        email: decoded.email,
+        type: decoded.type
+      });
 
     const user = await prisma.m_user.findFirst({
       where: {
@@ -145,16 +154,27 @@ class AuthService {
       throw new Error("User tidak ditemukan");
     }
 
-    const newAccessToken = JWTService.generateAccessToken({
+    const tokenPayload = {
       userId: user.user_id,
       email: user.user_email,
       role: user.m_role?.role_name || 'SA',
       name: user.user_full_name || user.user_name,
       tenantId: user.tenant_id
-    });
+    };
+
+    const rawTokens = JWTService.generateTokenPair(tokenPayload);
+
+    // Transform to snake_case for frontend compatibility
+    const tokens = {
+      access_token: rawTokens.accessToken,
+      refresh_token: rawTokens.refreshToken,
+      expires_in: rawTokens.expiresIn,
+      refresh_expires_in: rawTokens.refreshExpiresIn,
+      tokenType: rawTokens.tokenType
+    };
 
       return {
-        accessToken: newAccessToken,
+        tokens: tokens,
         user: {
           id: user.user_id,
           name: user.user_full_name || user.user_name,

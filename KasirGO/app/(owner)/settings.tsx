@@ -1,12 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from "react-native";
 import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight, Moon, Sun } from "lucide-react-native";
-import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
+import OwnerBottomNav from "../../src/components/navigation/OwnerBottomNav";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter } from "expo-router";
 
-export default function SettingsScreen() {
+export default function OwnerSettingsScreen() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme, colors } = useTheme();
   const router = useRouter();
@@ -130,7 +130,7 @@ export default function SettingsScreen() {
         <View style={{ height: 20 }} />
       </ScrollView>
 
-      <AdminBottomNav />
+      <OwnerBottomNav />
     </View>
   );
 }

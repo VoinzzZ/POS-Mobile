@@ -5,7 +5,7 @@ export interface Product {
   product_id: number;
   product_name: string;
   product_price: number;
-  product_stock: number;
+  product_qty: number;
   product_image_url: string | null;
   product_brand_id: number | null;
   m_brand?: {
@@ -43,7 +43,7 @@ export interface Brand {
 export interface CreateProductData {
   product_name: string;
   product_price: number;
-  product_stock: number;
+  product_qty: number;
   product_image_url?: string | null;
   product_brand_id?: number | null;
   image?: any;
@@ -72,7 +72,7 @@ export const getAllProducts = async (
   if (category_id) params.category_id = category_id;
   if (brand_id) params.brand_id = brand_id;
 
-  const res = await api.get("/product", { params });
+  const res = await api.get("/products", { params });
 
   // Transform the server data to add camelCase aliases
   if (res.data.success && res.data.data) {
@@ -93,7 +93,7 @@ export const getAllProducts = async (
 export const getProductById = async (
   id: number
 ): Promise<ApiResponse<Product>> => {
-  const res = await api.get(`/product/${id}`);
+  const res = await api.get(`/products/${id}`);
   return res.data;
 };
 
@@ -109,11 +109,11 @@ export const createProduct = async (
     const formData = new FormData();
     formData.append('product_name', data.product_name);
     formData.append('product_price', data.product_price.toString());
-    formData.append('product_stock', data.product_stock.toString());
+    formData.append('product_qty', data.product_qty.toString());
     if (data.product_brand_id) formData.append('brand_id', data.product_brand_id.toString());
     formData.append('image', data.image);
     
-    const res = await api.post("/product", formData, {
+    const res = await api.post("/products", formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -121,8 +121,16 @@ export const createProduct = async (
     return res.data;
   }
   
-  // Otherwise, use regular JSON
-  const res = await api.post("/product", data);
+  // Otherwise, use regular JSON with field transformation
+  const transformedData = {
+    product_name: data.product_name,
+    product_price: data.product_price,
+    product_qty: data.product_qty,
+    brand_id: data.product_brand_id || null,
+    category_id: data.product_category_id || null
+  };
+
+  const res = await api.post("/products", transformedData);
   return res.data;
 };
 
@@ -140,11 +148,11 @@ export const updateProduct = async (
     const formData = new FormData();
     if (data.product_name) formData.append('product_name', data.product_name);
     if (data.product_price) formData.append('product_price', data.product_price.toString());
-    if (data.product_stock) formData.append('product_stock', data.product_stock.toString());
+    if (data.product_qty) formData.append('product_qty', data.product_qty.toString());
     if (data.product_brand_id) formData.append('brand_id', data.product_brand_id.toString());
     formData.append('image', data.image);
     
-    const res = await api.put(`/product/${id}`, formData, {
+    const res = await api.put(`/products/${id}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -153,7 +161,7 @@ export const updateProduct = async (
   }
   
   // Otherwise, use regular JSON
-  const res = await api.put(`/product/${id}`, data);
+  const res = await api.put(`/products/${id}`, data);
   return res.data;
 };
 
@@ -164,7 +172,7 @@ export const updateProduct = async (
 export const deleteProduct = async (
   id: number
 ): Promise<ApiResponse> => {
-  const res = await api.delete(`/product/${id}`);
+  const res = await api.delete(`/products/${id}`);
   return res.data;
 };
 
@@ -172,7 +180,7 @@ export const deleteProduct = async (
  * Get all categories
  */
 export const getAllCategories = async (): Promise<ApiResponse<Category[]>> => {
-  const res = await api.get("/category");
+  const res = await api.get("/categories");
 
   // Transform the server data to add camelCase aliases
   if (res.data.success && res.data.data) {
@@ -190,7 +198,7 @@ export const getAllCategories = async (): Promise<ApiResponse<Category[]>> => {
  * Get all brands
  */
 export const getAllBrands = async (): Promise<ApiResponse<Brand[]>> => {
-  const res = await api.get("/brand");
+  const res = await api.get("/brands");
 
   // Transform the server data to add camelCase aliases
   if (res.data.success && res.data.data) {
@@ -211,7 +219,7 @@ export const getAllBrands = async (): Promise<ApiResponse<Brand[]>> => {
 export const createCategory = async (
   name: string
 ): Promise<ApiResponse<Category>> => {
-  const res = await api.post("/category", { category_name: name });
+  const res = await api.post("/categories", { category_name: name });
   return res.data;
 };
 
@@ -224,7 +232,7 @@ export const updateCategory = async (
   id: number,
   name: string
 ): Promise<ApiResponse<Category>> => {
-  const res = await api.put(`/category/${id}`, { category_name: name });
+  const res = await api.put(`/categories/${id}`, { category_name: name });
   return res.data;
 };
 
@@ -235,7 +243,7 @@ export const updateCategory = async (
 export const deleteCategory = async (
   id: number
 ): Promise<ApiResponse> => {
-  const res = await api.delete(`/category/${id}`);
+  const res = await api.delete(`/categories/${id}`);
   return res.data;
 };
 
@@ -248,7 +256,7 @@ export const createBrand = async (
   name: string,
   category_id?: number | null
 ): Promise<ApiResponse<Brand>> => {
-  const res = await api.post("/brand", { brand_name: name, brand_category_id: category_id });
+  const res = await api.post("/brands", { brand_name: name, brand_category_id: category_id });
   return res.data;
 };
 
@@ -263,7 +271,7 @@ export const updateBrand = async (
   name: string,
   category_id?: number | null
 ): Promise<ApiResponse<Brand>> => {
-  const res = await api.put(`/brand/${id}`, { brand_name: name, brand_category_id: category_id });
+  const res = await api.put(`/brands/${id}`, { brand_name: name, brand_category_id: category_id });
   return res.data;
 };
 
@@ -274,7 +282,7 @@ export const updateBrand = async (
 export const deleteBrand = async (
   id: number
 ): Promise<ApiResponse> => {
-  const res = await api.delete(`/brand/${id}`);
+  const res = await api.delete(`/brands/${id}`);
   return res.data;
 };
 

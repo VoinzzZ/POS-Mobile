@@ -64,11 +64,6 @@ const getCategories = async (filters = {}) => {
             tenant_id: true,
             tenant_name: true
           }
-        },
-        _count: {
-          select: {
-            m_product: true
-          }
         }
       },
       orderBy: {

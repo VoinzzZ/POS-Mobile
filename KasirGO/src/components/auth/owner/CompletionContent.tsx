@@ -94,7 +94,6 @@ export default function CompletionContent({
             </View>
           </View>
 
-          {/* Go to Login Button */}
           <TouchableOpacity
             style={[styles.loginButton, { backgroundColor: colors.primary }]}
             onPress={handleGoToLogin}
@@ -106,7 +105,6 @@ export default function CompletionContent({
           </TouchableOpacity>
         </View>
 
-        {/* Help Text - Fixed at bottom with 10px margin */}
         <View style={styles.helpContainer}>
           <Text style={[styles.helpText, { color: colors.textSecondary }]}>
             Butuh bantuan?{' '}

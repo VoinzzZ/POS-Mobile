@@ -32,6 +32,12 @@ class AuthController {
     try {
       const { refreshToken } = req.body;
 
+      console.log('🔄 Refresh token request:', {
+        hasRefreshToken: !!refreshToken,
+        tokenLength: refreshToken ? refreshToken.length : 0,
+        tokenStart: refreshToken ? refreshToken.substring(0, 20) + '...' : 'none'
+      });
+
       const result = await AuthService.refreshAccessToken(refreshToken);
 
       res.status(200).json({
@@ -40,6 +46,11 @@ class AuthController {
         data: result
       });
     } catch (error) {
+      console.log('❌ Refresh token error:', {
+        message: error.message,
+        stack: error.stack
+      });
+
       res.status(401).json({
         success: false,
         message: error.message || 'Refresh token gagal'

@@ -7,12 +7,12 @@ const createProduct = async (productData) => {
         product_name: productData.product_name,
         product_description: productData.product_description || null,
         product_sku: productData.product_sku || null,
-        brand_id: productData.brand_id,
-        category_id: productData.category_id,
+        brand_id: productData.brand_id || null,
+        category_id: productData.category_id || null,
         tenant_id: productData.tenant_id,
         product_price: productData.product_price,
         product_cost: productData.product_cost || null,
-        product_stock: productData.product_stock || 0,
+        product_qty: productData.product_qty || 0,
         product_min_stock: productData.product_min_stock || 5,
         is_active: productData.is_active !== undefined ? productData.is_active : true,
         is_track_stock: productData.is_track_stock !== undefined ? productData.is_track_stock : true,
@@ -90,65 +90,27 @@ const getProducts = async (filters = {}) => {
     }
 
     if (low_stock === 'true' || low_stock === true) {
-      where.product_stock = {
+      where.product_qty = {
         lte: prisma.m_product.fields.product_min_stock
       };
     }
 
-    // Handle cursor-based pagination for infinite scroll
-    let orderBy = {};
-    let skip = undefined;
-    let cursorCondition = undefined;
+    // Simple orderBy construction
+    const sortField = sort_by === 'created_at' ? 'created_at' :
+                     sort_by === 'product_name' ? 'product_name' :
+                     sort_by === 'product_price' ? 'product_price' :
+                     sort_by === 'product_qty' ? 'product_qty' : 'created_at';
 
-    if (cursor) {
-      // Cursor-based pagination for infinite scroll
-      const sortField = sort_by === 'created_at' ? 'created_at' :
-                       sort_by === 'product_name' ? 'product_name' :
-                       sort_by === 'product_price' ? 'product_price' :
-                       sort_by === 'product_stock' ? 'product_stock' : 'created_at';
+    const orderBy = {
+      [sortField]: sort_order === 'asc' ? 'asc' : 'desc'
+    };
 
-      orderBy[sortField] = sort_order === 'asc' ? 'asc' : 'desc';
-
-      // Add secondary sort for consistent ordering
-      if (sortField !== 'product_id') {
-        orderBy.product_id = 'desc';
-      }
-
-      cursorCondition = {
-        [sortField]: cursor_direction === 'backward' ?
-          { lt: cursor } : { gt: cursor }
-      };
-
-      if (cursor_direction === 'backward') {
-        // For backward pagination, we need to reverse the order and limit
-        orderBy = Object.keys(orderBy).reduce((acc, key) => {
-          acc[key] = orderBy[key] === 'asc' ? 'desc' : 'asc';
-          return acc;
-        }, {});
-      }
-    } else {
-      // Regular offset-based pagination
-      const sortField = sort_by === 'created_at' ? 'created_at' :
-                       sort_by === 'product_name' ? 'product_name' :
-                       sort_by === 'product_price' ? 'product_price' :
-                       sort_by === 'product_stock' ? 'product_stock' : 'created_at';
-
-      orderBy[sortField] = sort_order === 'asc' ? 'asc' : 'desc';
-
-      // Add secondary sort for consistent ordering
-      if (sortField !== 'product_id') {
-        orderBy.product_id = 'desc';
-      }
-
-      const offset = (parseInt(page) - 1) * parseInt(limit);
-      skip = offset;
-    }
+    let skip = 0;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    skip = offset;
 
     const products = await prisma.m_product.findMany({
-      where: {
-        ...where,
-        ...cursorCondition
-      },
+      where: where,
       include: {
         m_brand: {
           select: {
@@ -203,13 +165,13 @@ const getProducts = async (filters = {}) => {
       finalProducts[finalProducts.length - 1][sort_by === 'created_at' ? 'created_at' :
                                              sort_by === 'product_name' ? 'product_name' :
                                              sort_by === 'product_price' ? 'product_price' :
-                                             sort_by === 'product_stock' ? 'product_stock' : 'created_at'] : null;
+                                             sort_by === 'product_qty' ? 'product_qty' : 'created_at'] : null;
 
     const previousCursor = hasPreviousPage && finalProducts.length > 0 ?
       finalProducts[0][sort_by === 'created_at' ? 'created_at' :
                          sort_by === 'product_name' ? 'product_name' :
                          sort_by === 'product_price' ? 'product_price' :
-                         sort_by === 'product_stock' ? 'product_stock' : 'created_at'] : null;
+                         sort_by === 'product_qty' ? 'product_qty' : 'created_at'] : null;
 
     return {
       data: finalProducts,
@@ -288,7 +250,7 @@ const updateProduct = async (product_id, updateData) => {
         ...(updateData.category_id && { category_id: updateData.category_id }),
         ...(updateData.product_price && { product_price: updateData.product_price }),
         ...(updateData.product_cost !== undefined && { product_cost: updateData.product_cost }),
-        ...(updateData.product_stock !== undefined && { product_stock: updateData.product_stock }),
+        ...(updateData.product_qty !== undefined && { product_qty: updateData.product_qty }),
         ...(updateData.product_min_stock !== undefined && { product_min_stock: updateData.product_min_stock }),
         ...(updateData.is_active !== undefined && { is_active: updateData.is_active }),
         ...(updateData.is_track_stock !== undefined && { is_track_stock: updateData.is_track_stock }),
@@ -382,7 +344,7 @@ const getProductsByCategory = async (category_id, tenant_id, isActiveOnly = true
         product_description: true,
         product_sku: true,
         product_price: true,
-        product_stock: true,
+        product_qty: true,
         product_min_stock: true,
         is_active: true,
         is_sellable: true,
@@ -421,7 +383,7 @@ const getProductsByBrand = async (brand_id, tenant_id, isActiveOnly = true, isSe
         product_description: true,
         product_sku: true,
         product_price: true,
-        product_stock: true,
+        product_qty: true,
         product_min_stock: true,
         is_active: true,
         is_sellable: true,
@@ -536,10 +498,10 @@ const updateProductStock = async (product_id, stock, operation = 'set', updated_
     let newStock;
     switch (operation) {
       case 'add':
-        newStock = existingProduct.product_stock + parseInt(stock);
+        newStock = existingProduct.product_qty + parseInt(stock);
         break;
       case 'subtract':
-        newStock = existingProduct.product_stock - parseInt(stock);
+        newStock = existingProduct.product_qty - parseInt(stock);
         if (newStock < 0) newStock = 0;
         break;
       case 'set':
@@ -553,7 +515,7 @@ const updateProductStock = async (product_id, stock, operation = 'set', updated_
         product_id: parseInt(product_id)
       },
       data: {
-        product_stock: newStock,
+        product_qty: newStock,
         updated_by,
         updated_at: new Date()
       },
@@ -620,7 +582,7 @@ const getProductsInfinite = async (filters = {}) => {
     }
 
     if (low_stock === 'true' || low_stock === true) {
-      where.product_stock = {
+      where.product_qty = {
         lte: prisma.m_product.fields.product_min_stock
       };
     }
@@ -628,7 +590,7 @@ const getProductsInfinite = async (filters = {}) => {
     const sortField = sort_by === 'created_at' ? 'created_at' :
                      sort_by === 'product_name' ? 'product_name' :
                      sort_by === 'product_price' ? 'product_price' :
-                     sort_by === 'product_stock' ? 'product_stock' : 'created_at';
+                     sort_by === 'product_qty' ? 'product_qty' : 'created_at';
 
     const orderBy = {};
     orderBy[sortField] = sort_order === 'asc' ? 'asc' : 'desc';
@@ -709,7 +671,7 @@ const searchProductsInfinite = async (searchTerm, filters = {}) => {
     const sortField = sort_by === 'created_at' ? 'created_at' :
                      sort_by === 'product_name' ? 'product_name' :
                      sort_by === 'product_price' ? 'product_price' :
-                     sort_by === 'product_stock' ? 'product_stock' : 'product_name';
+                     sort_by === 'product_qty' ? 'product_qty' : 'product_name';
 
     const orderBy = {};
     orderBy[sortField] = sort_order === 'asc' ? 'asc' : 'desc';
@@ -807,7 +769,7 @@ const getProductsMobile = async (filters = {}) => {
     }
 
     if (low_stock === 'true' || low_stock === true) {
-      where.product_stock = {
+      where.product_qty = {
         lte: prisma.m_product.fields.product_min_stock
       };
     }
@@ -815,7 +777,7 @@ const getProductsMobile = async (filters = {}) => {
     const sortField = sort_by === 'created_at' ? 'created_at' :
                      sort_by === 'product_name' ? 'product_name' :
                      sort_by === 'product_price' ? 'product_price' :
-                     sort_by === 'product_stock' ? 'product_stock' : 'created_at';
+                     sort_by === 'product_qty' ? 'product_qty' : 'created_at';
 
     const orderBy = {};
     orderBy[sortField] = sort_order === 'asc' ? 'asc' : 'desc';
@@ -840,7 +802,7 @@ const getProductsMobile = async (filters = {}) => {
         product_name: true,
         product_sku: true,
         product_price: true,
-        product_stock: true,
+        product_qty: true,
         product_min_stock: true,
         is_active: true,
         is_sellable: true,
@@ -908,7 +870,7 @@ const searchProductsMobile = async (searchTerm, filters = {}) => {
     const sortField = sort_by === 'created_at' ? 'created_at' :
                      sort_by === 'product_name' ? 'product_name' :
                      sort_by === 'product_price' ? 'product_price' :
-                     sort_by === 'product_stock' ? 'product_stock' : 'product_name';
+                     sort_by === 'product_qty' ? 'product_qty' : 'product_name';
 
     const orderBy = {};
     orderBy[sortField] = sort_order === 'asc' ? 'asc' : 'desc';
@@ -933,7 +895,7 @@ const searchProductsMobile = async (searchTerm, filters = {}) => {
         product_name: true,
         product_sku: true,
         product_price: true,
-        product_stock: true,
+        product_qty: true,
         is_active: true,
         is_sellable: true,
         m_brand: {
@@ -1002,7 +964,7 @@ const getProductsQuickLoad = async (filters = {}) => {
         product_id: true,
         product_name: true,
         product_price: true,
-        product_stock: true,
+        product_qty: true,
         is_sellable: true
       },
       orderBy: {

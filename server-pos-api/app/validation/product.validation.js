@@ -31,23 +31,23 @@ const createProductValidation = Joi.object({
   brand_id: Joi.number()
     .integer()
     .positive()
-    .required()
+    .allow(null)
+    .optional()
     .messages({
       'number.base': 'Brand ID harus berupa angka',
       'number.integer': 'Brand ID harus berupa angka bulat',
-      'number.positive': 'Brand ID harus berupa angka positif',
-      'any.required': 'Brand ID wajib diisi'
+      'number.positive': 'Brand ID harus berupa angka positif'
     }),
 
   category_id: Joi.number()
     .integer()
     .positive()
-    .required()
+    .allow(null)
+    .optional()
     .messages({
       'number.base': 'Category ID harus berupa angka',
       'number.integer': 'Category ID harus berupa angka bulat',
-      'number.positive': 'Category ID harus berupa angka positif',
-      'any.required': 'Category ID wajib diisi'
+      'number.positive': 'Category ID harus berupa angka positif'
     }),
 
   tenant_id: Joi.number()
@@ -80,7 +80,7 @@ const createProductValidation = Joi.object({
       'number.min': 'Harga beli produk tidak boleh negatif'
     }),
 
-  product_stock: Joi.number()
+  product_qty: Joi.number()
     .integer()
     .min(0)
     .default(0)
@@ -175,7 +175,7 @@ const updateProductValidation = Joi.object({
       'number.min': 'Harga beli produk tidak boleh negatif'
     }),
 
-  product_stock: Joi.number()
+  product_qty: Joi.number()
     .integer()
     .min(0)
     .optional()
@@ -230,10 +230,10 @@ const paginationValidation = Joi.object({
     }),
 
   sort_by: Joi.string()
-    .valid('created_at', 'product_name', 'product_price', 'product_stock')
+    .valid('created_at', 'product_name', 'product_price', 'product_qty')
     .default('created_at')
     .messages({
-      'any.only': 'Sort field tidak valid. Pilihan: created_at, product_name, product_price, product_stock'
+      'any.only': 'Sort field tidak valid. Pilihan: created_at, product_name, product_price, product_qty'
     }),
 
   sort_order: Joi.string()
@@ -272,10 +272,10 @@ const infiniteScrollValidation = Joi.object({
     }),
 
   sort_by: Joi.string()
-    .valid('created_at', 'product_name', 'product_price', 'product_stock')
+    .valid('created_at', 'product_name', 'product_price', 'product_qty')
     .default('created_at')
     .messages({
-      'any.only': 'Sort field tidak valid. Pilihan: created_at, product_name, product_price, product_stock'
+      'any.only': 'Sort field tidak valid. Pilihan: created_at, product_name, product_price, product_qty'
     }),
 
   sort_order: Joi.string()

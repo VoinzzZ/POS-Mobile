@@ -188,7 +188,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       const productData: any = {
         product_name: name.trim(),
         product_price: Number(price),
-        product_stock: Number(stock),
+        product_qty: Number(stock),
         product_brand_id: brandId || null,
       };
 

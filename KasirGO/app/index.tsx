@@ -20,11 +20,17 @@ export default function Index() {
     return <Redirect href="/auth/login" />;
   }
 
-  if (user.role === 'ADMIN') {
+  const userRole = user?.role || user?.user_role;
+
+  if (userRole === 'OWNER') {
+    return <Redirect href="/(owner)/dashboard" />;
+  }
+
+  if (userRole === 'ADMIN') {
     return <Redirect href="/(admin)/dashboard" />;
   }
 
-  if (user.role === 'CASHIER') {
+  if (userRole === 'CASHIER') {
     return <Redirect href="/(cashier)/dashboard" />;
   }
 

@@ -70,12 +70,12 @@ api.interceptors.response.use(
         // Use TokenService to refresh token
         const newTokens = await TokenService.refreshAccessToken();
         
-        if (newTokens && newTokens.accessToken) {
+        if (newTokens && newTokens.access_token) {
           console.log('Token refreshed successfully via TokenService');
-          
+
           // Update original request with new access token
           if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+            originalRequest.headers.Authorization = `Bearer ${newTokens.access_token}`;
           }
           
           console.log('Retrying original request...');

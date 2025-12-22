@@ -21,7 +21,7 @@ import {
   OwnerEmailData,
   EmployeeRegistrationData,
 } from "../api/auth";
-import TokenService from "../services/tokenService";
+import TokenService, { Tokens, testAsyncStorage } from "../services/tokenService";
 
 // ========== TYPES ==========
 
@@ -38,14 +38,14 @@ interface User {
   roleId?: number;
   isSA?: boolean;
   lastLogin?: string;
+
+  // New API response properties for compatibility
+  name?: string; // Alternative to user_name
+  email?: string; // Alternative to user_email
+  role?: "OWNER" | "ADMIN" | "CASHIER" | "INVENTORY"; // Alternative to user_role
+  isVerified?: boolean; // Alternative to user_is_verified
 }
 
-interface Tokens {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  refresh_expires_in: number;
-}
 
 // Registration data types are imported from auth API
 
@@ -67,7 +67,7 @@ interface AuthContextType {
 
   // New owner registration flow
   registerOwnerTenant: (tenantData: TenantRegistrationData) => Promise<{ registration_id: number; tenant_id: number }>;
-  sendOwnerEmailVerification: (emailData: OwnerEmailData) => Promise<void>;
+  sendOwnerEmailVerification: (emailData: OwnerEmailData) => Promise<any>;
   confirmEmailVerification: (registration_id: number, otp_code: string) => Promise<void>;
   completeOwnerRegistration: (registration_id: number, password: string) => Promise<void>;
 
@@ -109,11 +109,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const loadAuthFromStorage = async () => {
     try {
-      const userStr = await AsyncStorage.getItem("@user");
-      const tokenStr = await AsyncStorage.getItem("@tokens");
+      console.log('🔍 Loading auth from storage...');
 
-      if (userStr) setUser(JSON.parse(userStr));
-      if (tokenStr) setTokens(JSON.parse(tokenStr));
+      // Test AsyncStorage first
+      await testAsyncStorage();
+
+      const userStr = await AsyncStorage.getItem("@user");
+      const tokens = await TokenService.getStoredTokens();
+
+      console.log('🔍 Auth storage results:', {
+        hasUser: !!userStr,
+        hasTokens: !!tokens
+      });
+
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setUser(user);
+        console.log('✅ User loaded:', user.user_email);
+      }
+
+      if (tokens) {
+        setTokens(tokens);
+        console.log('✅ Tokens loaded to context');
+      }
     } catch (error) {
       console.error("Failed to load auth from storage:", error);
     } finally {
@@ -256,12 +274,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   /**
    * Step 2: Send email verification for owner
    */
-  const sendOwnerEmailVerification = async (emailData: OwnerEmailData): Promise<void> => {
+  const sendOwnerEmailVerification = async (emailData: OwnerEmailData): Promise<any> => {
     try {
       const response = await sendOwnerVerificationEmailApi(emailData);
       if (!response.success) {
         throw new Error(response.message || "Failed to send email verification");
       }
+      return response.data;
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Failed to send email verification";
       throw new Error(message);

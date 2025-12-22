@@ -1,4 +1,5 @@
 import api from "./axiosInstance";
+import { Tokens } from "../services/tokenService";
 
 interface User {
   user_id: number;
@@ -8,12 +9,6 @@ interface User {
   user_is_verified: boolean;
 }
 
-interface Tokens {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  refresh_expires_in: number;
-}
 
 interface ApiResponse<T = any> {
   success: boolean;

@@ -152,12 +152,15 @@ export default function DataContent({
         user_phone: emailData.user_phone,
       };
 
-      await sendOwnerEmailVerification(requestData);
+      const response = await sendOwnerEmailVerification(requestData);
+
+      // Use the new registration_id returned from the API (this is the user_id)
+      const newRegistrationId = response.registration_id;
 
       const combinedData = {
         ...params,
         ...emailData,
-        registration_id: registrationId.toString(),
+        registration_id: newRegistrationId.toString(),
       };
 
       router.push({
@@ -165,7 +168,6 @@ export default function DataContent({
         params: combinedData
       });
     } catch (error: any) {
-      // Handle specific API errors
       if (error.message && error.message.includes('registration_id')) {
         Alert.alert(
           'Error Registration',

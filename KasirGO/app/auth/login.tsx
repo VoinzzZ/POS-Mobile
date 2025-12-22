@@ -12,21 +12,32 @@ const LoginScreen = () => {
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      switch (user.user_role) {
-        case "OWNER":
-          router.replace("/(owner)/dashboard");
-          break;
-        case "ADMIN":
-          router.replace("/(admin)/dashboard");
-          break;
-        case "CASHIER":
-          router.replace("/(cashier)/dashboard");
-          break;
-        case "INVENTORY":
-          router.replace("/(inventory)/dashboard");
-          break;
-      }
+    // Only redirect when user is authenticated AND user has role data
+    // Check both 'role' and 'user_role' properties for compatibility
+    const userRole = user?.role || user?.user_role;
+
+    if (isAuthenticated && user && userRole) {
+      console.log("🔄 Redirecting to dashboard - Role:", userRole);
+
+      // Add small delay to ensure state is properly updated
+      const timer = setTimeout(() => {
+        switch (userRole) {
+          case "OWNER":
+            router.replace("/(owner)/dashboard");
+            break;
+          case "ADMIN":
+            router.replace("/(admin)/dashboard");
+            break;
+          case "CASHIER":
+            router.replace("/(cashier)/dashboard");
+            break;
+          case "INVENTORY":
+            router.replace("/(inventory)/dashboard");
+            break;
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
   }, [isAuthenticated, user, router]);
   const backgroundAsset = theme === "light"

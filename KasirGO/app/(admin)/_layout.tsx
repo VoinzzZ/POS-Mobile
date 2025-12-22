@@ -17,10 +17,12 @@ export default function AdminLayout() {
     return <Redirect href="/auth/login" />;
   }
 
-  if (user?.user_role !== "ADMIN" && user?.user_role !== "OWNER") {
-    if (user?.user_role === "CASHIER") {
+  const userRole = user?.role || user?.user_role;
+
+  if (userRole !== "ADMIN" && userRole !== "OWNER") {
+    if (userRole === "CASHIER") {
       return <Redirect href="/(cashier)/dashboard" />;
-    } else if (user?.user_role === "INVENTORY") {
+    } else if (userRole === "INVENTORY") {
       return <Redirect href="/(inventory)/dashboard" />;
     }
     return <Redirect href="/auth/login" />;
