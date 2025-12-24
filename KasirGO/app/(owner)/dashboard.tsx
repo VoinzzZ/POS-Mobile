@@ -73,7 +73,7 @@ export default function OwnerDashboard() {
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <View key={index} style={[styles.statCard, { borderLeftColor: stat.color, backgroundColor: colors.card }]}>
+              <View key={index} style={[styles.statCard, { backgroundColor: colors.card }]}>
                 <View style={[styles.iconContainer, { backgroundColor: stat.bgColor }]}>
                   <Icon size={24} color={stat.color} />
                 </View>
@@ -111,11 +111,7 @@ export default function OwnerDashboard() {
                   key={index}
                   style={[styles.actionButton, { backgroundColor: colors.card }]}
                   onPress={() => {
-                    if (action.onPress) {
-                      action.onPress();
-                    } else if (action.route) {
-                      router.push(action.route as any);
-                    }
+                    router.push(action.route as any);
                   }}
                 >
                   <Icon size={20} color={colors.primary} />
@@ -171,7 +167,6 @@ const styles = StyleSheet.create({
     width: "48%",
     padding: 16,
     borderRadius: 12,
-    borderLeftWidth: 4,
   },
   iconContainer: {
     width: 48,

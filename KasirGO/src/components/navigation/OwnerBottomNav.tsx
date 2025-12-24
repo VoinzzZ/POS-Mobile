@@ -11,25 +11,16 @@ export default function OwnerBottomNav() {
 
   const tabs = [
     {
-      name: "Dashboard",
-      icon: LayoutDashboard,
-      route: "/(owner)/dashboard",
-      path: "/dashboard",
-    },
-    {
-      name: "Products",
-      icon: Package,
-      route: "/(owner)/products",
-      path: "/products",
-    },
-    {
-      name: "Analytics",
       icon: TrendingUp,
       route: "/(owner)/analytics",
       path: "/analytics",
     },
     {
-      name: "Store",
+      icon: LayoutDashboard,
+      route: "/(owner)/dashboard",
+      path: "/dashboard",
+    },
+    {
       icon: Store,
       route: "/(owner)/store",
       path: "/store",
@@ -46,7 +37,6 @@ export default function OwnerBottomNav() {
 
         return (
           <TouchableOpacity
-            key={tab.name}
             style={styles.tab}
             onPress={() => router.push(tab.route as any)}
           >
@@ -55,9 +45,6 @@ export default function OwnerBottomNav() {
               color={active ? colors.primary : colors.textSecondary}
               strokeWidth={active ? 2.5 : 2}
             />
-            <Text style={[styles.label, active && styles.labelActive, { color: active ? colors.primary : colors.textSecondary }]}>
-              {tab.name}
-            </Text>
           </TouchableOpacity>
         );
       })}
@@ -70,7 +57,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderTopWidth: 1,
     paddingVertical: 8,
-    paddingHorizontal: 4,
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },

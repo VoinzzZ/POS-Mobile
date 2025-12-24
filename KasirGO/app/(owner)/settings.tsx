@@ -1,7 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from "react-native";
-import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight, Moon, Sun } from "lucide-react-native";
-import OwnerBottomNav from "../../src/components/navigation/OwnerBottomNav";
+import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight, Moon, Sun, ArrowLeft } from "lucide-react-native";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter } from "expo-router";
@@ -55,7 +54,11 @@ export default function OwnerSettingsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <ArrowLeft size={24} color={colors.text} />
+        </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Pengaturan</Text>
+        <View style={styles.backButton} />
       </View>
 
       <ScrollView style={styles.scrollView}>
@@ -129,8 +132,6 @@ export default function OwnerSettingsScreen() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
-
-      <OwnerBottomNav />
     </View>
   );
 }
@@ -140,9 +141,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 24,

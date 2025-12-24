@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from "react-native";
-import { TrendingUp, Calendar, DollarSign, Users, BarChart3, PieChart, Filter } from "lucide-react-native";
+import { TrendingUp, Calendar, DollarSign, Users, BarChart3, PieChart, Filter, Settings } from "lucide-react-native";
 import OwnerBottomNav from "../../src/components/navigation/OwnerBottomNav";
 import RevenueChart from "../../src/components/shared/RevenueChart";
 import { useTheme } from "../../src/context/ThemeContext";
+import { useRouter } from "expo-router";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -29,6 +30,7 @@ interface AnalyticsData {
 
 export default function AnalyticsScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
 
   const [analyticsData] = useState<AnalyticsData>({
@@ -100,17 +102,17 @@ export default function AnalyticsScreen() {
     },
   ];
 
-  const renderTimeRangeSelector = () => (
-    <View style={styles.timeRangeContainer}>
-      <Filter size={16} color={colors.textSecondary} />
+const renderTimeRangeSelector = () => (
+    <View style={[styles.timeRangeContainer, { backgroundColor: colors.card }]}>
       {timeRanges.map((range) => (
         <TouchableOpacity
           key={range.key}
           style={[
             styles.timeRangeButton,
             {
-              backgroundColor: timeRange === range.key ? colors.primary : colors.card,
-              borderColor: colors.border,
+              backgroundColor: timeRange === range.key ? colors.primary : 'transparent',
+              borderColor: timeRange === range.key ? colors.primary : colors.border,
+              borderWidth: 1,
             }
           ]}
           onPress={() => setTimeRange(range.key as any)}
@@ -119,7 +121,8 @@ export default function AnalyticsScreen() {
             style={[
               styles.timeRangeText,
               {
-                color: timeRange === range.key ? '#ffffff' : colors.text,
+                color: timeRange === range.key ? '#ffffff' : colors.textSecondary,
+                fontWeight: timeRange === range.key ? '700' : '600',
               }
             ]}
           >
@@ -130,19 +133,36 @@ export default function AnalyticsScreen() {
     </View>
   );
 
-  const renderKeyMetrics = () => (
+const renderKeyMetrics = () => (
     <View style={styles.metricsContainer}>
       {keyMetrics.map((metric, index) => {
         const Icon = metric.icon;
         return (
-          <View key={index} style={[styles.metricCard, { backgroundColor: colors.card }]}>
+          <View
+            key={index}
+            style={[
+              styles.metricCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                borderWidth: 1,
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+                elevation: 3,
+              },
+            ]}
+          >
             <View style={styles.metricHeader}>
-              <View style={[styles.metricIcon, { backgroundColor: `${metric.color}20` }]}>
+              <View style={[styles.metricIcon, { backgroundColor: `${metric.color}15` }]}>
                 <Icon size={20} color={metric.color} />
               </View>
-              <Text style={[styles.metricChange, { color: metric.color }]}>
-                {metric.change}
-              </Text>
+              <View style={[styles.metricBadge, { backgroundColor: `${metric.color}20` }]}>
+                <Text style={[styles.metricChange, { color: metric.color }]}>
+                  {metric.change}
+                </Text>
+              </View>
             </View>
             <Text style={[styles.metricValue, { color: colors.text }]}>
               {metric.value}
@@ -156,16 +176,18 @@ export default function AnalyticsScreen() {
     </View>
   );
 
-  const renderProfitAnalysis = () => (
-    <View style={[styles.section, { backgroundColor: colors.card }]}>
+const renderProfitAnalysis = () => (
+    <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Profit Analysis</Text>
       <View style={styles.profitContainer}>
         <View style={styles.profitItem}>
-          <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Revenue</Text>
-          <Text style={[styles.profitValue, { color: colors.primary }]}>
-            {formatCurrency(analyticsData.revenue)}
-          </Text>
-          <View style={[styles.profitBar, { backgroundColor: `${colors.primary}20` }]}>
+          <View style={styles.profitHeader}>
+            <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Revenue</Text>
+            <Text style={[styles.profitValue, { color: colors.primary }]}>
+              {formatCurrency(analyticsData.revenue)}
+            </Text>
+          </View>
+          <View style={[styles.profitBar, { backgroundColor: `${colors.primary}15` }]}>
             <View
               style={[
                 styles.profitFill,
@@ -175,29 +197,33 @@ export default function AnalyticsScreen() {
           </View>
         </View>
         <View style={styles.profitItem}>
-          <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Expenses</Text>
-          <Text style={[styles.profitValue, { color: '#ef4444' }]}>
-            {formatCurrency(analyticsData.expenses)}
-          </Text>
-          <View style={[styles.profitBar, { backgroundColor: '#ef444420' }]}>
+          <View style={styles.profitHeader}>
+            <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Expenses</Text>
+            <Text style={[styles.profitValue, { color: colors.error }]}>
+              {formatCurrency(analyticsData.expenses)}
+            </Text>
+          </View>
+          <View style={[styles.profitBar, { backgroundColor: `${colors.error}15` }]}>
             <View
               style={[
                 styles.profitFill,
-                { backgroundColor: '#ef4444', width: '55%' }
+                { backgroundColor: colors.error, width: '55%' }
               ]}
             />
           </View>
         </View>
         <View style={styles.profitItem}>
-          <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Profit</Text>
-          <Text style={[styles.profitValue, { color: '#10b981' }]}>
-            {formatCurrency(analyticsData.profit)}
-          </Text>
-          <View style={[styles.profitBar, { backgroundColor: '#10b98120' }]}>
+          <View style={styles.profitHeader}>
+            <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Profit</Text>
+            <Text style={[styles.profitValue, { color: colors.success }]}>
+              {formatCurrency(analyticsData.profit)}
+            </Text>
+          </View>
+          <View style={[styles.profitBar, { backgroundColor: `${colors.success}15` }]}>
             <View
               style={[
                 styles.profitFill,
-                { backgroundColor: '#10b981', width: '32%' }
+                { backgroundColor: colors.success, width: '32%' }
               ]}
             />
           </View>
@@ -206,11 +232,20 @@ export default function AnalyticsScreen() {
     </View>
   );
 
-  const renderEmployeePerformance = () => (
-    <View style={[styles.section, { backgroundColor: colors.card }]}>
+const renderEmployeePerformance = () => (
+    <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Performers</Text>
-      {analyticsData.employeePerformance.slice(0, 3).map((employee, index) => (
-        <View key={index} style={styles.employeeItem}>
+      {analyticsData.employeePerformance.slice(0, 3).map((employee, index, arr) => (
+        <View
+          key={index}
+          style={[
+            styles.employeeItem,
+            {
+              borderBottomColor: colors.border,
+              borderBottomWidth: index < arr.length - 1 ? 1 : 0,
+            },
+          ]}
+        >
           <View style={styles.employeeInfo}>
             <Text style={[styles.employeeName, { color: colors.text }]}>
               {employee.name}
@@ -219,12 +254,9 @@ export default function AnalyticsScreen() {
               {employee.transactions} transactions • {formatCurrency(employee.revenue)}
             </Text>
           </View>
-          <View style={styles.employeeRating}>
+          <View style={[styles.employeeRating, { backgroundColor: `${colors.primary}15`, borderRadius: 8 }]}>
             <Text style={[styles.ratingValue, { color: colors.primary }]}>
-              {employee.rating}
-            </Text>
-            <Text style={[styles.ratingLabel, { color: colors.textSecondary }]}>
-              Rating
+              {employee.rating}★
             </Text>
           </View>
         </View>
@@ -235,27 +267,26 @@ export default function AnalyticsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <View style={styles.headerLeft}>
-          <TrendingUp size={24} color={colors.primary} />
-          <Text style={[styles.title, { color: colors.text }]}>Analytics</Text>
-        </View>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Business intelligence dashboard
-        </Text>
+        <Text style={[styles.title, { color: colors.text }]}>Analytics</Text>
+        <TouchableOpacity
+          onPress={() => router.push("/(owner)/settings")}
+          style={styles.settingsBtn}
+        >
+          <Settings size={24} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Revenue Chart - Hero Section at Top */}
+        <View style={[styles.chartHeroSection, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+          <RevenueChart />
+        </View>
+
         {/* Time Range Selector */}
         {renderTimeRangeSelector()}
 
         {/* Key Metrics */}
         {renderKeyMetrics()}
-
-        {/* Revenue Chart */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Revenue Trends</Text>
-          <RevenueChart />
-        </View>
 
         {/* Profit Analysis */}
         {renderProfitAnalysis()}
@@ -264,23 +295,23 @@ export default function AnalyticsScreen() {
         {renderEmployeePerformance()}
 
         {/* Business Insights */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Business Insights</Text>
           <View style={styles.insightList}>
-            <View style={styles.insightItem}>
-              <View style={[styles.insightDot, { backgroundColor: '#10b981' }]} />
+            <View style={[styles.insightItem, { backgroundColor: `${colors.success}08`, borderLeftColor: colors.success }]}>
+              <View style={[styles.insightDot, { backgroundColor: colors.success }]} />
               <Text style={[styles.insightText, { color: colors.text }]}>
                 Revenue increased by 18.5% compared to last month
               </Text>
             </View>
-            <View style={styles.insightItem}>
-              <View style={[styles.insightDot, { backgroundColor: '#3b82f6' }]} />
+            <View style={[styles.insightItem, { backgroundColor: `${colors.info}08`, borderLeftColor: colors.info }]}>
+              <View style={[styles.insightDot, { backgroundColor: colors.info }]} />
               <Text style={[styles.insightText, { color: colors.text }]}>
                 Average transaction value: {formatCurrency(Math.round(analyticsData.revenue / analyticsData.transactions))}
               </Text>
             </View>
-            <View style={styles.insightItem}>
-              <View style={[styles.insightDot, { backgroundColor: '#f59e0b' }]} />
+            <View style={[styles.insightItem, { backgroundColor: `${colors.warning}08`, borderLeftColor: colors.warning }]}>
+              <View style={[styles.insightDot, { backgroundColor: colors.warning }]} />
               <Text style={[styles.insightText, { color: colors.text }]}>
                 Peak business hours: 10 AM - 2 PM
               </Text>
@@ -302,59 +333,61 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
   },
-  subtitle: {
-    fontSize: 12,
-    fontWeight: '500',
+  settingsBtn: {
+    padding: 8,
   },
   scrollView: {
     flex: 1,
   },
-  // Time range selector
+  chartHeroSection: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 24,
+    padding: 0,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
   timeRangeContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
     gap: 8,
   },
   timeRangeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    alignItems: 'center',
   },
   timeRangeText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
   },
   // Key metrics
   metricsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 16,
+    paddingHorizontal: 20,
+    marginBottom: 8,
     gap: 12,
   },
   metricCard: {
     width: '48%',
     padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#3b82f6',
+    borderRadius: 14,
   },
   metricHeader: {
     flexDirection: 'row',
@@ -369,28 +402,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  metricBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
   metricChange: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   metricValue: {
     fontSize: 20,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   metricTitle: {
     fontSize: 12,
+    fontWeight: '500',
   },
   // Section
   section: {
     marginHorizontal: 20,
     marginBottom: 20,
-    padding: 20,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 14,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     marginBottom: 16,
   },
   // Profit analysis
@@ -400,48 +439,53 @@ const styles = StyleSheet.create({
   profitItem: {
     gap: 8,
   },
+  profitHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   profitLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   profitValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
   profitBar: {
-    height: 8,
-    borderRadius: 4,
+    height: 10,
+    borderRadius: 6,
     overflow: 'hidden',
   },
   profitFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 6,
   },
   // Employee performance
   employeeItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    paddingVertical: 14,
   },
   employeeInfo: {
     flex: 1,
   },
   employeeName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   employeeStats: {
     fontSize: 12,
   },
   employeeRating: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     alignItems: 'center',
   },
   ratingValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
   ratingLabel: {
@@ -455,16 +499,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
+    padding: 12,
+    borderLeftWidth: 3,
+    borderRadius: 8,
   },
   insightDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 6,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 8,
   },
   insightText: {
-    fontSize: 14,
+    fontSize: 13,
     flex: 1,
     lineHeight: 20,
+    fontWeight: '500',
   },
 });

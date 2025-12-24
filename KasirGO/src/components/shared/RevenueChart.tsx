@@ -79,14 +79,14 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
   const averageRevenue = totalRevenue / currentData.length;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card }, containerStyle]}>
+    <View style={[styles.container, { backgroundColor: colors.background }, containerStyle]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <TrendingUp size={20} color={colors.primary} />
           <Text style={[styles.title, { color: colors.text }]}>Revenue Overview</Text>
         </View>
-        <View style={[styles.toggleContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.toggleContainer, { backgroundColor: colors.card }]}>
           <TouchableOpacity
             style={[
               styles.toggleButton, 
@@ -119,7 +119,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
       </View>
 
       {/* Summary Stats */}
-      <View style={[styles.summaryContainer, { backgroundColor: colors.background }]}>
+      <View style={[styles.summaryContainer, { backgroundColor: colors.card, borderColor: colors.card, borderWidth: 1 }]}>
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total</Text>
           <Text style={[styles.summaryValue, { color: colors.primary }]}>Rp {formatValue(totalRevenue)}</Text>
@@ -244,6 +244,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderRadius: 8,
     padding: 4,
+    gap: 4,
   },
   toggleButton: {
     paddingHorizontal: 12,
@@ -251,13 +252,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   toggleText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
   },
   summaryContainer: {
     flexDirection: "row",
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 10,
+    padding: 14,
     marginBottom: 20,
   },
   summaryItem: {
