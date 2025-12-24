@@ -46,6 +46,7 @@ export interface CreateProductData {
   product_qty: number;
   product_image_url?: string | null;
   product_brand_id?: number | null;
+  product_category_id?: number | null;
   image?: any;
 }
 
@@ -111,8 +112,9 @@ export const createProduct = async (
     formData.append('product_price', data.product_price.toString());
     formData.append('product_qty', data.product_qty.toString());
     if (data.product_brand_id) formData.append('brand_id', data.product_brand_id.toString());
+    if (data.product_category_id) formData.append('category_id', data.product_category_id.toString());
     formData.append('image', data.image);
-    
+
     const res = await api.post("/products", formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -120,7 +122,7 @@ export const createProduct = async (
     });
     return res.data;
   }
-  
+
   // Otherwise, use regular JSON with field transformation
   const transformedData = {
     product_name: data.product_name,
@@ -150,8 +152,9 @@ export const updateProduct = async (
     if (data.product_price) formData.append('product_price', data.product_price.toString());
     if (data.product_qty) formData.append('product_qty', data.product_qty.toString());
     if (data.product_brand_id) formData.append('brand_id', data.product_brand_id.toString());
+    if (data.product_category_id) formData.append('category_id', data.product_category_id.toString());
     formData.append('image', data.image);
-    
+
     const res = await api.put(`/products/${id}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -160,8 +163,16 @@ export const updateProduct = async (
     return res.data;
   }
   
-  // Otherwise, use regular JSON
-  const res = await api.put(`/products/${id}`, data);
+  // Otherwise, use regular JSON with field transformation
+  const transformedData = {
+    product_name: data.product_name,
+    product_price: data.product_price,
+    product_qty: data.product_qty,
+    brand_id: data.product_brand_id || null,
+    category_id: data.product_category_id || null
+  };
+
+  const res = await api.put(`/products/${id}`, transformedData);
   return res.data;
 };
 

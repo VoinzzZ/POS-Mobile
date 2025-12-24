@@ -65,8 +65,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
       setName(product.product_name);
       setPrice(product.product_price.toString());
       setStock(product.product_qty.toString());
-      // Set categoryId from product's brand
-      const productCategoryId = product.m_brand?.brand_category_id || null;
+      // Set categoryId from product's category
+      const productCategoryId = product.m_category?.category_id || null;
       setCategoryId(productCategoryId);
       setBrandId(product.product_brand_id || null);
       setExistingImageUrl(product.product_image_url || null);

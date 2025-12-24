@@ -29,11 +29,10 @@ export const refreshTokenApi = async (refresh_token: string): Promise<TokenRefre
   try {
     const res = await axios.post(
       `${API_URL}/auth/refresh-token`,
-      {},
+      { refreshToken: refresh_token }, // Send refresh token in request body
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${refresh_token}`,
         },
         timeout: 30000,
       }

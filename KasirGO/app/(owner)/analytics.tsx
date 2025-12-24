@@ -31,7 +31,6 @@ export default function AnalyticsScreen() {
   const { colors } = useTheme();
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
 
-  // Sample analytics data - replace with actual API calls
   const [analyticsData] = useState<AnalyticsData>({
     revenue: 24500000,
     profit: 7850000,

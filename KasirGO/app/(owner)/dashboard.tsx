@@ -1,56 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import React from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { useAuth } from "../../src/context/AuthContext";
-import { DollarSign, TrendingUp, Users, Briefcase, Settings, Package, Tag, Folder, Plus } from "lucide-react-native";
+import { DollarSign, TrendingUp, Users, Briefcase, Settings } from "lucide-react-native";
 import OwnerBottomNav from "../../src/components/navigation/OwnerBottomNav";
 import RevenueChart from "../../src/components/shared/RevenueChart";
-import AddProductModal from "../../src/components/modals/AddProductModal";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../src/context/ThemeContext";
-import { getAllProducts, getAllCategories, getAllBrands } from "../../src/api/product";
 
 export default function OwnerDashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const { colors } = useTheme();
-
-  // Product management state
-  const [productStats, setProductStats] = useState({
-    totalProducts: 0,
-    totalCategories: 0,
-    totalBrands: 0,
-    loading: true
-  });
-  const [showAddProductModal, setShowAddProductModal] = useState(false);
-
-  // Load product statistics
-  useEffect(() => {
-    loadProductStats();
-  }, []);
-
-  const loadProductStats = async () => {
-    try {
-      const [productsRes, categoriesRes, brandsRes] = await Promise.all([
-        getAllProducts(),
-        getAllCategories(),
-        getAllBrands()
-      ]);
-
-      setProductStats({
-        totalProducts: productsRes.success && productsRes.data ? productsRes.data.length : 0,
-        totalCategories: categoriesRes.success && categoriesRes.data ? categoriesRes.data.length : 0,
-        totalBrands: brandsRes.success && brandsRes.data ? brandsRes.data.length : 0,
-        loading: false
-      });
-    } catch (error) {
-      console.error("Error loading product stats:", error);
-      setProductStats(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-  const handleProductAdded = () => {
-    loadProductStats(); // Refresh stats after adding product
-  };
 
   const stats = [
     {
@@ -83,41 +43,7 @@ export default function OwnerDashboard() {
     },
   ];
 
-  const productManagementStats = [
-    {
-      title: "Products",
-      value: productStats.loading ? "..." : productStats.totalProducts.toString(),
-      icon: Package,
-      color: "#8b5cf6",
-      bgColor: "#4c1d95",
-    },
-    {
-      title: "Categories",
-      value: productStats.loading ? "..." : productStats.totalCategories.toString(),
-      icon: Tag,
-      color: "#06b6d4",
-      bgColor: "#083344",
-    },
-    {
-      title: "Brands",
-      value: productStats.loading ? "..." : productStats.totalBrands.toString(),
-      icon: Folder,
-      color: "#f97316",
-      bgColor: "#7c2d12",
-    },
-  ];
-
   const quickActions = [
-    {
-      title: "Add Product",
-      icon: Plus,
-      onPress: () => setShowAddProductModal(true),
-    },
-    {
-      title: "Manage Products",
-      icon: Package,
-      route: "/(owner)/products",
-    },
     {
       title: "View Analytics",
       icon: TrendingUp,
@@ -173,41 +99,7 @@ export default function OwnerDashboard() {
           </View>
         </View>
 
-        {/* Product Management Statistics */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Product Management</Text>
-          <View style={styles.productStatsGrid}>
-            {productManagementStats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={[styles.productStatCard, { borderLeftColor: stat.color, backgroundColor: colors.card }]}
-                  onPress={() => {
-                    if (stat.title === "Products") {
-                      router.push("/(owner)/products?tab=products");
-                    } else if (stat.title === "Categories") {
-                      router.push("/(owner)/products?tab=categories");
-                    } else if (stat.title === "Brands") {
-                      router.push("/(owner)/products?tab=brands");
-                    }
-                  }}
-                >
-                  <View style={[styles.iconContainer, { backgroundColor: stat.bgColor }]}>
-                    {productStats.loading ? (
-                      <ActivityIndicator size="small" color={stat.color} />
-                    ) : (
-                      <Icon size={24} color={stat.color} />
-                    )}
-                  </View>
-                  <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
-                  <Text style={[styles.statTitle, { color: colors.textSecondary }]}>{stat.title}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
+        
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
@@ -236,17 +128,6 @@ export default function OwnerDashboard() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
-
-      {/* Add Product Modal */}
-      <AddProductModal
-        visible={showAddProductModal}
-        onClose={() => setShowAddProductModal(false)}
-        onSuccess={() => {
-          setShowAddProductModal(false);
-          handleProductAdded();
-          Alert.alert("Success", "Product added successfully!");
-        }}
-      />
 
       {/* Bottom Navigation */}
       <OwnerBottomNav />
@@ -352,16 +233,5 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     fontWeight: "600",
-  },
-  productStatsGrid: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  productStatCard: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    alignItems: "center",
   },
 });
