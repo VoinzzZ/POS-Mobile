@@ -12,7 +12,7 @@ const ThemeToggle = ({ style, position = 'absolute' }: ThemeToggleProps) => {
   const { theme, colors, toggleTheme } = useTheme();
 
   const backgroundColor = theme === 'dark'
-    ? 'rgba(30, 41, 59, 0.9)'
+    ? '#2A2A2E'
     : 'rgba(255, 255, 255, 0.9)';
 
   return (

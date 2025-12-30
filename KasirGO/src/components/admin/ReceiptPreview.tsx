@@ -1,14 +1,20 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image, Animated } from "react-native";
 import { Receipt, Info, CheckCircle } from "lucide-react-native";
 import { getStoreSettings, Store } from "../../api/store";
 import { useTheme } from "../../context/ThemeContext";
 import { useFocusEffect } from "@react-navigation/native";
 
-export default function ReceiptPreview() {
+interface ReceiptPreviewProps {
+  store?: Store | null;
+}
+
+export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewProps = {}) {
   const { colors } = useTheme();
-  const [loading, setLoading] = useState(true);
-  const [storeData, setStoreData] = useState<Store | null>(null);
+  const [loading, setLoading] = useState(!externalStore);
+  const [storeData, setStoreData] = useState<Store | null>(externalStore || null);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Sample transaction data for preview
   const sampleTransaction = {
@@ -33,15 +39,52 @@ export default function ReceiptPreview() {
   };
 
   useEffect(() => {
-    loadStoreData();
-  }, []);
+    if (!externalStore) {
+      loadStoreData();
+    }
+  }, [externalStore]);
 
-  // Auto-refresh when screen comes into focus
+  // Auto-refresh when screen comes into focus (only if not using external store)
   useFocusEffect(
     React.useCallback(() => {
-      loadStoreData();
-    }, [])
+      if (!externalStore) {
+        loadStoreData();
+      }
+    }, [externalStore])
   );
+
+  // Handle external store updates
+  useEffect(() => {
+    if (externalStore) {
+      setStoreData(externalStore);
+      // Animate when external store data changes
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: -10,
+          duration: 150,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          })
+        ]).start();
+      });
+    }
+  }, [externalStore, fadeAnim, slideAnim]);
 
   const loadStoreData = async () => {
     try {
@@ -49,6 +92,32 @@ export default function ReceiptPreview() {
       const response = await getStoreSettings();
       if (response.success && response.data) {
         setStoreData(response.data);
+        // Animate when data loads
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: -10,
+            duration: 150,
+            useNativeDriver: true,
+          })
+        ]).start(() => {
+          Animated.parallel([
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: true,
+            })
+          ]).start();
+        });
       }
     } catch (error) {
       console.error("Error loading store data:", error);
@@ -66,7 +135,7 @@ export default function ReceiptPreview() {
       <View style={[styles.loadingContainer, { backgroundColor: colors.card }]}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-          Memuat preview...
+          Loading preview...
         </Text>
       </View>
     );
@@ -78,14 +147,24 @@ export default function ReceiptPreview() {
         {/* Header */}
         <View style={styles.header}>
           <Receipt size={24} color={colors.primary} />
-          <Text style={[styles.title, { color: colors.text }]}>Preview Struk</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Receipt Preview</Text>
         </View>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Preview struk transaksi dengan data toko Anda
+          Receipt preview with your store data
         </Text>
 
         {/* Receipt Preview */}
-        <View style={[styles.receiptContainer, { backgroundColor: "#ffffff", borderColor: colors.border }]}>
+        <Animated.View
+          style={[
+            styles.receiptContainer,
+            {
+              backgroundColor: "#ffffff",
+              borderColor: colors.border,
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
           <View style={styles.receipt}>
             {/* Store Header */}
             <View style={styles.receiptHeader}>
@@ -97,7 +176,7 @@ export default function ReceiptPreview() {
                 />
               )}
                 <Text style={[styles.storeName, { color: "#000000" }]}>
-                {storeData?.store_name || "Nama Toko"}
+                {storeData?.store_name || "Store Name"}
               </Text>
               {storeData?.store_description && (
                 <Text style={[styles.storeDescription, { color: "#666666" }]}>
@@ -111,7 +190,7 @@ export default function ReceiptPreview() {
               )}
               {(storeData?.store_phone || storeData?.store_email) && (
                 <Text style={[styles.storeInfo, { color: "#666666" }]}>
-                  {storeData?.store_phone && `Telp: ${storeData.store_phone}`}
+                  {storeData?.store_phone && `Phone: ${storeData.store_phone}`}
                   {storeData?.store_phone && storeData?.store_email && " | "}
                   {storeData?.store_email && `Email: ${storeData.store_email}`}
                 </Text>
@@ -124,7 +203,7 @@ export default function ReceiptPreview() {
             <View style={styles.transactionInfo}>
               <View style={styles.infoRow}>
                 <Text style={[styles.infoLabel, { color: "#666666" }]}>
-                  No. Transaksi
+                  Transaction No.
                 </Text>
                 <Text style={[styles.infoValue, { color: "#000000" }]}>
                   {sampleTransaction.id}
@@ -132,7 +211,7 @@ export default function ReceiptPreview() {
               </View>
               <View style={styles.infoRow}>
                 <Text style={[styles.infoLabel, { color: "#666666" }]}>
-                  Tanggal
+                  Date
                 </Text>
                 <Text style={[styles.infoValue, { color: "#000000" }]}>
                   {sampleTransaction.date}
@@ -140,7 +219,7 @@ export default function ReceiptPreview() {
               </View>
               <View style={styles.infoRow}>
                 <Text style={[styles.infoLabel, { color: "#666666" }]}>
-                  Kasir
+                  Cashier
                 </Text>
                 <Text style={[styles.infoValue, { color: "#000000" }]}>
                   {sampleTransaction.cashier}
@@ -153,7 +232,7 @@ export default function ReceiptPreview() {
             {/* Items */}
             <View style={styles.items}>
               <Text style={[styles.sectionTitle, { color: "#000000" }]}>
-                Detail Pembelian
+                Purchase Details
               </Text>
               {sampleTransaction.items.map((item, idx) => (
                 <View key={idx} style={[styles.item, { borderBottomColor: "#e5e7eb" }]}>
@@ -189,20 +268,20 @@ export default function ReceiptPreview() {
                 </Text>
               </View>
               <View style={styles.totalRow}>
-                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Metode:</Text>
+                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Method:</Text>
                 <Text style={[styles.paymentValue, { color: "#000000" }]}>
-                  {sampleTransaction.paymentMethod === 'CASH' ? 'Tunai' : 
+                  {sampleTransaction.paymentMethod === 'CASH' ? 'Cash' :
                    sampleTransaction.paymentMethod === 'QRIS' ? 'QRIS' : 'Debit'}
                 </Text>
               </View>
               <View style={styles.totalRow}>
-                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Bayar:</Text>
+                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Pay:</Text>
                 <Text style={[styles.paymentValue, { color: "#000000" }]}>
                   {formatCurrency(sampleTransaction.payment)}
                 </Text>
               </View>
               <View style={styles.totalRow}>
-                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Kembali:</Text>
+                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Change:</Text>
                 <Text style={[styles.paymentValue, { color: "#000000" }]}>
                   {formatCurrency(sampleTransaction.change)}
                 </Text>
@@ -214,14 +293,14 @@ export default function ReceiptPreview() {
             {/* Footer */}
             <View style={styles.receiptFooter}>
               <Text style={[styles.footerText, { color: "#666666" }]}>
-                Terima kasih atas kunjungan Anda!
+                Thank you for your visit!
               </Text>
               <Text style={[styles.footerText, { color: "#666666" }]}>
                 Made by KasirGo - @VoinzzZ
               </Text>
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Info Boxes */}
         <View style={styles.infoBoxes}>
@@ -229,9 +308,9 @@ export default function ReceiptPreview() {
           <View style={[styles.infoBox, { backgroundColor: colors.card + "80", borderColor: "#3b82f6" }]}>
             <Info size={20} color="#3b82f6" />
             <View style={styles.infoBoxContent}>
-              <Text style={[styles.infoBoxTitle, { color: "#3b82f6" }]}>Informasi</Text>
+              <Text style={[styles.infoBoxTitle, { color: "#3b82f6" }]}>Information</Text>
               <Text style={[styles.infoBoxText, { color: colors.textSecondary }]}>
-                Preview ini menunjukkan bagaimana struk akan tercetak dengan data toko Anda
+                This preview shows how the receipt will print with your store data
               </Text>
             </View>
           </View>
@@ -240,22 +319,22 @@ export default function ReceiptPreview() {
           <View style={[styles.infoBox, { backgroundColor: colors.card + "80", borderColor: "#10b981" }]}>
             <CheckCircle size={20} color="#10b981" />
             <View style={styles.infoBoxContent}>
-              <Text style={[styles.infoBoxTitle, { color: "#10b981" }]}>Data Toko Saat Ini</Text>
+              <Text style={[styles.infoBoxTitle, { color: "#10b981" }]}>Current Store Data</Text>
               <View style={styles.dataList}>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Nama: {storeData?.store_name || "-"}
+                  • Name: {storeData?.store_name || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Alamat: {storeData?.store_address || "-"}
+                  • Address: {storeData?.store_address || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Telepon: {storeData?.store_phone || "-"}
+                  • Phone: {storeData?.store_phone || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
                   • Email: {storeData?.store_email || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Logo: {storeData?.store_logo_url ? "✓ Tersedia" : "✗ Belum diset"}
+                  • Logo: {storeData?.store_logo_url ? "✓ Available" : "✗ Not set"}
                 </Text>
               </View>
             </View>

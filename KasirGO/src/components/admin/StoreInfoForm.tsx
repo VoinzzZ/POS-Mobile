@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from "react-native";
-import { Store, Building2, Mail, Phone, Image as ImageIcon, FileText, Upload, Trash2 } from "lucide-react-native";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Animated } from "react-native";
+import { Store, Building2, Mail, Phone, Image as ImageIcon, FileText, Upload, Trash2, Check, AlertCircle } from "lucide-react-native";
 import { updateStoreSettings, uploadStoreLogo, deleteStoreLogo, UpdateStoreData, Store as StoreType, getStoreSettings } from "../../api/store";
 import { useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
@@ -8,7 +8,7 @@ import { useTheme } from "../../context/ThemeContext";
 
 interface StoreInfoFormProps {
   store?: StoreType | null;
-  onStoreUpdate?: () => void;
+  onStoreUpdate?: (updatedStore: StoreType) => void;
 }
 
 export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: StoreInfoFormProps = {}) {
@@ -16,13 +16,18 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
   const store = externalStore || internalStore;
   const updateStore = (newStore: StoreType) => {
     setInternalStore(newStore);
-    onStoreUpdate?.();
+    onStoreUpdate?.(newStore);
   };
   const { colors } = useTheme();
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [deletingLogo, setDeletingLogo] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [isTyping, setIsTyping] = useState(false);
+  const [activeInput, setActiveInput] = useState<string | null>(null); // Track which input is currently focused
+  const saveStatusOpacity = useRef(new Animated.Value(0)).current;
+  const saveStatusScale = useRef(new Animated.Value(0.8)).current;
   
   const [formData, setFormData] = useState<UpdateStoreData>({
     store_name: "",
@@ -66,18 +71,23 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
         store_logo_url: store.store_logo_url || "",
         store_description: store.store_description || "",
       };
-      setFormData(storeData);
-      originalData.current = { ...storeData };
-      setHasChanges(false);
+      // Only update form data if no input is currently active
+      if (!activeInput) {
+        setFormData(storeData);
+        originalData.current = { ...storeData };
+        setHasChanges(false);
+      }
+      // Also notify parent component about the loaded store data
+      onStoreUpdate?.(store);
     }
-  }, [store]);
+  }, [store, activeInput, onStoreUpdate]);
 
   // Auto-save when leaving the screen
   useFocusEffect(
     React.useCallback(() => {
       return () => {
         // This runs when the screen loses focus (user navigates away)
-        if (hasChanges && formData.store_name && formData.store_name.trim() !== "") {
+        if (hasChanges && formData.store_name && formData.store_name.trim() !== "" && !activeInput) {
           // Clear any pending timeout
           if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
@@ -86,7 +96,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
           autoSave();
         }
       };
-    }, [hasChanges, formData])
+    }, [hasChanges, formData, activeInput])
   );
 
   // Cleanup timeout on unmount
@@ -101,47 +111,91 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
   // Check if data has changed
   const checkForChanges = (newData: UpdateStoreData) => {
     const changed = JSON.stringify(newData) !== JSON.stringify(originalData.current);
-    setHasChanges(changed);
+    // Only update hasChanges state if no input is currently active
+    if (!activeInput) {
+      setHasChanges(changed);
+    }
     return changed;
   };
 
   // Auto-save function
   const autoSave = async (dataToSave?: UpdateStoreData) => {
     const saveData = dataToSave || formData;
-    
+
     if (!saveData.store_name || saveData.store_name.trim() === "") {
       return; // Don't save if name is empty
     }
 
+    // Only proceed with save if no input is currently active
+    if (activeInput) {
+      // Schedule save for later when no input is active
+      setTimeout(() => {
+        if (!activeInput) {
+          autoSave(dataToSave);
+        }
+      }, 500);
+      return;
+    }
+
     try {
       setSaving(true);
+      setSaveStatus('saving');
+      // Animate save status
+      Animated.parallel([
+        Animated.timing(saveStatusOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(saveStatusScale, {
+          toValue: 1,
+          useNativeDriver: true,
+        })
+      ]).start();
+
       const response = await updateStoreSettings(saveData);
       if (response.success) {
         originalData.current = { ...saveData };
         setHasChanges(false);
-        console.log("✅ Data toko berhasil disimpan otomatis");
+        setSaveStatus('saved');
+        console.log("✅ Store data saved successfully");
         updateStore(response.data); // Update internal store state
-        onStoreUpdate?.(); // Notify parent component
+        onStoreUpdate?.(response.data); // Notify parent component with updated data
+
+        // Hide success status after 2 seconds
+        setTimeout(() => {
+          Animated.timing(saveStatusOpacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+        }, 2000);
+      } else {
+        setSaveStatus('error');
+        // Show error for 3 seconds
+        setTimeout(() => {
+          Animated.timing(saveStatusOpacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+        }, 3000);
       }
     } catch (error: any) {
       console.error("Error auto-saving store data:", error);
+      setSaveStatus('error');
+      // Show error for 3 seconds
+      setTimeout(() => {
+        Animated.timing(saveStatusOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      }, 3000);
       // Don't show alert for auto-save errors to avoid interrupting user
     } finally {
       setSaving(false);
     }
-  };
-
-  // Debounced save function
-  const debouncedSave = (newData: UpdateStoreData) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    saveTimeoutRef.current = setTimeout(() => {
-      if (checkForChanges(newData)) {
-        autoSave(newData);
-      }
-    }, 1500); // Save after 1.5 seconds of no changes
   };
 
   // Update form data and trigger auto-save
@@ -149,13 +203,49 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
     const newData = { ...formData, ...updates };
     setFormData(newData);
     checkForChanges(newData);
-    debouncedSave(newData);
+
+    // Set typing status to true when user is actively typing
+    setIsTyping(true);
+
+    // Clear any existing timeout to reset the typing timer
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Update parent component immediately for real-time updates to receipt preview
+    // Create a complete store object with updated form data
+    if (store) {
+      const updatedStoreData = {
+        ...store,
+        store_name: newData.store_name,
+        store_address: newData.store_address || null,
+        store_phone: newData.store_phone || null,
+        store_email: newData.store_email || null,
+        store_logo_url: newData.store_logo_url || null,
+        store_description: newData.store_description || null,
+        name: newData.store_name,
+        address: newData.store_address || null,
+        phone: newData.store_phone || null,
+        email: newData.store_email || null,
+        logoUrl: newData.store_logo_url || null,
+        description: newData.store_description || null,
+      } as StoreType;
+      updateStore(updatedStoreData);
+    }
+
+    // Set a timeout to reset typing status after user stops typing
+    saveTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      if (checkForChanges(newData)) {
+        autoSave(newData);
+      }
+    }, 3000); // Match the same delay as auto-save
   };
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Error', 'Izin akses galeri diperlukan untuk upload logo');
+      Alert.alert('Error', 'Gallery access permission is required to upload logo');
       return;
     }
 
@@ -173,20 +263,22 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
         setUploadingLogo(true);
         const response = await uploadStoreLogo(imageAsset);
         if (response.success) {
-          // Update form data and original data
-          const updatedData = { ...formData, store_logo_url: response.data.logo_url };
-          setFormData(updatedData);
-          originalData.current = { ...updatedData };
-          setHasChanges(false);
-          Alert.alert('Sukses', 'Logo berhasil diupload!');
+          // Update form data and original data only if no input is active
+          if (!activeInput) {
+            const updatedData = { ...formData, store_logo_url: response.data.logo_url };
+            setFormData(updatedData);
+            originalData.current = { ...updatedData };
+            setHasChanges(false);
+          }
+          Alert.alert('Success', 'Logo uploaded successfully!');
           updateStore(response.data.store); // Update internal store state
-          onStoreUpdate?.(); // Notify parent component
+          onStoreUpdate?.(response.data.store); // Notify parent component with updated data
         }
       } catch (error: any) {
         console.error('Error uploading logo:', error);
         Alert.alert(
           'Error',
-          error.response?.data?.message || 'Gagal upload logo'
+          error.response?.data?.message || 'Failed to upload logo'
         );
       } finally {
         setUploadingLogo(false);
@@ -196,32 +288,33 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
 
   const handleDeleteLogo = async () => {
     Alert.alert(
-      'Konfirmasi',
-      'Apakah Anda yakin ingin menghapus logo?',
+      'Confirmation',
+      'Are you sure you want to delete the logo?',
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Hapus',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
               setDeletingLogo(true);
               const response = await deleteStoreLogo();
               if (response.success) {
-                // Update form data and original data
-                const updatedData = { ...formData, store_logo_url: null };
-                setFormData(updatedData);
-                originalData.current = { ...updatedData };
-                setHasChanges(false);
-                Alert.alert('Sukses', 'Logo berhasil dihapus');
+                // Update form data and original data only if no input is active
+                if (!activeInput) {
+                  const updatedData = { ...formData, store_logo_url: null };
+                  setFormData(updatedData);
+                  originalData.current = { ...updatedData };
+                  setHasChanges(false);
+                }
                 updateStore(response.data); // Update internal store state
-                onStoreUpdate?.(); // Notify parent component
+                onStoreUpdate?.(response.data); // Notify parent component with updated data
               }
             } catch (error: any) {
               console.error('Error deleting logo:', error);
               Alert.alert(
                 'Error',
-                error.response?.data?.message || 'Gagal menghapus logo'
+                error.response?.data?.message || 'Failed to delete logo'
               );
             } finally {
               setDeletingLogo(false);
@@ -250,11 +343,11 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
         <View style={styles.header}>
           <Building2 size={24} color={colors.primary} />
           <Text style={[styles.title, { color: colors.text }]}>
-            Informasi Toko
+            Store Information
           </Text>
         </View>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Data ini akan ditampilkan pada struk transaksi. Perubahan akan disimpan otomatis.
+          This data will be displayed on transaction receipts. Changes will be saved automatically.
         </Text>
 
         {/* Form Fields */}
@@ -262,7 +355,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
           {/* Nama Toko */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>
-              Nama Toko <Text style={styles.required}>*</Text>
+              Store Name <Text style={styles.required}>*</Text>
             </Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Store size={20} color={colors.textSecondary} />
@@ -270,32 +363,36 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 style={[styles.input, { color: colors.text }]}
                 value={formData.store_name}
                 onChangeText={(text) => updateFormData({ store_name: text })}
-                placeholder="Contoh: Toko Berkah"
+                placeholder="Example: Berkah Store"
                 placeholderTextColor={colors.textSecondary}
+                onFocus={() => setActiveInput('store_name')}
+                onBlur={() => setActiveInput(null)}
               />
             </View>
           </View>
 
           {/* Alamat */}
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Alamat</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Address</Text>
             <View style={[styles.inputContainer, styles.textAreaContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Building2 size={20} color={colors.textSecondary} style={styles.iconTop} />
               <TextInput
                 style={[styles.input, styles.textArea, { color: colors.text }]}
                 value={formData.store_address || ""}
                 onChangeText={(text) => updateFormData({ store_address: text })}
-                placeholder="Jl. Contoh No. 123, Kota"
+                placeholder="Example Street No. 123, City"
                 placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={3}
+                onFocus={() => setActiveInput('store_address')}
+                onBlur={() => setActiveInput(null)}
               />
             </View>
           </View>
 
           {/* Telepon */}
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Telepon</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Phone</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Phone size={20} color={colors.textSecondary} />
               <TextInput
@@ -305,6 +402,8 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 placeholder="0812-3456-7890"
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="phone-pad"
+                onFocus={() => setActiveInput('store_phone')}
+                onBlur={() => setActiveInput(null)}
               />
             </View>
           </View>
@@ -322,13 +421,15 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                onFocus={() => setActiveInput('store_email')}
+                onBlur={() => setActiveInput(null)}
               />
             </View>
           </View>
 
           {/* Logo Upload */}
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Logo Toko</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Store Logo</Text>
             
             {/* Current Logo Display */}
             {formData.store_logo_url && (
@@ -361,25 +462,25 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
               {uploadingLogo ? (
                 <>
                   <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={[styles.uploadButtonText, { color: colors.text }]}>Mengupload...</Text>
+                  <Text style={[styles.uploadButtonText, { color: colors.text }]}>Uploading...</Text>
                 </>
               ) : (
                 <>
                   <Upload size={20} color={colors.primary} />
-                  <Text style={[styles.uploadButtonText, { color: colors.text }]}>Pilih Logo</Text>
+                  <Text style={[styles.uploadButtonText, { color: colors.text }]}>Select Logo</Text>
                 </>
               )}
             </TouchableOpacity>
             
             <Text style={[styles.hint, { color: colors.textSecondary }]}>
-              Pilih gambar logo untuk ditampilkan di struk (max 2MB)
+              Select logo image to be displayed on receipts (max 2MB)
             </Text>
           </View>
 
           {/* Deskripsi */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>
-              Deskripsi / Tagline
+              Description / Tagline
             </Text>
             <View style={[styles.inputContainer, styles.textAreaContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <FileText size={20} color={colors.textSecondary} style={styles.iconTop} />
@@ -387,31 +488,54 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 style={[styles.input, styles.textArea, { color: colors.text }]}
                 value={formData.store_description || ""}
                 onChangeText={(text) => updateFormData({ store_description: text })}
-                placeholder="Melayani dengan sepenuh hati"
+                placeholder="Serving with whole heart"
                 placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={2}
+                onFocus={() => setActiveInput('store_description')}
+                onBlur={() => setActiveInput(null)}
               />
             </View>
           </View>
         </View>
 
         {/* Auto-save Status */}
-        {(saving || hasChanges) && (
-          <View style={[styles.statusContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {saving ? (
-              <>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={[styles.statusText, { color: colors.text }]}>Menyimpan...</Text>
-              </>
-            ) : hasChanges ? (
-              <>
-                <View style={[styles.statusDot, { backgroundColor: '#f59e0b' }]} />
-                <Text style={[styles.statusText, { color: colors.text }]}>Perubahan akan disimpan otomatis</Text>
-              </>
-            ) : null}
-          </View>
-        )}
+        <Animated.View
+          style={[
+            styles.statusContainer,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              opacity: saveStatusOpacity,
+              transform: [{ scale: saveStatusScale }]
+            }
+          ]}
+        >
+          {saveStatus === 'saving' && (
+            <>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.statusText, { color: colors.text }]}>Saving...</Text>
+            </>
+          )}
+          {saveStatus === 'saved' && (
+            <>
+              <Check size={16} color="#10b981" />
+              <Text style={[styles.statusText, { color: "#10b981" }]}>Saved successfully!</Text>
+            </>
+          )}
+          {saveStatus === 'error' && (
+            <>
+              <AlertCircle size={16} color="#ef4444" />
+              <Text style={[styles.statusText, { color: "#ef4444" }]}>Save failed. Please try again.</Text>
+            </>
+          )}
+          {saveStatus === 'idle' && hasChanges && !isTyping && (
+            <>
+              <View style={[styles.statusDot, { backgroundColor: '#f59e0b' }]} />
+              <Text style={[styles.statusText, { color: colors.text }]}>Changes will be saved automatically</Text>
+            </>
+          )}
+        </Animated.View>
       </View>
     </ScrollView>
   );

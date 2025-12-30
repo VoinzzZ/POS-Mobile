@@ -122,12 +122,17 @@ class AuthService {
     });
   }
 
-    static async refreshAccessToken(refreshToken) {
+  static async refreshAccessToken(refreshToken) {
     if (!refreshToken) {
       throw new Error("Refresh token diperlukan");
     }
 
     try {
+      console.log('🔄 Refresh token request:', {
+        tokenLength: refreshToken ? refreshToken.length : 0,
+        tokenStart: refreshToken ? refreshToken.substring(0, 30) + '...' : 'none'
+      });
+
       console.log('🔍 Verifying refresh token...');
       const decoded = JWTService.verifyRefreshToken(refreshToken);
 
@@ -137,41 +142,44 @@ class AuthService {
         type: decoded.type
       });
 
-    const user = await prisma.m_user.findFirst({
-      where: {
-        user_id: decoded.userId,
-        user_email: decoded.email,
-        deleted_at: null,
-        user_is_active: true
-      },
-      include: {
-        m_role: true,
-        m_tenant: true
+      const user = await prisma.m_user.findFirst({
+        where: {
+          user_id: decoded.userId,
+          user_email: decoded.email,
+          deleted_at: null,
+          is_active: true
+        },
+        include: {
+          m_role: true,
+          m_tenant: true
+        }
+      });
+
+      if (!user) {
+        console.log('❌ User not found for token refresh');
+        throw new Error("User tidak ditemukan");
       }
-    });
 
-    if (!user) {
-      throw new Error("User tidak ditemukan");
-    }
+      const tokenPayload = {
+        userId: user.user_id,
+        email: user.user_email,
+        role: user.m_role?.role_name || 'SA',
+        name: user.user_full_name || user.user_name,
+        tenantId: user.tenant_id
+      };
 
-    const tokenPayload = {
-      userId: user.user_id,
-      email: user.user_email,
-      role: user.m_role?.role_name || 'SA',
-      name: user.user_full_name || user.user_name,
-      tenantId: user.tenant_id
-    };
+      const rawTokens = JWTService.generateTokenPair(tokenPayload);
 
-    const rawTokens = JWTService.generateTokenPair(tokenPayload);
+      // Transform to snake_case for frontend compatibility
+      const tokens = {
+        access_token: rawTokens.accessToken,
+        refresh_token: rawTokens.refreshToken,
+        expires_in: rawTokens.expiresIn,
+        refresh_expires_in: rawTokens.refreshExpiresIn,
+        tokenType: rawTokens.tokenType
+      };
 
-    // Transform to snake_case for frontend compatibility
-    const tokens = {
-      access_token: rawTokens.accessToken,
-      refresh_token: rawTokens.refreshToken,
-      expires_in: rawTokens.expiresIn,
-      refresh_expires_in: rawTokens.refreshExpiresIn,
-      tokenType: rawTokens.tokenType
-    };
+      console.log('✅ New tokens generated successfully');
 
       return {
         tokens: tokens,
@@ -185,6 +193,11 @@ class AuthService {
         }
       };
     } catch (error) {
+      console.log('❌ Token refresh error:', {
+        errorMessage: error.message,
+        errorName: error.name,
+        errorStack: error.stack ? error.stack.substring(0, 150) : 'none'
+      });
       throw new Error("Refresh token tidak valid atau sudah kadaluarsa");
     }
   }

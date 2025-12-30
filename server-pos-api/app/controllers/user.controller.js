@@ -4,8 +4,9 @@ class UserController {
   static async generateEmployeePin(req, res) {
     try {
       const { tenantId, userId } = req.user;
+      const { expires_in_hours = 24 } = req.body; // Get expiry time from request body
 
-      const result = await UserService.generateEmployeePin(tenantId, userId);
+      const result = await UserService.generateEmployeePin(tenantId, userId, expires_in_hours);
 
       res.status(201).json({
         success: true,
@@ -325,7 +326,50 @@ class UserController {
       });
     }
   }
-  
+
+  static async getPinHistory(req, res) {
+    try {
+      const { tenantId } = req.user;
+      const { page = 1, limit = 10, status } = req.query;
+
+      const result = await UserService.getPinHistory(tenantId, {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        status
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'PIN history retrieved successfully',
+        data: result
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  static async revokePin(req, res) {
+    try {
+      const { tenantId, userId } = req.user;
+      const { pinId } = req.params;
+
+      const result = await UserService.revokePin(parseInt(pinId), tenantId, userId);
+
+      res.status(200).json({
+        success: true,
+        message: result.message
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
 }
 
 module.exports = UserController;

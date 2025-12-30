@@ -122,12 +122,12 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
       <View style={[styles.summaryContainer, { backgroundColor: colors.card, borderColor: colors.card, borderWidth: 1 }]}>
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total</Text>
-          <Text style={[styles.summaryValue, { color: colors.primary }]}>Rp {formatValue(totalRevenue)}</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>Rp {formatValue(totalRevenue)}</Text>
         </View>
         <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Average</Text>
-          <Text style={[styles.summaryValue, { color: colors.primary }]}>Rp {formatValue(averageRevenue)}</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>Rp {formatValue(averageRevenue)}</Text>
         </View>
       </View>
 

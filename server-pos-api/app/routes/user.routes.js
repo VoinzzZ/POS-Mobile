@@ -76,4 +76,20 @@ router.delete(
   UserController.cleanupExpiredPins
 );
 
+// Get PIN history
+router.get(
+  '/pins/history',
+  verifyToken,
+  requireRole(['OWNER']),
+  UserController.getPinHistory
+);
+
+// Revoke PIN
+router.patch(
+  '/pins/:pinId/revoke',
+  verifyToken,
+  requireRole(['OWNER']),
+  UserController.revokePin
+);
+
 module.exports = router;

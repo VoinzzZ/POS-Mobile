@@ -35,22 +35,20 @@ const lightColors = {
 };
 
 const darkColors = {
-  background: "#000000ff",      // background utama
-  surface: "#000000ff",         // layer di atas background
-  card: "#171717",            // card / list item
-  text: "#FFFFFF",            // teks utama
-  textSecondary: "#B3B3B8",   // teks sekunder
-  border: "#2A2A2E",          // divider / border halus
-
-  primary: "#4ECDC4",         // ungu utama (CTA, highlight)
-  secondary: "#4ECDC4",       // ungu lebih soft
-  tertiary: "#4ECDC4",        // ungu lebih bold (optional)
-
-  success: "#22C55E",         // hijau profit
-  error: "#FF4D4F",           // merah loss
-  warning: "#FBBF24",         // kuning warning
-  info: "#60A5FA",            // biru info
-  disabled: "#3A3A3F",        // button / text disabled
+  background: "#000000ff",      
+  surface: "#000000ff",
+  card: "#171717",      
+  text: "#FFFFFF",
+  textSecondary: "#B3B3B8",
+  border: "#2A2A2E",
+  primary: "#4ECDC4",
+  secondary: "#4ECDC4",      
+  tertiary: "#4ECDC4",
+  success: "#22C55E",     
+  error: "#FF4D4F",     
+  warning: "#FBBF24",       
+  info: "#60A5FA",     
+  disabled: "#3A3A3F",
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

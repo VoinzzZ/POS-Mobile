@@ -12,6 +12,14 @@ const defaultOptions = {
   audience: 'pos-mobile-client'
 };
 
+// Validate JWT_SECRET on module load
+if (!process.env.JWT_SECRET) {
+  console.error('🔴 CRITICAL: JWT_SECRET is not set in environment variables');
+  console.error('Please set JWT_SECRET in .env file before starting the server');
+} else {
+  console.log('✅ JWT_SECRET is configured (length: ' + process.env.JWT_SECRET.length + ')');
+}
+
 function generateTokenId() {
   return crypto.randomBytes(32).toString('hex');
 }
@@ -31,12 +39,35 @@ function generateToken(payload, type) {
 
 function verifyTokenType(token, type) {
   try {
+    console.log(`🔍 Verifying ${type} token:`, {
+      tokenLength: token ? token.length : 0,
+      tokenStart: token ? token.substring(0, 30) + '...' : 'none',
+      jwtSecretSet: !!process.env.JWT_SECRET,
+      jwtSecretLength: process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0
+    });
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET not configured in environment variables');
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET, defaultOptions);
-    if (decoded.type !== type) throw new Error('Invalid token type');
+    
+    if (decoded.type !== type) {
+      throw new Error(`Token type mismatch: expected ${type}, got ${decoded.type}`);
+    }
+    
+    console.log(`✅ ${type} token verified successfully`);
     return decoded;
   } catch (error) {
+    console.log(`❌ Token verification failed:`, {
+      type,
+      errorName: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack ? error.stack.substring(0, 100) : 'none'
+    });
+    
     if (error.name === 'TokenExpiredError') throw new Error(`${type} token has expired`);
-    if (error.name === 'JsonWebTokenError') throw new Error(`Invalid ${type} token`);
+    if (error.name === 'JsonWebTokenError') throw new Error(`Invalid ${type} token: ${error.message}`);
     throw error;
   }
 }

@@ -5,7 +5,7 @@ import { useAuth } from "../../src/context/AuthContext";
 import { Store as StoreIcon, Users as UsersIcon, Receipt, Settings, Search, Key } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
 import { useRouter } from "expo-router";
-import { getAllUsers, getUserStats, User } from "../../src/api/admin";
+import { getAllUsers, User } from "../../src/api/user";
 import { useTheme } from "../../src/context/ThemeContext";
 import GeneratePinModal from "../../src/components/shared/GeneratePinModal";
 import StoreInfoForm from "../../src/components/admin/StoreInfoForm";
@@ -19,40 +19,29 @@ export default function StoreManagement() {
   const { colors } = useTheme();
   
   const [activeTab, setActiveTab] = useState<TabType>("store");
-  const [activeTabIndex, setActiveTabIndex] = useState(0); // For PagerView
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [users, setUsers] = useState<User[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]); // For search functionality
-  const [loading, setLoading] = useState(false); // Changed to false to avoid initial loading
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   
   const pagerRef = useRef<PagerView>(null);
-  
-  // Haptics helper function (optional)
   const triggerHaptic = () => {
     try {
-      // Simple vibration fallback if haptics not available
       console.log('Tab switched');
     } catch (error) {
       // Silent fail
     }
   };
-  
-  // Tab configuration
+
   const tabs: { key: TabType; title: string; icon: any }[] = [
-    { key: "store", title: "Info Toko", icon: StoreIcon },
-    { key: "cashiers", title: "Kasir", icon: UsersIcon },
-    { key: "receipt", title: "Preview Struk", icon: Receipt },
+    { key: "store", title: "Store Info", icon: StoreIcon },
+    { key: "cashiers", title: "User", icon: UsersIcon },
+    { key: "receipt", title: "Receipt Preview", icon: Receipt },
   ];
   
-  const [stats, setStats] = useState({
-    total_users: 0,
-    admin_count: 0,
-    cashier_count: 0,
-    verified_users: 0,
-    unverified_users: 0,
-  });
   
   // Helper functions for tab switching
   const handleTabPress = (index: number) => {
@@ -76,7 +65,7 @@ export default function StoreManagement() {
 
   const fetchUsers = async () => {
     try {
-      const response = await getAllUsers('CASHIER');
+      const response = await getAllUsers();
       if (response.success) {
         setUsers(response.data.users);
         setAllUsers(response.data.users);
@@ -86,26 +75,15 @@ export default function StoreManagement() {
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const response = await getUserStats();
-      if (response.success) {
-        setStats(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-    }
-  };
-
   const loadData = async () => {
     setLoading(true);
-    await Promise.all([fetchUsers(), fetchStats()]);
+    await fetchUsers();
     setLoading(false);
   };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchUsers(), fetchStats()]);
+    await fetchUsers();
     setRefreshing(false);
   }, []);
 
@@ -127,8 +105,9 @@ export default function StoreManagement() {
       setUsers(allUsers);
     } else {
       const filtered = allUsers.filter(user =>
-        user.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.userEmail.toLowerCase().includes(searchQuery.toLowerCase())
+        (user.userName || user.user_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (user.userEmail || user.user_email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (user.role || user.user_role || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
       setUsers(filtered);
     }
@@ -139,8 +118,8 @@ export default function StoreManagement() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <View>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Kelola Toko</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Atur informasi toko & kelola kasir</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Manage Store</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Manage store information & user management</Text>
         </View>
         <TouchableOpacity 
           onPress={() => router.push("/(admin)/settings")} 
@@ -185,7 +164,6 @@ export default function StoreManagement() {
           <StoreInfoForm
             store={null}
             onStoreUpdate={() => {
-              // Refresh store data when updated
               console.log('Store data updated');
             }}
           />
@@ -200,21 +178,6 @@ export default function StoreManagement() {
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
             }
           >
-            {/* Stats Cards */}
-            <View style={styles.statsContainer}>
-              <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>{stats.cashier_count}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Kasir</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>{users.filter(u => u.isVerified).length}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Terverifikasi</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>{users.filter(u => !u.isVerified).length}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Belum Verifikasi</Text>
-              </View>
-            </View>
 
             {/* Generate PIN Button */}
             <TouchableOpacity 
@@ -230,7 +193,7 @@ export default function StoreManagement() {
               <Search size={20} color={colors.textSecondary} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Cari pengguna..."
+                placeholder="Search users..."
                 placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -239,17 +202,17 @@ export default function StoreManagement() {
 
             {/* Users List */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Kasir ({users.length})</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Users ({users.length})</Text>
               {loading ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Memuat pengguna...</Text>
+                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading users...</Text>
                 </View>
               ) : users.length === 0 ? (
                 <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
                   <UsersIcon size={48} color={colors.textSecondary} />
-                  <Text style={[styles.emptyText, { color: colors.text }]}>Belum ada kasir</Text>
-                  <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Generate PIN untuk registrasi kasir baru</Text>
+                  <Text style={[styles.emptyText, { color: colors.text }]}>No users yet</Text>
+                  <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Generate PIN for new user registration</Text>
                 </View>
               ) : (
                 users.map((userItem) => (
@@ -268,7 +231,7 @@ export default function StoreManagement() {
                         </View>
                         <View style={[styles.badge, { backgroundColor: getStatusColor(userItem.isVerified) + "20" }]}>
                           <Text style={[styles.badgeText, { color: getStatusColor(userItem.isVerified) }]}>
-                            {userItem.isVerified ? "Terverifikasi" : "Belum Verifikasi"}
+                            {userItem.isVerified ? "Verified" : "Not Verified"}
                           </Text>
                         </View>
                       </View>

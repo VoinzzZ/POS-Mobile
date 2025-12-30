@@ -34,7 +34,6 @@ export default function OwnerLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="dashboard" />
-      <Stack.Screen name="products" />
       <Stack.Screen name="analytics" />
       <Stack.Screen name="store" />
       <Stack.Screen name="settings" />

@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput, Animated, Clipboard } from "react-native";
 import PagerView from "react-native-pager-view";
 import { useAuth } from "../../src/context/AuthContext";
-import { Store as StoreIcon, Users as UsersIcon, Receipt, Settings, Search, Key } from "lucide-react-native";
+import { Store as StoreIcon, Users as UsersIcon, Receipt, Settings, Search, Key, UserPlus, UserCheck, UserX, Copy, Check } from "lucide-react-native";
 import OwnerBottomNav from "../../src/components/navigation/OwnerBottomNav";
 import { useRouter } from "expo-router";
-import { getAllUsers, getUserStats, User } from "../../src/api/admin";
+import { getAllUsers, User, getPinHistory, PinHistory } from "../../src/api/user";
 import { useTheme } from "../../src/context/ThemeContext";
 import GeneratePinModal from "../../src/components/shared/GeneratePinModal";
+import PinHistoryModal from "../../src/components/shared/PinHistoryModal";
 import StoreInfoForm from "../../src/components/admin/StoreInfoForm";
 import ReceiptPreview from "../../src/components/admin/ReceiptPreview";
 
@@ -25,9 +26,22 @@ export default function OwnerStore() {
   const [loading, setLoading] = useState(false); // Changed to false to avoid initial loading
   const [refreshing, setRefreshing] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [activePin, setActivePin] = useState<PinHistory | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [storeDataForReceipt, setStoreDataForReceipt] = useState<any>(null);
 
   const pagerRef = useRef<PagerView>(null);
+
+  React.useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const triggerHaptic = () => {
     try {
@@ -38,18 +52,25 @@ export default function OwnerStore() {
 
   // Tab configuration
   const tabs: { key: TabType; title: string; icon: any }[] = [
-    { key: "store", title: "Info Toko", icon: StoreIcon },
-    { key: "cashiers", title: "Kasir", icon: UsersIcon },
-    { key: "receipt", title: "Preview Struk", icon: Receipt },
+    { key: "store", title: "Store Info", icon: StoreIcon },
+    { key: "cashiers", title: "User", icon: UsersIcon },
+    { key: "receipt", title: "Receipt Preview", icon: Receipt },
   ];
 
-  const [stats, setStats] = useState({
-    total_users: 0,
-    admin_count: 0,
-    cashier_count: 0,
-    verified_users: 0,
-    unverified_users: 0,
-  });
+  // Check for active PIN
+  const checkActivePin = async () => {
+    try {
+      const response = await getPinHistory(1, 1, 'active');
+      if (response && response.success && response.data.pins && response.data.pins.length > 0) {
+        setActivePin(response.data.pins[0]);
+      } else {
+        setActivePin(null);
+      }
+    } catch (error) {
+      console.error("Error checking active PIN:", error);
+      setActivePin(null);
+    }
+  };
 
   const handleTabPress = (index: number) => {
     if (index !== activeTabIndex) {
@@ -57,6 +78,33 @@ export default function OwnerStore() {
       setActiveTabIndex(index);
       setActiveTab(tabs[index].key);
       pagerRef.current?.setPage(index);
+
+      // Check for active PIN when switching to cashiers tab
+      if (tabs[index].key === "cashiers") {
+        checkActivePin();
+      }
+
+      // Load store data when switching to store tab
+      if (tabs[index].key === "store") {
+        loadStoreDataForReceipt();
+      }
+
+      // Load store data when switching to receipt tab to ensure latest data
+      if (tabs[index].key === "receipt") {
+        loadStoreDataForReceipt();
+      }
+    }
+  };
+
+  const loadStoreDataForReceipt = async () => {
+    try {
+      const storeResponse = await import("../../src/api/store");
+      const response = await storeResponse.getStoreSettings();
+      if (response.success && response.data) {
+        setStoreDataForReceipt(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading store data for receipt preview:", error);
     }
   };
 
@@ -66,13 +114,28 @@ export default function OwnerStore() {
       triggerHaptic();
       setActiveTabIndex(index);
       setActiveTab(tabs[index].key);
+
+      // Check for active PIN when switching to cashiers tab
+      if (tabs[index].key === "cashiers") {
+        checkActivePin();
+      }
+
+      // Load store data when switching to store tab
+      if (tabs[index].key === "store") {
+        loadStoreDataForReceipt();
+      }
+
+      // Load store data when switching to receipt tab to ensure latest data
+      if (tabs[index].key === "receipt") {
+        loadStoreDataForReceipt();
+      }
     }
   };
 
-
   const fetchUsers = async () => {
     try {
-      const response = await getAllUsers('CASHIER');
+      // Fetch all users regardless of role
+      const response = await getAllUsers();
       if (response.success) {
         setUsers(response.data.users);
         setAllUsers(response.data.users);
@@ -82,26 +145,53 @@ export default function OwnerStore() {
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const response = await getUserStats();
-      if (response.success) {
-        setStats(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-    }
-  };
-
   const loadData = async () => {
     setLoading(true);
-    await Promise.all([fetchUsers(), fetchStats()]);
+    await fetchUsers();
+
+    // Check for active PIN when loading data
+    if (activeTab === "cashiers" || activeTabIndex === 1) {
+      await checkActivePin();
+    }
+
+    // Load store data for receipt preview if on store or receipt tab
+    if (activeTab === "store" || activeTabIndex === 0 || activeTab === "receipt" || activeTabIndex === 2) {
+      try {
+        const storeResponse = await import("../../src/api/store");
+        const response = await storeResponse.getStoreSettings();
+        if (response.success && response.data) {
+          setStoreDataForReceipt(response.data);
+        }
+      } catch (error) {
+        console.error("Error loading store data for receipt preview:", error);
+      }
+    }
+
     setLoading(false);
   };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([fetchUsers(), fetchStats()]);
+    await fetchUsers();
+
+    // Check for active PIN when refreshing
+    if (activeTab === "cashiers" || activeTabIndex === 1) {
+      await checkActivePin();
+    }
+
+    // Load store data for receipt preview if on store or receipt tab
+    if (activeTab === "store" || activeTabIndex === 0 || activeTab === "receipt" || activeTabIndex === 2) {
+      try {
+        const storeResponse = await import("../../src/api/store");
+        const response = await storeResponse.getStoreSettings();
+        if (response.success && response.data) {
+          setStoreDataForReceipt(response.data);
+        }
+      } catch (error) {
+        console.error("Error loading store data for receipt preview:", error);
+      }
+    }
+
     setRefreshing(false);
   }, []);
 
@@ -124,22 +214,42 @@ export default function OwnerStore() {
     } else {
       const filtered = allUsers.filter(user =>
         (user.userName || user.user_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (user.userEmail || user.user_email || '').toLowerCase().includes(searchQuery.toLowerCase())
+        (user.userEmail || user.user_email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (user.role || user.user_role || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
       setUsers(filtered);
     }
   }, [searchQuery, allUsers]);
 
+  const handleCopyPin = () => {
+    if (activePin) {
+      Clipboard.setString(activePin.code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <View>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Kelola Toko</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Atur informasi toko & kelola kasir</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Manage Store</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Manage store information & user management</Text>
         </View>
         <TouchableOpacity
-          onPress={() => router.push("/(owner)/analytics")}
+          onPress={() => router.push("/(owner)/settings")}
           style={styles.settingsBtn}
         >
           <Settings size={24} color={colors.textSecondary} />
@@ -180,8 +290,10 @@ export default function OwnerStore() {
         <View key="store" style={styles.page}>
           <StoreInfoForm
             store={null}
-            onStoreUpdate={() => {
+            onStoreUpdate={(updatedStore) => {
               console.log('Store data updated');
+              // Update the receipt preview with the new store data
+              setStoreDataForReceipt(updatedStore);
             }}
           />
         </View>
@@ -195,37 +307,49 @@ export default function OwnerStore() {
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
             }
           >
-            {/* Stats Cards */}
-            <View style={styles.statsContainer}>
-              <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>{stats.cashier_count}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Kasir</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>{users.filter(u => u.isVerified).length}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Terverifikasi</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>{users.filter(u => !u.isVerified).length}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Belum Verifikasi</Text>
-              </View>
-            </View>
+            {/* Active PIN Display */}
+            {activePin ? (
+              <View style={[styles.activePinContainer, { backgroundColor: colors.card, marginHorizontal: 20, marginTop: 16, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 3 }]}>
+                <View style={styles.activePinHeader}>
+                  <Text style={[styles.activePinTitle, { color: colors.text }]}>Active Registration PIN</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: "#10b981" + "20" }]}>
+                    <Text style={[styles.statusText, { color: "#10b981" }]}>Active</Text>
+                  </View>
+                </View>
 
-            {/* Generate PIN Button */}
-            <TouchableOpacity
-              style={styles.generatePinButton}
-              onPress={() => setShowPinModal(true)}
-            >
-              <Key size={20} color="#ffffff" />
-              <Text style={styles.generatePinButtonText}>Generate Registration PIN</Text>
-            </TouchableOpacity>
+                <View style={styles.pinCodeContainer}>
+                  <Text style={styles.pinCode}>{activePin.code}</Text>
+                  <TouchableOpacity onPress={handleCopyPin} style={styles.copyBtn}>
+                    {copied ? (
+                      <Check size={20} color="#10b981" />
+                    ) : (
+                      <Copy size={20} color="#4ECDC4" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.expiryInfo}>
+                  <Text style={[styles.expiryText, { color: colors.textSecondary }]}>Expires: {formatDate(activePin.expiresAt)}</Text>
+                </View>
+              </View>
+            ) : (
+              // Generate PIN Button
+              <TouchableOpacity
+                style={[styles.generatePinButton, { backgroundColor: "#8b5cf6", flexDirection: "row", padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", gap: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 5 }]}
+                onPress={() => setShowPinModal(true)}
+                activeOpacity={0.8}
+              >
+                <Key size={20} color="#ffffff" />
+                <Text style={styles.generatePinButtonText}>Generate PIN</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Search Bar */}
             <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
               <Search size={20} color={colors.textSecondary} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Cari pengguna..."
+                placeholder="Search users..."
                 placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -234,21 +358,28 @@ export default function OwnerStore() {
 
             {/* Users List */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Kasir ({users.length})</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Users ({users.length})</Text>
               {loading ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Memuat pengguna...</Text>
+                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading users...</Text>
                 </View>
               ) : users.length === 0 ? (
                 <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
                   <UsersIcon size={48} color={colors.textSecondary} />
-                  <Text style={[styles.emptyText, { color: colors.text }]}>Belum ada kasir</Text>
-                  <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Generate PIN untuk registrasi kasir baru</Text>
+                  <Text style={[styles.emptyText, { color: colors.text }]}>No users yet</Text>
+                  <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Generate PIN for new user registration</Text>
                 </View>
               ) : (
-                users.map((userItem) => (
-                  <View key={userItem.id} style={[styles.userCard, { backgroundColor: colors.card }]}>
+                users.map((userItem, index) => (
+                  <Animated.View
+                    key={userItem.id}
+                    style={[
+                      styles.userCard,
+                      { backgroundColor: colors.card },
+                      { opacity: fadeAnim, transform: [{ translateY: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }
+                    ]}
+                  >
                     <View style={[styles.userAvatar, { backgroundColor: colors.primary + "20" }]}>
                       <UsersIcon size={24} color={colors.primary} />
                     </View>
@@ -263,7 +394,7 @@ export default function OwnerStore() {
                         </View>
                         <View style={[styles.badge, { backgroundColor: getStatusColor(userItem.isVerified) + "20" }]}>
                           <Text style={[styles.badgeText, { color: getStatusColor(userItem.isVerified) }]}>
-                            {userItem.isVerified ? "Terverifikasi" : "Belum Verifikasi"}
+                            {userItem.isVerified ? "Verified" : "Not Verified"}
                           </Text>
                         </View>
                       </View>
@@ -271,18 +402,18 @@ export default function OwnerStore() {
                     <TouchableOpacity style={styles.moreBtn}>
                       <Text style={[styles.moreBtnText, { color: colors.textSecondary }]}>•••</Text>
                     </TouchableOpacity>
-                  </View>
+                  </Animated.View>
                 ))
               )}
             </View>
 
-            <View style={{ height: 20 }} />
+            <View style={{ height: 100 }} />
           </ScrollView>
         </View>
 
         {/* Page 3: Receipt Preview */}
         <View key="receipt" style={styles.page}>
-          <ReceiptPreview />
+          <ReceiptPreview store={storeDataForReceipt} />
         </View>
       </PagerView>
 
@@ -296,9 +427,17 @@ export default function OwnerStore() {
         onSuccess={() => {
           // Optionally refresh user list after PIN generation
           onRefresh();
+          // Check for active PIN after modal closes
+          checkActivePin();
         }}
       />
-    </View>
+
+      {/* PIN History Modal */}
+      <PinHistoryModal
+        visible={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+      />
+    </Animated.View>
   );
 }
 
@@ -366,44 +505,48 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#1e293b",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: "center",
+    justifyContent: "center",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 5,
   },
   statValue: {
     fontSize: 24,
     fontWeight: "700",
+    marginTop: 8,
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 11,
-  },
-  generatePinButton: {
-    flexDirection: "row",
-    backgroundColor: "#8b5cf6",
-    marginHorizontal: 20,
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    fontSize: 12,
+    textAlign: "center",
   },
   generatePinButtonText: {
     fontSize: 16,
     fontWeight: "600",
     color: "#ffffff",
   },
+  generatePinButton: {
+    marginHorizontal: 20,
+    marginTop: 16,
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1e293b",
     marginHorizontal: 20,
     marginTop: 16,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
   },
   searchInput: {
     flex: 1,
@@ -421,17 +564,20 @@ const styles = StyleSheet.create({
   },
   userCard: {
     flexDirection: "row",
-    backgroundColor: "#1e293b",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 12,
     alignItems: "center",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
   },
   userAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#4ECDC4" + "20",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -455,7 +601,7 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 20,
   },
   badgeText: {
     fontSize: 10,
@@ -481,8 +627,8 @@ const styles = StyleSheet.create({
     padding: 40,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1e293b",
-    borderRadius: 12,
+    borderRadius: 16,
+    marginHorizontal: 20,
   },
   emptyText: {
     fontSize: 16,
@@ -492,11 +638,70 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 12,
     marginTop: 4,
+    textAlign: "center",
   },
   pagerView: {
     flex: 1,
   },
   page: {
     flex: 1,
+  },
+  activePinContainer: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  activePinHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  activePinTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  pinCodeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#f1f5f9",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  pinCode: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#8b5cf6",
+    letterSpacing: 4,
+    flex: 1,
+  },
+  copyBtn: {
+    padding: 8,
+  },
+  expiryInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  expiryText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

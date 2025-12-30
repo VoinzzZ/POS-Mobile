@@ -6,7 +6,7 @@ const EmailService = require('./email.service.js');
 const emailService = new EmailService();
 
 class UserService {
-    static async generateEmployeePin(tenantId, generatedBy) {
+    static async generateEmployeePin(tenantId, generatedBy, expires_in_hours = 24) {
     try {
       // Verify user is owner of tenant
       const user = await prisma.m_user.findFirst({
@@ -26,6 +26,28 @@ class UserService {
       }
 
       const tenant = user.m_tenant;
+
+      // Check if there are any active (unused and not expired) PINs for this tenant
+      const activePin = await prisma.s_registration_pin.findFirst({
+        where: {
+          tenant_id: tenantId,
+          used: false,
+          revoked_at: null,
+          expires_at: {
+            gt: new Date()
+          }
+        }
+      });
+
+      if (activePin) {
+        throw new Error('Masih ada PIN aktif yang belum digunakan. Harap gunakan atau cabut PIN tersebut terlebih dahulu.');
+      }
+
+      // Validate expiry time (between 1 hour and 168 hours (7 days))
+      const hours = parseInt(expires_in_hours);
+      if (hours < 1 || hours > 168) {
+        throw new Error('Expiry time harus antara 1 jam hingga 168 jam (7 hari)');
+      }
 
       // Generate unique 6-digit PIN
       let pin;
@@ -56,8 +78,8 @@ class UserService {
         throw new Error('Gagal generate PIN unik, silakan coba lagi');
       }
 
-      // Create PIN record with expiry (24 hours)
-      const expiryTime = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+      // Create PIN record with expiry (based on requested hours)
+      const expiryTime = new Date(Date.now() + hours * 60 * 60 * 1000); // hours from now
 
       const pinRecord = await prisma.s_registration_pin.create({
         data: {
@@ -83,11 +105,11 @@ class UserService {
 
     static async validatePin(pin, tenantId) {
     try {
-      const pinRecord = await prisma.registration_pins.findFirst({
+      const pinRecord = await prisma.s_registration_pin.findFirst({
         where: {
-          pin,
+          code: pin,
           tenant_id: tenantId,
-          is_active: true,
+          used: false,
           expires_at: {
             gt: new Date()
           }
@@ -108,7 +130,7 @@ class UserService {
       }
 
       return {
-        pinId: pinRecord.pin_id,
+        pinId: pinRecord.id,
         tenant: pinRecord.m_tenant
       };
 
@@ -361,15 +383,15 @@ class UserService {
    */
   static async cleanupExpiredPins() {
     try {
-      const result = await prisma.registration_pins.updateMany({
+      const result = await prisma.s_registration_pin.updateMany({
         where: {
           expires_at: {
             lt: new Date()
           },
-          is_active: true
+          used: false  // Only mark unused pins as expired
         },
         data: {
-          is_active: false
+          used: true  // Mark as used instead of is_active
         }
       });
 
@@ -1016,6 +1038,138 @@ class UserService {
         message: 'Employee berhasil ditolak. Email notifikasi telah dikirim'
       };
     });
+  }
+
+  static async getPinHistory(tenantId, options = {}) {
+    try {
+      const { page = 1, limit = 10, status } = options;
+      const skip = (page - 1) * limit;
+
+      const where = {
+        tenant_id: tenantId
+      };
+
+      if (status) {
+        switch (status) {
+          case 'active':
+            where.used = false;
+            where.revoked_at = null;
+            where.expires_at = {
+              gt: new Date()
+            };
+            break;
+          case 'used':
+            where.used = true;
+            break;
+          case 'expired':
+            where.expires_at = {
+              lt: new Date()
+            };
+            where.used = false;
+            break;
+          case 'revoked':
+            where.revoked_at = {
+              not: null
+            };
+            break;
+        }
+      }
+
+      const [pins, total] = await Promise.all([
+        prisma.s_registration_pin.findMany({
+          where,
+          skip,
+          take: parseInt(limit),
+          include: {
+            m_user: {
+              select: {
+                user_name: true
+              }
+            }
+          },
+          orderBy: {
+            created_at: 'desc'
+          }
+        }),
+        prisma.s_registration_pin.count({ where })
+      ]);
+
+      const result = pins.map(pin => ({
+        id: pin.id,
+        code: pin.code,
+        expiresAt: pin.expires_at,
+        used: pin.used,
+        usedAt: pin.used_at,
+        revokedAt: pin.revoked_at,
+        currentUses: pin.current_uses,
+        maxUses: pin.max_uses,
+        createdBy: pin.m_user?.user_name,
+        createdAt: pin.created_at,
+        status: this.getPinStatus(pin)
+      }));
+
+      return {
+        pins: result,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static getPinStatus(pin) {
+    if (pin.revoked_at) {
+      return 'revoked';
+    } else if (pin.used) {
+      return 'used';
+    } else if (new Date() > pin.expires_at) {
+      return 'expired';
+    } else {
+      return 'active';
+    }
+  }
+
+  static async revokePin(pinId, tenantId, revokedBy) {
+    try {
+      // Verify pin belongs to tenant
+      const pin = await prisma.s_registration_pin.findFirst({
+        where: {
+          id: pinId,
+          tenant_id: tenantId,
+          revoked_at: null,
+          used: false,
+          expires_at: {
+            gt: new Date()
+          }
+        }
+      });
+
+      if (!pin) {
+        throw new Error('PIN tidak ditemukan atau sudah tidak valid');
+      }
+
+      // Update pin to revoked status
+      await prisma.s_registration_pin.update({
+        where: { id: pinId },
+        data: {
+          revoked_at: new Date(),
+          updated_by: revokedBy
+        }
+      });
+
+      return {
+        message: 'PIN berhasil dicabut'
+      };
+
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

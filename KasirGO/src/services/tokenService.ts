@@ -15,6 +15,10 @@ interface StoredTokens extends Tokens {
 
 export class TokenService {
   private static refreshPromise: Promise<Tokens> | null = null;
+  private static lastRefreshAttempt: number = 0;
+  private static refreshFailureCount: number = 0;
+  private static readonly MAX_REFRESH_FAILURES = 3;
+  private static readonly RETRY_DELAY = 5000; // 5 seconds between retries
 
   /**
    * Check if access token is about to expire (within 2 minutes)
@@ -162,14 +166,29 @@ export class TokenService {
   }
 
   /**
-   * Refresh access token using refresh token
+   * Refresh access token using refresh token with retry limit
    */
   static async refreshAccessToken(): Promise<Tokens | null> {
     try {
+      // If refresh has failed too many times, give up and require re-login
+      if (this.refreshFailureCount >= this.MAX_REFRESH_FAILURES) {
+        console.log('🛑 Max refresh attempts reached. Clearing tokens and requiring login');
+        await this.clearTokens();
+        return null;
+      }
+
       // If there's already a refresh in progress, wait for it
       if (this.refreshPromise) {
         console.log('⏳ Refresh already in progress, waiting...');
         return await this.refreshPromise;
+      }
+
+      // Check if enough time has passed since last attempt
+      const now = Date.now();
+      const timeSinceLastAttempt = now - this.lastRefreshAttempt;
+      if (timeSinceLastAttempt < this.RETRY_DELAY && this.refreshFailureCount > 0) {
+        console.log(`⏳ Refresh rate limited. Wait ${Math.ceil((this.RETRY_DELAY - timeSinceLastAttempt) / 1000)}s`);
+        return null;
       }
 
       const tokens = await this.getStoredTokens();
@@ -183,20 +202,39 @@ export class TokenService {
 
       if (!tokens || !tokens.refresh_token) {
         console.log('❌ No refresh token available');
+        // Reset failure count when there's no refresh token to start fresh after login
+        this.refreshFailureCount = 0;
+        return null;
+      }
+
+      // Check if refresh token itself is expired
+      const now_sec = Math.floor(Date.now() / 1000);
+      const refreshTokenExpirationTime = tokens.issuedAt + tokens.refresh_expires_in;
+      if (now_sec > refreshTokenExpirationTime) {
+        console.log('❌ Refresh token has expired. Requires re-login');
+        this.refreshFailureCount = this.MAX_REFRESH_FAILURES;
+        await this.clearTokens();
         return null;
       }
 
       // Start the refresh process
+      this.lastRefreshAttempt = Date.now();
       this.refreshPromise = this.performTokenRefresh(tokens.refresh_token);
-      
+
       try {
         const newTokens = await this.refreshPromise;
+        if (newTokens) {
+          this.refreshFailureCount = 0; // Reset on success
+        } else {
+          this.refreshFailureCount++;
+        }
         return newTokens;
       } finally {
         // Clear the promise when done
         this.refreshPromise = null;
       }
     } catch (error) {
+      this.refreshFailureCount++;
       console.error('❌ Error refreshing access token:', error);
       this.refreshPromise = null;
       return null;

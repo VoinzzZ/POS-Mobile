@@ -31,12 +31,13 @@ export default function OwnerBottomNav() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-      {tabs.map((tab) => {
+      {tabs.map((tab, index) => {
         const Icon = tab.icon;
         const active = isActive(tab.path);
 
         return (
           <TouchableOpacity
+            key={index}
             style={styles.tab}
             onPress={() => router.push(tab.route as any)}
           >

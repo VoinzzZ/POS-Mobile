@@ -21,7 +21,16 @@ import {
   OwnerEmailData,
   EmployeeRegistrationData,
 } from "../api/auth";
-import TokenService, { Tokens, testAsyncStorage } from "../services/tokenService";
+import TokenService, { testAsyncStorage } from "../services/tokenService";
+
+// Define Tokens interface to match the one in tokenService
+interface Tokens {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  refresh_expires_in: number;
+  tokenType?: string;
+}
 
 // ========== TYPES ==========
 
@@ -31,7 +40,7 @@ interface User {
   user_id: number;
   user_name: string;
   user_email: string;
-  user_role: "OWNER" | "ADMIN" | "CASHIER" | "INVENTORY";
+  user_role: string; // Using string to match API response, then validate specific values
   user_is_verified: boolean;
   tenantId?: number;
   tenantName?: string;
@@ -42,7 +51,7 @@ interface User {
   // New API response properties for compatibility
   name?: string; // Alternative to user_name
   email?: string; // Alternative to user_email
-  role?: "OWNER" | "ADMIN" | "CASHIER" | "INVENTORY"; // Alternative to user_role
+  role?: string; // Alternative to user_role - using string to match API
   isVerified?: boolean; // Alternative to user_is_verified
 }
 
@@ -72,7 +81,7 @@ interface AuthContextType {
   completeOwnerRegistration: (registration_id: number, password: string) => Promise<void>;
 
   // New employee registration flow
-  registerEmployeeWithPin: (employeeData: EmployeeRegistrationData) => Promise<{ registration_id: number }>;
+  registerEmployeeWithPin: (employeeData: EmployeeRegistrationData) => Promise<{ user_id: number }>;
 
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -234,16 +243,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // ========== LOGIN ==========>
   const login = async (email: string, password: string): Promise<void> => {
     try {
+      console.log('🔄 Attempting login for:', email);
       const response = await loginApi(email, password);
+      console.log('🔄 Login API response:', response);
+
       if (!response.success) {
         throw new Error(response.message || "Login failed");
       }
 
       const { user, tokens } = response.data!;
+      console.log('🔄 Login successful, saving auth data...');
       await saveAuthToStorage(user, tokens);
+      console.log('✅ Auth data saved successfully');
     } catch (error: any) {
-      const message =
-        error.response?.data?.message || error.message || "Login failed";
+      console.error('❌ Login error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
+      const message = error.response?.data?.message || error.message || "Login failed";
+      // Jika login gagal, pastikan tidak ada sisa data auth
+      await clearAuthFromStorage();
       throw new Error(message);
     }
   };
@@ -322,7 +343,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   /**
    * Register employee with PIN
    */
-  const registerEmployeeWithPin = async (employeeData: EmployeeRegistrationData): Promise<{ registration_id: number }> => {
+  const registerEmployeeWithPin = async (employeeData: EmployeeRegistrationData): Promise<{ user_id: number }> => {
     try {
       const response = await registerEmployeeWithPinApi(employeeData);
       if (!response.success) {
