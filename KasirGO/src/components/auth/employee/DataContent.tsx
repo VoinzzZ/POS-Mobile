@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { User, ArrowRight } from 'lucide-react-native';
+import { registerEmployeeWithPinApi } from '@/src/api/auth';
 
 interface EmployeeData {
   user_email: string;
@@ -74,21 +75,40 @@ export default function EmployeeDataContent({ colors, params, router }: Employee
   };
 
   const handleNext = async () => {
-    // Skip validation for UI testing
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
     try {
-      // Combine with previous data (PIN)
-      const combinedData = {
+      // Make API call to register employee with PIN and user data
+      // This is where PIN validation actually happens - if PIN is invalid, API will return error
+      const response = await registerEmployeeWithPinApi({
         pin_registration: params.pin_registration,
-        ...employeeData,
-      };
+        user_email: employeeData.user_email,
+        user_name: employeeData.user_name,
+        user_full_name: employeeData.user_full_name,
+        user_phone: employeeData.user_phone,
+      });
 
-      router.push({
-        pathname: '/auth/register/employee/verify',
-        params: combinedData
-      } as any);
-    } catch (error) {
-      Alert.alert('Error', 'Gagal melanjutkan pendaftaran. Silakan coba lagi.');
+      if (response.success) {
+        // Prepare data for next step - include registration ID from API response
+        const combinedData = {
+          pin_registration: params.pin_registration,
+          ...employeeData,
+          registration_id: response.data?.user_id, // Use the user_id from response as registration_id
+        };
+
+        router.push({
+          pathname: '/auth/register/employee/verify',
+          params: combinedData
+        } as any);
+      } else {
+        Alert.alert('Error', response.message || 'PIN tidak valid atau gagal mendaftar. Silakan coba lagi.');
+      }
+    } catch (error: any) {
+      console.error('Error registering employee with PIN and user data:', error);
+      Alert.alert('Error', error.response?.data?.message || error.message || 'PIN tidak valid atau gagal mendaftar. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }

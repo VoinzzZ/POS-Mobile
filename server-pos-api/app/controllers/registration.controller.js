@@ -5,7 +5,8 @@ const {
   sendEmailVerificationSchema,
   confirmEmailVerificationSchema,
   completeRegistrationSchema,
-  registerEmployeeWithPinSchema
+  registerEmployeeWithPinSchema,
+  validatePinSchema
 } = require('../validation/auth.validation.js');
 const prisma = require('../config/mysql.db.js');
 
@@ -40,6 +41,50 @@ class RegistrationController {
       let message = error.message || 'Failed to create tenant registration';
 
       if (error.message.includes('sudah digunakan')) {
+        statusCode = 409;
+      }
+
+      res.status(statusCode).json({
+        success: false,
+        message: message
+      });
+    }
+  }
+
+  static async validatePin(req, res) {
+    try {
+      const { error, value } = checkValidate(validatePinSchema, req);
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validasi gagal',
+          errors: error
+        });
+      }
+
+      const result = await RegistrationService.validateEmployeePin(value.pin);
+
+      res.status(200).json({
+        success: true,
+        message: 'PIN valid',
+        data: {
+          pin_valid: true,
+          tenant_name: result.tenant_name,
+          role_name: result.role_name,
+          max_uses: result.max_uses,
+          current_uses: result.current_uses
+        }
+      });
+    } catch (error) {
+      let statusCode = 400;
+      let message = error.message || 'PIN tidak valid';
+
+      if (error.message.includes('tidak valid') ||
+          error.message.includes('kadaluarsa') ||
+          error.message.includes('mencapai batas') ||
+          error.message.includes('sudah digunakan') ||
+          error.message.includes('dicabut') ||
+          error.message.includes('batal')) {
         statusCode = 409;
       }
 

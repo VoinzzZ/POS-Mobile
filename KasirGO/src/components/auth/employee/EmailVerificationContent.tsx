@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Mail, ArrowRight, Info } from 'lucide-react-native';
+import { confirmEmailOtpApi } from '@/src/api/auth';
 
 interface EmployeeEmailVerificationContentProps {
   colors: any;
@@ -89,18 +90,39 @@ export default function EmployeeEmailVerificationContent({ colors, params, route
 
     setLoading(true);
     try {
-      // Combine all data for next step
-      const combinedData = {
-        ...params,
-        otp_code: finalCode,
-      };
+      // Call API to verify OTP
+      const registrationId = params.registration_id || params.user_id;
+      if (!registrationId) {
+        throw new Error('Registration ID tidak ditemukan');
+      }
 
-      router.push({
-        pathname: '/auth/register/employee/password',
-        params: combinedData
-      });
+      const response = await confirmEmailOtpApi(registrationId, finalCode);
+
+      if (response.success) {
+        // Combine all data for next step
+        const combinedData = {
+          ...params,
+          otp_code: finalCode,
+        };
+
+        router.push({
+          pathname: '/auth/register/employee/password',
+          params: combinedData
+        });
+      } else {
+        throw new Error(response.message || 'Kode OTP tidak valid');
+      }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Kode OTP tidak valid. Silakan coba lagi.');
+      let errorMessage = 'Kode OTP tidak valid. Silakan coba lagi.';
+
+      // Extract more specific error message from response
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert('Error', errorMessage);
       // Clear OTP inputs on error
       setOtpCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
@@ -114,7 +136,9 @@ export default function EmployeeEmailVerificationContent({ colors, params, route
 
     setResendLoading(true);
     try {
-      // TODO: Call API to resend OTP
+      // TODO: Implement API call to resend OTP
+      // Currently, this only resets the timer locally
+      // Backend API for resending OTP needs to be implemented
       setTimeLeft(600); // Reset timer to 10 minutes
       setCanResend(false);
       setOtpCode(['', '', '', '', '', '']);
@@ -171,8 +195,8 @@ export default function EmployeeEmailVerificationContent({ colors, params, route
         <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
         <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
         <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-        <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-        <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
+        <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
+        <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
       </View>
 
       {/* Email Info Card */}

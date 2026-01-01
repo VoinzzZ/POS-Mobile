@@ -24,8 +24,6 @@ export default function OwnerLayout() {
       return <Redirect href="/(admin)/dashboard" />;
     } else if (userRole === "CASHIER") {
       return <Redirect href="/(cashier)/dashboard" />;
-    } else if (userRole === "INVENTORY") {
-      return <Redirect href="/(inventory)/dashboard" />;
     }
     return <Redirect href="/auth/login" />;
   }

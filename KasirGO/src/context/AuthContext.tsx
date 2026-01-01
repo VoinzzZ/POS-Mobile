@@ -16,6 +16,7 @@ import {
   sendOwnerVerificationEmailApi,
   confirmEmailOtpApi,
   completeOwnerRegistrationApi,
+  completeEmployeeRegistrationApi,
   registerEmployeeWithPinApi,
   TenantRegistrationData,
   OwnerEmailData,
@@ -338,6 +339,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  /**
+   * Step 3: Complete employee registration
+   */
+  const completeEmployeeRegistration = async (registration_id: number, password: string): Promise<void> => {
+    try {
+      const response = await completeEmployeeRegistrationApi(registration_id, password);
+      if (!response.success) {
+        throw new Error(response.message || "Failed to complete registration");
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || "Failed to complete registration";
+      throw new Error(message);
+    }
+  };
+
   // ========== EMPLOYEE REGISTRATION FLOW ==========>
 
   /**
@@ -386,6 +402,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         sendOwnerEmailVerification,
         confirmEmailVerification,
         completeOwnerRegistration,
+        completeEmployeeRegistration,
         registerEmployeeWithPin,
         logout,
         refreshProfile,

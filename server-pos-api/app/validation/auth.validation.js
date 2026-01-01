@@ -136,6 +136,14 @@ const registerEmployeeWithPinSchema = Joi.object({
   })
 });
 
+// Validate Employee PIN
+const validatePinSchema = Joi.object({
+  pin: Joi.string().required().messages({
+    'string.empty': 'PIN wajib diisi',
+    'any.required': 'PIN wajib diisi'
+  })
+});
+
 module.exports = {
 
   createTenantSchema,
@@ -143,9 +151,10 @@ module.exports = {
   confirmEmailVerificationSchema,
   completeRegistrationSchema,
   registerEmployeeWithPinSchema,
+  validatePinSchema,
 
   loginSchema,
   approveUserSchema,
   rejectUserSchema,
-  
+
 };

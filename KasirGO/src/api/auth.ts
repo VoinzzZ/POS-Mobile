@@ -226,6 +226,30 @@ export const completeOwnerRegistrationApi = async (
 };
 
 /**
+ * Complete employee registration (Step 3 for employee)
+ */
+export const completeEmployeeRegistrationApi = async (
+  registration_id: number,
+  user_password: string
+): Promise<ApiResponse> => {
+  const res = await api.post("/registration/complete", {
+    registration_id,
+    user_password,
+  });
+  return res.data;
+};
+
+/**
+ * Validate employee PIN (Step 1 for employee)
+ */
+export const validateEmployeePinApi = async (
+  pin: string
+): Promise<ApiResponse> => {
+  const res = await api.post("/registration/employee/validate-pin", { pin });
+  return res.data;
+};
+
+/**
  * Register employee with PIN (Step 1 for employee)
  */
 export const registerEmployeeWithPinApi = async (

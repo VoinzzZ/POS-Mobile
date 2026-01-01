@@ -1,13 +1,15 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator, Dimensions } from "react-native";
 import PasswordInput from "../shared/PasswordInput";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
+import { useOrientation } from "../../hooks/useOrientation";
 
 interface LoginFormProps {}
 
 const LoginForm = (props: LoginFormProps) => {
+  const { isLandscape: isLand, isTablet: isTab } = useOrientation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -98,20 +100,23 @@ const LoginForm = (props: LoginFormProps) => {
   });
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
+    <View style={[styles.container, isLand && isTab ? styles.landscapeContainer : {}, dynamicStyles.container]}>
       {/* Logo */}
-      <Image source={require("../../../assets/images/KasirGOTrnsprt.png")} style={styles.logo} />
+      <Image
+        source={require("../../../assets/images/KasirGOTrnsprt.png")}
+        style={[styles.logo, isLand && isTab ? styles.landscapeLogo : {}]}
+      />
 
       {/* Title */}
-      <Text style={[styles.title, dynamicStyles.title]}>MASUK</Text>
-      <Text style={[styles.subtitle, dynamicStyles.subtitle]}>Akses Sistem Point-of-Sale Anda</Text>
+      <Text style={[styles.title, isLand && isTab ? styles.landscapeTitle : {}, dynamicStyles.title]}>MASUK</Text>
+      <Text style={[styles.subtitle, isLand && isTab ? styles.landscapeSubtitle : {}, dynamicStyles.subtitle]}>Akses Sistem Point-of-Sale Anda</Text>
 
       {/* Email Input */}
       <View style={styles.fieldContainer}>
-        <Text style={[styles.label, dynamicStyles.label]}>Email</Text>
-        <View style={[styles.inputWrapper, { borderColor: errors.email ? '#ef4444' : colors.border }]}>
+        <Text style={[styles.label, isLand && isTab ? styles.landscapeLabel : {}, dynamicStyles.label]}>Email</Text>
+        <View style={[styles.inputWrapper, isLand && isTab ? styles.landscapeInputWrapper : {}, { borderColor: errors.email ? '#ef4444' : colors.border }]}>
           <TextInput
-            style={[styles.input, dynamicStyles.input]}
+            style={[styles.input, isLand && isTab ? styles.landscapeInput : {}, dynamicStyles.input]}
             placeholder="contoh@email.com"
             placeholderTextColor={colors.textSecondary}
             keyboardType="email-address"
@@ -126,13 +131,13 @@ const LoginForm = (props: LoginFormProps) => {
           />
         </View>
         {errors.email && (
-          <Text style={styles.errorText}>{errors.email}</Text>
+          <Text style={[styles.errorText, isLand && isTab ? styles.landscapeErrorText : {}]}>{errors.email}</Text>
         )}
       </View>
 
       {/* Password Input */}
       <View style={styles.fieldContainer}>
-        <Text style={[styles.label, dynamicStyles.label]}>Password</Text>
+        <Text style={[styles.label, isLand && isTab ? styles.landscapeLabel : {}, dynamicStyles.label]}>Password</Text>
         <PasswordInput
           value={password}
           onChangeText={(text) => {
@@ -145,31 +150,31 @@ const LoginForm = (props: LoginFormProps) => {
           hasError={!!errors.password}
         />
         {errors.password && (
-          <Text style={styles.errorText}>{errors.password}</Text>
+          <Text style={[styles.errorText, isLand && isTab ? styles.landscapeErrorText : {}]}>{errors.password}</Text>
         )}
       </View>
 
       {/* Button Login */}
       <TouchableOpacity
-        style={[styles.button, dynamicStyles.button, isLoading && styles.buttonDisabled]}
+        style={[styles.button, isLand && isTab ? styles.landscapeButton : {}, dynamicStyles.button, isLoading && styles.buttonDisabled]}
         onPress={handleLogin}
         disabled={isLoading}
       >
         {isLoading ? (
-          <ActivityIndicator size="small" color="white" />
+          <ActivityIndicator size={isLand && isTab ? "large" : "small"} color="white" />
         ) : (
-          <Text style={styles.buttonText}>MASUK</Text>
+          <Text style={[styles.buttonText, isLand && isTab ? styles.landscapeButtonText : {}]}>MASUK</Text>
         )}
       </TouchableOpacity>
 
       {/* Links */}
       <TouchableOpacity onPress={() => console.log("Lupa Password - coming soon")}>
-        <Text style={[styles.link, dynamicStyles.link]}>Lupa Password?</Text>
+        <Text style={[styles.link, isLand && isTab ? styles.landscapeLink : {}, dynamicStyles.link]}>Lupa Password?</Text>
       </TouchableOpacity>
-      <Text style={[styles.footer, dynamicStyles.footer]}>
+      <Text style={[styles.footer, isLand && isTab ? styles.landscapeFooter : {}, dynamicStyles.footer]}>
         Belum punya akun?{" "}
         <Text
-          style={[styles.linkInline, dynamicStyles.link]}
+          style={[styles.linkInline, isLand && isTab ? styles.landscapeLinkInline : {}, dynamicStyles.link]}
           onPress={() => router.push("/auth/registerSelectType")}
         >
           Daftar Sekarang
@@ -189,6 +194,11 @@ const styles = StyleSheet.create({
     gap: 12,
     borderWidth: 1,
   },
+  landscapeContainer: {
+    maxWidth: 500,
+    padding: 32,
+    gap: 16,
+  },
   fieldContainer: {
     width: "100%",
     marginBottom: 4,
@@ -199,13 +209,25 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
     marginBottom: 10,
   },
+  landscapeLogo: {
+    width: 250,
+    height: 125,
+    marginBottom: 16,
+  },
   title: {
     fontSize: 24,
     fontWeight: "700",
   },
+  landscapeTitle: {
+    fontSize: 32,
+  },
   subtitle: {
     fontSize: 14,
     marginBottom: 20,
+  },
+  landscapeSubtitle: {
+    fontSize: 16,
+    marginBottom: 24,
   },
   label: {
     fontSize: 16,
@@ -213,20 +235,37 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     alignSelf: "flex-start",
   },
+  landscapeLabel: {
+    fontSize: 18,
+    marginBottom: 10,
+  },
   inputWrapper: {
     width: "100%",
     borderWidth: 1,
     borderRadius: 8,
   },
+  landscapeInputWrapper: {
+    borderRadius: 12,
+  },
   input: {
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  landscapeInput: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
   },
   button: {
     width: "100%",
     paddingVertical: 12,
     borderRadius: 8,
     marginTop: 10,
+  },
+  landscapeButton: {
+    paddingVertical: 18,
+    borderRadius: 12,
+    marginTop: 16,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -237,16 +276,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
+  landscapeButtonText: {
+    fontSize: 20,
+  },
   link: {
     marginTop: 10,
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     textDecorationLine: 'underline',
   },
+  landscapeLink: {
+    marginTop: 14,
+    fontSize: 16,
+  },
   linkInline: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     textDecorationLine: 'underline',
+  },
+  landscapeLinkInline: {
+    fontSize: 16,
   },
   footerContainer: {
     flexDirection: 'row',
@@ -257,10 +306,18 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 6,
   },
+  landscapeFooter: {
+    marginTop: 10,
+  },
   errorText: {
     color: "#ef4444",
     fontSize: 12,
     marginTop: 4,
+    marginLeft: 4,
+  },
+  landscapeErrorText: {
+    fontSize: 14,
+    marginTop: 6,
     marginLeft: 4,
   },
 });

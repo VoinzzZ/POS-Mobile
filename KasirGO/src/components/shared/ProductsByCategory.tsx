@@ -12,6 +12,7 @@ import {
 import { Package, ShoppingCart } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
+import { useOrientation } from "../../hooks/useOrientation";
 import {
   Product,
   getAllProducts,
@@ -25,15 +26,16 @@ interface ProductsByCategoryProps {
   onAddToCart?: (product: Product) => void;
 }
 
-export default function ProductsByCategory({ 
-  categoryId, 
+export default function ProductsByCategory({
+  categoryId,
   categoryName,
   brandId = null,
   brandName = "",
-  onAddToCart
+  onAddToCart,
 }: ProductsByCategoryProps) {
   const { colors } = useTheme();
   const { user } = useAuth();
+  const { isLandscape: isLand, isTablet: isTab } = useOrientation();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);

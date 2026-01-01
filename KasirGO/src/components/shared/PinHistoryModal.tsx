@@ -142,11 +142,11 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'active': return 'Active';
-      case 'used': return 'Used';
-      case 'expired': return 'Expired';
-      case 'revoked': return 'Revoked';
-      default: return 'Unknown';
+      case 'active': return 'Aktif';
+      case 'used': return 'Digunakan';
+      case 'expired': return 'Kedaluwarsa';
+      case 'revoked': return 'Dicabut';
+      default: return 'Tidak Diketahui';
     }
   };
 
@@ -185,7 +185,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
         <View style={styles.detailRow}>
           <Clock size={14} color={colors.textSecondary} />
           <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-            Exp: {formatDate(item.expiresAt)}
+            Kdl: {formatDate(item.expiresAt)}
           </Text>
         </View>
         
@@ -193,7 +193,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
           <View style={styles.detailRow}>
             <User size={14} color={colors.textSecondary} />
             <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-              By: {item.createdBy}
+              Oleh: {item.createdBy}
             </Text>
           </View>
         )}
@@ -208,19 +208,19 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
       
       {item.status === 'active' && (
         <View style={styles.actionRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.revokeBtn}
             onPress={() => Alert.alert(
-              "Revoke PIN",
-              `Are you sure you want to revoke this PIN? This action cannot be undone.`,
+              "Cabut PIN",
+              `Apakah Anda yakin ingin mencabut PIN ini? Tindakan ini tidak dapat dibatalkan.`,
               [
-                { text: "Cancel", style: "cancel" },
-                { text: "Revoke", style: "destructive", onPress: () => handleRevoke(item.id) }
+                { text: "Batal", style: "cancel" },
+                { text: "Cabut", style: "destructive", onPress: () => handleRevoke(item.id) }
               ]
             )}
           >
             <Key size={16} color="#ffffff" />
-            <Text style={styles.revokeBtnText}>Revoke</Text>
+            <Text style={styles.revokeBtnText}>Cabut</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -249,7 +249,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>PIN History</Text>
+            <Text style={styles.title}>Riwayat PIN</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={24} color="#64748b" />
             </TouchableOpacity>
@@ -268,7 +268,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
                 styles.filterText,
                 selectedStatus === undefined && styles.filterTextActive
               ]}>
-                All
+                Semua
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -282,7 +282,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
                 styles.filterText,
                 selectedStatus === 'active' && styles.filterTextActive
               ]}>
-                Active
+                Aktif
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -296,7 +296,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
                 styles.filterText,
                 selectedStatus === 'used' && styles.filterTextActive
               ]}>
-                Used
+                Digunakan
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -310,7 +310,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
                 styles.filterText,
                 selectedStatus === 'expired' && styles.filterTextActive
               ]}>
-                Expired
+                Kedaluwarsa
               </Text>
             </TouchableOpacity>
           </View>
@@ -320,13 +320,13 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
             {loading && pins.length === 0 ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator color={colors.primary} />
-                <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading PINs...</Text>
+                <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Memuat PIN...</Text>
               </View>
             ) : pins.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Key size={48} color={colors.textSecondary} />
-                <Text style={[styles.emptyText, { color: colors.text }]}>No PINs found</Text>
-                <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Generate PINs to see history here</Text>
+                <Text style={[styles.emptyText, { color: colors.text }]}>Tidak ada PIN ditemukan</Text>
+                <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Buat PIN untuk melihat riwayat di sini</Text>
               </View>
             ) : (
               <>

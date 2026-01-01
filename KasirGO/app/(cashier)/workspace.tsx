@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  StyleSheet,
   TouchableOpacity,
   Animated,
   Dimensions,
@@ -18,6 +18,7 @@ import CategoryTabView from "../../src/components/shared/CategoryTabView";
 import { useTheme } from "../../src/context/ThemeContext";
 import { Product } from "../../src/api/product";
 import { transactionService } from "../../src/api/transaction";
+import { useOrientation } from "../../src/hooks/useOrientation";
 
 export default function WorkspaceScreen() {
   const { colors } = useTheme();
@@ -177,12 +178,14 @@ export default function WorkspaceScreen() {
     );
   };
 
+  const { isLandscape: isLand, isTablet: isTab } = useOrientation();
+
   return (
-    <GestureHandlerRootView style={[styles.container, { backgroundColor: colors.background }]}>
+    <GestureHandlerRootView style={[styles.container, isLand && isTab ? styles.landscapeContainer : {}, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Workspace</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+      <View style={[styles.header, isLand && isTab ? styles.landscapeHeader : {}, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.title, isLand && isTab ? styles.landscapeTitle : {}, { color: colors.text }]}>Workspace</Text>
+        <Text style={[styles.subtitle, isLand && isTab ? styles.landscapeSubtitle : {}, { color: colors.textSecondary }]}>
           Geser tab kiri/kanan untuk pindah kategori
         </Text>
       </View>
@@ -197,78 +200,148 @@ export default function WorkspaceScreen() {
         />
       </View>
 
-      {/* Bottom Sheet Cart */}
-      {cart.length > 0 && (
-        <BottomSheet
-          ref={bottomSheetRef}
-          index={1}
-          snapPoints={snapPoints}
-          onChange={handleSheetChanges}
-          backgroundStyle={{ backgroundColor: colors.card }}
-          handleIndicatorStyle={{ backgroundColor: colors.border }}
-          enablePanDownToClose={false}
-        >
-          {/* Cart Summary Header */}
-          <View style={[styles.cartSummary, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-            <View style={styles.cartSummaryLeft}>
-              <View style={[styles.cartIconBadge, { backgroundColor: colors.primary }]}>
-                <ShoppingCart size={20} color="#fff" />
-                <View style={styles.cartBadge}>
-                  <Text style={styles.cartBadgeText}>{getTotalItems()}</Text>
+      {/* Bottom Sheet Cart - Only show on portrait or phone landscape */}
+      {!isLand || !isTab ? (
+        <>
+          {cart.length > 0 && (
+            <BottomSheet
+              ref={bottomSheetRef}
+              index={1}
+              snapPoints={snapPoints}
+              onChange={handleSheetChanges}
+              backgroundStyle={{ backgroundColor: colors.card }}
+              handleIndicatorStyle={{ backgroundColor: colors.border }}
+              enablePanDownToClose={false}
+            >
+              {/* Cart Summary Header */}
+              <View style={[styles.cartSummary, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                <View style={styles.cartSummaryLeft}>
+                  <View style={[styles.cartIconBadge, { backgroundColor: colors.primary }]}>
+                    <ShoppingCart size={20} color="#fff" />
+                    <View style={styles.cartBadge}>
+                      <Text style={styles.cartBadgeText}>{getTotalItems()}</Text>
+                    </View>
+                  </View>
+                  <View>
+                    <Text style={[styles.cartSummaryTitle, { color: colors.text }]}>
+                      {getTotalItems()} Item{getTotalItems() > 1 ? 's' : ''}
+                    </Text>
+                    <Text style={[styles.cartSummaryPrice, { color: colors.primary }]}>
+                      Rp {getTotalPrice().toLocaleString("id-ID")}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={clearCart}>
+                  <Text style={[styles.clearCartText, { color: "#ef4444" }]}>
+                    Kosongkan
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Cart Items */}
+              <BottomSheetScrollView
+                style={styles.cartItemsScroll}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.cartItemsContainer}>
+                  {cart.map(renderCartItem)}
+                </View>
+                <View style={{ height: 80 }} />
+              </BottomSheetScrollView>
+            </BottomSheet>
+          )}
+
+          {/* Floating Checkout Button */}
+          {cart.length > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.checkoutFAB,
+                { backgroundColor: colors.primary },
+                checkoutLoading && styles.disabledButton
+              ]}
+              onPress={handleCheckout}
+              disabled={checkoutLoading}
+            >
+              {checkoutLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <ShoppingCart size={24} color="#fff" />
+                  <Text style={styles.checkoutFABText}>Checkout</Text>
+                  <View style={styles.checkoutBadge}>
+                    <Text style={styles.checkoutBadgeText}>{getTotalItems()}</Text>
+                  </View>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </>
+      ) : (
+        // For landscape tablet, show cart as a side panel
+        <View style={styles.landscapeCartContainer}>
+          {cart.length > 0 ? (
+            <>
+              {/* Cart Summary Header */}
+              <View style={[styles.landscapeCartSummary, { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                <View style={styles.cartSummaryLeft}>
+                  <View style={[styles.cartIconBadge, { backgroundColor: colors.primary }]}>
+                    <ShoppingCart size={20} color="#fff" />
+                    <View style={styles.cartBadge}>
+                      <Text style={styles.cartBadgeText}>{getTotalItems()}</Text>
+                    </View>
+                  </View>
+                  <View>
+                    <Text style={[styles.cartSummaryTitle, { color: colors.text }]}>
+                      {getTotalItems()} Item{getTotalItems() > 1 ? 's' : ''}
+                    </Text>
+                    <Text style={[styles.cartSummaryPrice, { color: colors.primary }]}>
+                      Rp {getTotalPrice().toLocaleString("id-ID")}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={clearCart}>
+                  <Text style={[styles.clearCartText, { color: "#ef4444" }]}>
+                    Kosongkan
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Cart Items */}
+              <View style={styles.landscapeCartItemsScroll}>
+                <View style={styles.cartItemsContainer}>
+                  {cart.map(renderCartItem)}
                 </View>
               </View>
-              <View>
-                <Text style={[styles.cartSummaryTitle, { color: colors.text }]}>
-                  {getTotalItems()} Item{getTotalItems() > 1 ? 's' : ''}
-                </Text>
-                <Text style={[styles.cartSummaryPrice, { color: colors.primary }]}>
-                  Rp {getTotalPrice().toLocaleString("id-ID")}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity onPress={clearCart}>
-              <Text style={[styles.clearCartText, { color: "#ef4444" }]}>
-                Kosongkan
-              </Text>
-            </TouchableOpacity>
-          </View>
 
-          {/* Cart Items */}
-          <BottomSheetScrollView
-            style={styles.cartItemsScroll}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.cartItemsContainer}>
-              {cart.map(renderCartItem)}
-            </View>
-            <View style={{ height: 80 }} />
-          </BottomSheetScrollView>
-        </BottomSheet>
-      )}
-
-      {/* Floating Checkout Button */}
-      {cart.length > 0 && (
-        <TouchableOpacity
-          style={[
-            styles.checkoutFAB, 
-            { backgroundColor: colors.primary },
-            checkoutLoading && styles.disabledButton
-          ]}
-          onPress={handleCheckout}
-          disabled={checkoutLoading}
-        >
-          {checkoutLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <>
-              <ShoppingCart size={24} color="#fff" />
-              <Text style={styles.checkoutFABText}>Checkout</Text>
-              <View style={styles.checkoutBadge}>
-                <Text style={styles.checkoutBadgeText}>{getTotalItems()}</Text>
-              </View>
+              {/* Checkout Button for landscape tablet */}
+              <TouchableOpacity
+                style={[
+                  styles.landscapeCheckoutButton,
+                  { backgroundColor: colors.primary },
+                  checkoutLoading && styles.disabledButton
+                ]}
+                onPress={handleCheckout}
+                disabled={checkoutLoading}
+              >
+                {checkoutLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <ShoppingCart size={24} color="#fff" />
+                    <Text style={styles.checkoutFABText}>Checkout</Text>
+                    <View style={styles.checkoutBadge}>
+                      <Text style={styles.checkoutBadgeText}>{getTotalItems()}</Text>
+                    </View>
+                  </>
+                )}
+              </TouchableOpacity>
             </>
+          ) : (
+            <View style={styles.emptyLandscapeCart}>
+              <Text style={{ color: colors.textSecondary }}>Keranjang kosong</Text>
+            </View>
           )}
-        </TouchableOpacity>
+        </View>
       )}
 
       <CashierBottomNav />
@@ -467,5 +540,52 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  landscapeContainer: {
+    flexDirection: 'row',
+  },
+  landscapeHeader: {
+    paddingTop: 40,
+    paddingBottom: 12,
+  },
+  landscapeTitle: {
+    fontSize: 28,
+  },
+  landscapeSubtitle: {
+    fontSize: 16,
+  },
+  landscapeCartContainer: {
+    width: 350,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderLeftWidth: 1,
+    borderLeftColor: '#e5e7eb',
+  },
+  landscapeCartSummary: {
+    padding: 16,
+    paddingBottom: 12,
+  },
+  landscapeCartItemsScroll: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  landscapeCheckoutButton: {
+    margin: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  emptyLandscapeCart: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -84,7 +84,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <TrendingUp size={20} color={colors.primary} />
-          <Text style={[styles.title, { color: colors.text }]}>Revenue Overview</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Ikhtisar Pendapatan</Text>
         </View>
         <View style={[styles.toggleContainer, { backgroundColor: colors.card }]}>
           <TouchableOpacity
@@ -95,10 +95,10 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
             onPress={() => setViewMode("weekly")}
           >
             <Text style={[
-              styles.toggleText, 
+              styles.toggleText,
               { color: viewMode === "weekly" ? "#ffffff" : colors.textSecondary }
             ]}>
-              Week
+              Minggu
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -109,10 +109,10 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
             onPress={() => setViewMode("yearly")}
           >
             <Text style={[
-              styles.toggleText, 
+              styles.toggleText,
               { color: viewMode === "yearly" ? "#ffffff" : colors.textSecondary }
             ]}>
-              Year
+              Tahun
             </Text>
           </TouchableOpacity>
         </View>
@@ -126,7 +126,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
         </View>
         <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryItem}>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Average</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Rata-rata</Text>
           <Text style={[styles.summaryValue, { color: colors.text }]}>Rp {formatValue(averageRevenue)}</Text>
         </View>
       </View>
@@ -211,9 +211,9 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
       <View style={styles.legendContainer}>
         <Calendar size={14} color={colors.textSecondary} />
         <Text style={[styles.legendText, { color: colors.textSecondary }]}>
-          {viewMode === "weekly" 
-            ? "Last 7 days daily revenue" 
-            : "Monthly revenue for current year"}
+          {viewMode === "weekly"
+            ? "Pendapatan harian 7 hari terakhir"
+            : "Pendapatan bulanan tahun ini"}
         </Text>
       </View>
     </View>

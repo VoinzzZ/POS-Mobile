@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Lock, Eye, EyeOff, ArrowRight, Check } from 'lucide-react-native';
+import { useAuth } from '@/src/context/AuthContext';
 
 interface EmployeePasswordSetupContentProps {
   colors: any;
@@ -22,6 +23,7 @@ export default function PasswordSetupContent({
   params,
   router
 }: EmployeePasswordSetupContentProps) {
+  const { completeEmployeeRegistration } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -48,12 +50,44 @@ export default function PasswordSetupContent({
   const isPasswordMatch = password === confirmPassword && password !== '';
 
   const handleCompleteRegistration = async () => {
-    // Skip validation for UI testing - allow direct navigation
+    if (!password || !confirmPassword) {
+      Alert.alert('Error', 'Silakan masukkan password dan konfirmasi password');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Password dan konfirmasi password tidak cocok');
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      Alert.alert('Error', 'Password tidak memenuhi syarat');
+      return;
+    }
+
     setLoading(true);
     try {
+      // Get registration ID from params
+      const registrationId = params.registration_id || params.user_id;
+      if (!registrationId) {
+        throw new Error('Registration ID tidak ditemukan');
+      }
+
+      // Call API to complete registration with password
+      await completeEmployeeRegistration(registrationId, password);
+
       router.replace('/auth/register/employee/completion');
-    } catch (error) {
-      Alert.alert('Error', 'Gagal menyelesaikan pendaftaran. Silakan coba lagi.');
+    } catch (error: any) {
+      let errorMessage = 'Gagal menyelesaikan pendaftaran. Silakan coba lagi.';
+
+      // Extract more specific error message from response
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }

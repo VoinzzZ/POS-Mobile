@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { TabView, TabBar } from "react-native-tab-view";
 import { useTheme } from "../../context/ThemeContext";
+import { useOrientation } from "../../hooks/useOrientation";
 import {
   Category,
   getAllCategories,
@@ -25,10 +26,11 @@ export default function CategoryTabView({
   selectedBrandId,
   selectedBrandName,
   onBrandFilter,
-  onAddToCart
+  onAddToCart,
 }: CategoryTabViewProps) {
   const { colors } = useTheme();
   const layout = useWindowDimensions();
+  const { isLandscape: isLand, isTablet: isTab } = useOrientation();
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);

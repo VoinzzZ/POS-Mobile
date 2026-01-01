@@ -77,7 +77,7 @@ export default function AnalyticsScreen() {
 
   const keyMetrics = [
     {
-      title: "Total Revenue",
+      title: "Total Pendapatan",
       value: formatCurrency(analyticsData.revenue),
       change: "+18.5%",
       color: "#10b981",
@@ -85,7 +85,7 @@ export default function AnalyticsScreen() {
       trend: "up"
     },
     {
-      title: "Profit Margin",
+      title: "Margin Laba",
       value: `${calculateProfitMargin()}%`,
       change: "+2.3%",
       color: "#3b82f6",
@@ -93,7 +93,7 @@ export default function AnalyticsScreen() {
       trend: "up"
     },
     {
-      title: "Total Transactions",
+      title: "Total Transaksi",
       value: analyticsData.transactions.toLocaleString(),
       change: "+12.4%",
       color: "#f59e0b",
@@ -101,7 +101,7 @@ export default function AnalyticsScreen() {
       trend: "up"
     },
     {
-      title: "Active Customers",
+      title: "Jumlah Pelanggan Aktif",
       value: analyticsData.customers.toLocaleString(),
       change: "+8.7%",
       color: "#ec4899",
@@ -191,11 +191,11 @@ export default function AnalyticsScreen() {
 
   const renderProfitAnalysis = () => (
     <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Profit Analysis</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Analisis Laba</Text>
       <View style={styles.profitContainer}>
         <View style={styles.profitItem}>
           <View style={styles.profitHeader}>
-            <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Revenue</Text>
+            <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Pendapatan</Text>
             <Text style={[styles.profitValue, { color: colors.primary }]}>
               {formatCurrency(analyticsData.revenue)}
             </Text>
@@ -211,7 +211,7 @@ export default function AnalyticsScreen() {
         </View>
         <View style={styles.profitItem}>
           <View style={styles.profitHeader}>
-            <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Expenses</Text>
+            <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Pengeluaran</Text>
             <Text style={[styles.profitValue, { color: colors.error }]}>
               {formatCurrency(analyticsData.expenses)}
             </Text>
@@ -227,7 +227,7 @@ export default function AnalyticsScreen() {
         </View>
         <View style={styles.profitItem}>
           <View style={styles.profitHeader}>
-            <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Profit</Text>
+            <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>Laba</Text>
             <Text style={[styles.profitValue, { color: colors.success }]}>
               {formatCurrency(analyticsData.profit)}
             </Text>
@@ -247,7 +247,7 @@ export default function AnalyticsScreen() {
 
   const renderEmployeePerformance = () => (
     <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Performers</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Karyawan Terbaik</Text>
       {analyticsData.employeePerformance.slice(0, 3).map((employee, index, arr) => (
         <View
           key={index}
@@ -264,7 +264,7 @@ export default function AnalyticsScreen() {
               {employee.name}
             </Text>
             <Text style={[styles.employeeStats, { color: colors.textSecondary }]}>
-              {employee.transactions} transactions • {formatCurrency(employee.revenue)}
+              {employee.transactions} transaksi • {formatCurrency(employee.revenue)}
             </Text>
           </View>
           <View style={[styles.employeeRating, { backgroundColor: `${colors.primary}15`, borderRadius: 20, padding: 6 }]}>
@@ -282,8 +282,8 @@ export default function AnalyticsScreen() {
     <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <View style={styles.headerContent}>
-          <Text style={[styles.title, { color: colors.text }]}>Analytics</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Business Performance Overview</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Analitik</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Ringkasan Kinerja Bisnis</Text>
         </View>
         <TouchableOpacity
           onPress={() => router.push("/(owner)/settings")}
@@ -313,24 +313,24 @@ export default function AnalyticsScreen() {
 
         {/* Business Insights */}
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Business Insights</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Wawasan Bisnis</Text>
           <View style={styles.insightList}>
             <View style={[styles.insightItem, { backgroundColor: `${colors.success}08`, borderLeftColor: colors.success }]}>
               <Activity size={16} color={colors.success} />
               <Text style={[styles.insightText, { color: colors.text, flex: 1 }]}>
-                Revenue increased by 18.5% compared to last month
+                Pendapatan meningkat 18,5% dibanding bulan lalu
               </Text>
             </View>
             <View style={[styles.insightItem, { backgroundColor: `${colors.info}08`, borderLeftColor: colors.info }]}>
               <Target size={16} color={colors.info} />
               <Text style={[styles.insightText, { color: colors.text, flex: 1 }]}>
-                Average transaction value: {formatCurrency(Math.round(analyticsData.revenue / analyticsData.transactions))}
+                Nilai transaksi rata-rata: {formatCurrency(Math.round(analyticsData.revenue / analyticsData.transactions))}
               </Text>
             </View>
             <View style={[styles.insightItem, { backgroundColor: `${colors.warning}08`, borderLeftColor: colors.warning }]}>
               <BarChart3 size={16} color={colors.warning} />
               <Text style={[styles.insightText, { color: colors.text, flex: 1 }]}>
-                Peak business hours: 10 AM - 2 PM
+                Jam sibuk: 10 pagi - 2 siang
               </Text>
             </View>
           </View>

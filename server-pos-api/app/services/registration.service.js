@@ -336,7 +336,58 @@ class RegistrationService {
     });
   }
 
-  
+
+    static async validateEmployeePin(pin_code) {
+    return await prisma.$transaction(async (tx) => {
+      // Validate PIN
+      const pin = await tx.s_registration_pin.findFirst({
+        where: {
+          code: pin_code,
+          used: false,
+          revoked_at: null
+        },
+        include: { m_tenant: true, m_role: true }
+      });
+
+      if (!pin) {
+        // Check if PIN exists but is already used
+        const existingPin = await tx.s_registration_pin.findFirst({
+          where: {
+            code: pin_code
+          }
+        });
+
+        if (existingPin) {
+          if (existingPin.used) {
+            throw new Error('PIN sudah digunakan. Silakan minta PIN baru dari owner');
+          } else if (existingPin.revoked_at) {
+            throw new Error('PIN telah dicabut/dibatalkan oleh owner');
+          }
+        }
+
+        throw new Error('PIN registrasi tidak valid. Silakan periksa kembali PIN Anda');
+      }
+
+      // Check PIN expiry
+      if (new Date() > pin.expires_at) {
+        throw new Error('PIN sudah kadaluarsa. Silakan minta PIN baru dari owner');
+      }
+
+      // Check PIN usage limit
+      if (pin.current_uses >= pin.max_uses) {
+        throw new Error('PIN sudah mencapai batas penggunaan. Silakan minta PIN baru dari owner');
+      }
+
+      return {
+        tenant_name: pin.m_tenant.tenant_name,
+        role_name: pin.m_role?.role_name,
+        max_uses: pin.max_uses,
+        current_uses: pin.current_uses
+      };
+    });
+  }
+
+
     static async employeeRegisterStep1(data) {
     const { pin: registration_pin_code, user_name, user_email, user_full_name, user_phone } = data;
 

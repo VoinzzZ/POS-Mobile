@@ -95,12 +95,12 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
   };
 
   const expiryOptions = [
-    { label: "1 Hour", value: 1 },
-    { label: "6 Hours", value: 6 },
-    { label: "12 Hours", value: 12 },
-    { label: "24 Hours", value: 24 },
-    { label: "3 Days", value: 72 },
-    { label: "7 Days", value: 168 },
+    { label: "1 Jam", value: 1 },
+    { label: "6 Jam", value: 6 },
+    { label: "12 Jam", value: 12 },
+    { label: "24 Jam", value: 24 },
+    { label: "3 Hari", value: 72 },
+    { label: "7 Hari", value: 168 },
   ];
 
   const handleGenerate = async () => {
@@ -128,7 +128,6 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
         errorMessage = error.message;
       }
 
-      // Tampilkan pesan error yang lebih informatif
       Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);
@@ -144,7 +143,6 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
   };
 
   const handleClose = () => {
-    // Animate out before closing
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 0,
@@ -157,7 +155,7 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
         useNativeDriver: true,
       })
     ]).start(() => {
-      setGeneratedPin(null);
+      setGeneratedPin(null);  
       setExpiresAt(null);
       setSelectedHours(24);
       setCopied(false);
@@ -198,7 +196,7 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Generate Registration PIN</Text>
+            <Text style={styles.title}>Buat PIN Pendaftaran</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
               <X size={24} color="#64748b" />
             </TouchableOpacity>
@@ -238,7 +236,7 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
               <>
                 {/* Expiry Selection */}
                 <View style={styles.content}>
-                  <Text style={styles.label}>Select PIN Expiry Time</Text>
+                  <Text style={styles.label}>Pilih Waktu Kedaluwarsa PIN</Text>
                   <View style={styles.optionsGrid}>
                     {expiryOptions.map((option) => (
                       <TouchableOpacity
@@ -267,8 +265,8 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
 
                   <View style={styles.infoBox}>
                     <Text style={styles.infoText}>
-                      This PIN can be used by cashiers to register their account. The
-                      PIN will expire after the selected time period.
+                      PIN ini dapat digunakan oleh kasir untuk mendaftarkan akun mereka. PIN
+                      akan kedaluwarsa setelah periode waktu yang dipilih.
                     </Text>
                   </View>
                 </View>
@@ -282,7 +280,7 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
                   {loading ? (
                     <ActivityIndicator color="#ffffff" />
                   ) : (
-                    <Text style={styles.generateBtnText}>Generate PIN</Text>
+                    <Text style={styles.generateBtnText}>Buat PIN</Text>
                   )}
                 </TouchableOpacity>
               </>
@@ -293,11 +291,11 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
               <View style={styles.content}>
                 <View style={styles.successBox}>
                   <Check size={48} color="#10b981" />
-                  <Text style={styles.successText}>PIN Generated Successfully!</Text>
+                  <Text style={styles.successText}>PIN Berhasil Dibuat!</Text>
                 </View>
 
                 <View style={styles.pinDisplay}>
-                  <Text style={styles.pinLabel}>Registration PIN</Text>
+                  <Text style={styles.pinLabel}>PIN Pendaftaran</Text>
                   <View style={styles.pinCodeContainer}>
                     <Text style={styles.pinCode}>{generatedPin}</Text>
                     <TouchableOpacity onPress={handleCopyPin} style={styles.copyBtn}>
@@ -308,27 +306,27 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
                       )}
                     </TouchableOpacity>
                   </View>
-                  {copied && <Text style={styles.copiedText}>Copied to clipboard!</Text>}
+                  {copied && <Text style={styles.copiedText}>Disalin ke papan klip!</Text>}
                 </View>
 
                 <View style={styles.expiryInfo}>
                   <Clock size={16} color="#f59e0b" />
                   <Text style={styles.expiryText}>
-                    Expires: {expiresAt ? formatDate(expiresAt) : "-"}
+                    Kedaluwarsa: {expiresAt ? formatDate(expiresAt) : "-"}
                   </Text>
                 </View>
 
                 <View style={styles.instructionBox}>
-                  <Text style={styles.instructionTitle}>📋 Instructions:</Text>
+                  <Text style={styles.instructionTitle}>📋 Petunjuk:</Text>
                   <Text style={styles.instructionText}>
-                    1. Share this PIN with the cashier\n                    2. They can use it during registration\n                    3. PIN is single-use only\n                    4. Keep it secure and don't share publicly
+                    1. Bagikan PIN ini kepada kasir\n                    2. Mereka dapat menggunakannya saat pendaftaran\n                    3. PIN hanya bisa digunakan sekali\n                    4. Jaga kerahasiaan PIN dan jangan bagikan secara publik
                   </Text>
                 </View>
               </View>
 
               {/* Done Button */}
               <TouchableOpacity style={styles.doneBtn} onPress={handleClose}>
-                <Text style={styles.doneBtnText}>Done</Text>
+                <Text style={styles.doneBtnText}>Selesai</Text>
               </TouchableOpacity>
             </>
           )}

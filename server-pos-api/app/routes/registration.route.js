@@ -7,6 +7,8 @@ router.post('/tenant', RegistrationController.createTenant);
 
 router.post('/verify-email', RegistrationController.sendEmailVerification);
 
+router.post('/employee/validate-pin', RegistrationController.validatePin);
+
 router.post('/employee', RegistrationController.registerEmployeeWithPin);
 
 router.post('/confirm-email', RegistrationController.confirmEmailVerification);

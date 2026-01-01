@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Tag } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
+import { useOrientation } from "../../hooks/useOrientation";
 import {
   Category,
   Brand,
@@ -22,12 +23,13 @@ interface BrandFilterProps {
   selectedCategoryId?: number | null;
 }
 
-export default function BrandFilter({ 
+export default function BrandFilter({
   onCategoryChange,
   onBrandFilter,
-  selectedCategoryId: externalSelectedCategoryId
+  selectedCategoryId: externalSelectedCategoryId,
 }: BrandFilterProps) {
   const { colors } = useTheme();
+  const { isLandscape: isLand, isTablet: isTab } = useOrientation();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);

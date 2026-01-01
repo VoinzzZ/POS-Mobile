@@ -52,9 +52,9 @@ export default function OwnerStore() {
 
   // Tab configuration
   const tabs: { key: TabType; title: string; icon: any }[] = [
-    { key: "store", title: "Store Info", icon: StoreIcon },
-    { key: "cashiers", title: "User", icon: UsersIcon },
-    { key: "receipt", title: "Receipt Preview", icon: Receipt },
+    { key: "store", title: "Info Toko", icon: StoreIcon },
+    { key: "cashiers", title: "Pengguna", icon: UsersIcon },
+    { key: "receipt", title: "Pratinjau Struk", icon: Receipt },
   ];
 
   // Check for active PIN
@@ -98,8 +98,8 @@ export default function OwnerStore() {
 
   const loadStoreDataForReceipt = async () => {
     try {
-      const storeResponse = await import("../../src/api/store");
-      const response = await storeResponse.getStoreSettings();
+      const { getStoreSettings } = await import("../../src/api/store");
+      const response = await getStoreSettings();
       if (response.success && response.data) {
         setStoreDataForReceipt(response.data);
       }
@@ -157,8 +157,8 @@ export default function OwnerStore() {
     // Load store data for receipt preview if on store or receipt tab
     if (activeTab === "store" || activeTabIndex === 0 || activeTab === "receipt" || activeTabIndex === 2) {
       try {
-        const storeResponse = await import("../../src/api/store");
-        const response = await storeResponse.getStoreSettings();
+        const { getStoreSettings } = await import("../../src/api/store");
+        const response = await getStoreSettings();
         if (response.success && response.data) {
           setStoreDataForReceipt(response.data);
         }
@@ -182,8 +182,8 @@ export default function OwnerStore() {
     // Load store data for receipt preview if on store or receipt tab
     if (activeTab === "store" || activeTabIndex === 0 || activeTab === "receipt" || activeTabIndex === 2) {
       try {
-        const storeResponse = await import("../../src/api/store");
-        const response = await storeResponse.getStoreSettings();
+        const { getStoreSettings } = await import("../../src/api/store");
+        const response = await getStoreSettings();
         if (response.success && response.data) {
           setStoreDataForReceipt(response.data);
         }
@@ -245,8 +245,8 @@ export default function OwnerStore() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <View>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Manage Store</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Manage store information & user management</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Kelola Toko</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Kelola informasi toko & manajemen pengguna</Text>
         </View>
         <TouchableOpacity
           onPress={() => router.push("/(owner)/settings")}
@@ -292,7 +292,6 @@ export default function OwnerStore() {
             store={null}
             onStoreUpdate={(updatedStore) => {
               console.log('Store data updated');
-              // Update the receipt preview with the new store data
               setStoreDataForReceipt(updatedStore);
             }}
           />
@@ -311,9 +310,9 @@ export default function OwnerStore() {
             {activePin ? (
               <View style={[styles.activePinContainer, { backgroundColor: colors.card, marginHorizontal: 20, marginTop: 16, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 3 }]}>
                 <View style={styles.activePinHeader}>
-                  <Text style={[styles.activePinTitle, { color: colors.text }]}>Active Registration PIN</Text>
+                  <Text style={[styles.activePinTitle, { color: colors.text }]}>PIN Pendaftaran Aktif</Text>
                   <View style={[styles.statusBadge, { backgroundColor: "#10b981" + "20" }]}>
-                    <Text style={[styles.statusText, { color: "#10b981" }]}>Active</Text>
+                    <Text style={[styles.statusText, { color: "#10b981" }]}>Aktif</Text>
                   </View>
                 </View>
 
@@ -329,7 +328,7 @@ export default function OwnerStore() {
                 </View>
 
                 <View style={styles.expiryInfo}>
-                  <Text style={[styles.expiryText, { color: colors.textSecondary }]}>Expires: {formatDate(activePin.expiresAt)}</Text>
+                  <Text style={[styles.expiryText, { color: colors.textSecondary }]}>Kedaluwarsa: {formatDate(activePin.expiresAt)}</Text>
                 </View>
               </View>
             ) : (
@@ -340,7 +339,7 @@ export default function OwnerStore() {
                 activeOpacity={0.8}
               >
                 <Key size={20} color="#ffffff" />
-                <Text style={styles.generatePinButtonText}>Generate PIN</Text>
+                <Text style={styles.generatePinButtonText}>Buat PIN</Text>
               </TouchableOpacity>
             )}
 
@@ -349,7 +348,7 @@ export default function OwnerStore() {
               <Search size={20} color={colors.textSecondary} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search users..."
+                placeholder="Cari pengguna..."
                 placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -358,17 +357,17 @@ export default function OwnerStore() {
 
             {/* Users List */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Users ({users.length})</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Pengguna ({users.length})</Text>
               {loading ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading users...</Text>
+                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Memuat pengguna...</Text>
                 </View>
               ) : users.length === 0 ? (
                 <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
                   <UsersIcon size={48} color={colors.textSecondary} />
-                  <Text style={[styles.emptyText, { color: colors.text }]}>No users yet</Text>
-                  <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Generate PIN for new user registration</Text>
+                  <Text style={[styles.emptyText, { color: colors.text }]}>Belum ada pengguna</Text>
+                  <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Buat PIN untuk pendaftaran pengguna baru</Text>
                 </View>
               ) : (
                 users.map((userItem, index) => (
@@ -394,7 +393,7 @@ export default function OwnerStore() {
                         </View>
                         <View style={[styles.badge, { backgroundColor: getStatusColor(userItem.isVerified) + "20" }]}>
                           <Text style={[styles.badgeText, { color: getStatusColor(userItem.isVerified) }]}>
-                            {userItem.isVerified ? "Verified" : "Not Verified"}
+                            {userItem.isVerified ? "Terverifikasi" : "Belum Terverifikasi"}
                           </Text>
                         </View>
                       </View>

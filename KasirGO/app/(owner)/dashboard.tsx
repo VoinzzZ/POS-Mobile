@@ -14,28 +14,28 @@ export default function OwnerDashboard() {
 
   const stats = [
     {
-      title: "Total Revenue",
+      title: "Total Pendapatan",
       value: "Rp 24,500,000",
       icon: DollarSign,
       color: "#10b981",
       bgColor: "#064e3b",
     },
     {
-      title: "Profit Margin",
+      title: "Margin Laba",
       value: "32.5%",
       icon: TrendingUp,
       color: "#3b82f6",
       bgColor: "#1e3a8a",
     },
     {
-      title: "Total Transactions",
+      title: "Total Transaksi",
       value: "3,247",
       icon: Briefcase,
       color: "#f59e0b",
       bgColor: "#78350f",
     },
     {
-      title: "Employees",
+      title: "Karyawan",
       value: "12",
       icon: Users,
       color: "#ec4899",
@@ -45,7 +45,7 @@ export default function OwnerDashboard() {
 
   const quickActions = [
     {
-      title: "View Analytics",
+      title: "Lihat Analitik",
       icon: TrendingUp,
       route: "/(owner)/analytics",
     },
@@ -56,8 +56,8 @@ export default function OwnerDashboard() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <View>
-          <Text style={[styles.greeting, { color: colors.textSecondary }]}>Welcome Back,</Text>
-          <Text style={[styles.userName, { color: colors.text }]}>{user?.name || user?.user_name || "Owner"}</Text>
+          <Text style={[styles.greeting, { color: colors.textSecondary }]}>Selamat Datang Kembali,</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{user?.name || user?.user_name || "Pemilik"}</Text>
         </View>
         <TouchableOpacity
           onPress={() => router.push("/(owner)/settings")}
@@ -91,18 +91,18 @@ export default function OwnerDashboard() {
 
         {/* Business Insights */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Business Insights</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Wawasan Bisnis</Text>
           <View style={[styles.insightsCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.insightTitle, { color: colors.text }]}>Monthly Growth</Text>
+            <Text style={[styles.insightTitle, { color: colors.text }]}>Pertumbuhan Bulanan</Text>
             <Text style={[styles.insightValue, { color: colors.primary }]}>+18.5%</Text>
-            <Text style={[styles.insightSubtext, { color: colors.textSecondary }]}>Compared to last month</Text>
+            <Text style={[styles.insightSubtext, { color: colors.textSecondary }]}>Dibanding bulan lalu</Text>
           </View>
         </View>
 
         
         {/* Quick Actions */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Aksi Cepat</Text>
           <View style={styles.quickActions}>
             {quickActions.map((action, index) => {
               const Icon = action.icon;
