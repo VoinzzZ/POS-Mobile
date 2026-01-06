@@ -7,6 +7,7 @@ router.post('/login', AuthController.login);
 router.post('/refresh-token', AuthController.refreshToken);
 router.post('/logout', AuthController.logout);
 router.get('/profile', verifyToken, AuthController.getProfile);
+router.put('/profile', verifyToken, AuthController.updateProfile);
 router.get('/tenant-info', verifyToken, AuthController.getTenantInfo);
 
 module.exports = router;

@@ -48,23 +48,9 @@ async function main() {
     },
   });
 
-  const inventoryRole = await prisma.m_role.upsert({
-    where: { role_name: 'INVENTORY' },
-    update: {},
-    create: {
-      role_name: 'INVENTORY',
-      role_code: 'INVENTORY',
-      role_description: 'Staf inventory untuk mengelola stok dan produk',
-      role_level: 4,
-      is_system_role: true,
-      is_active: true
-    },
-  });
-
   console.log('   ✓ OWNER role created');
   console.log('   ✓ ADMIN role created');
   console.log('   ✓ CASHIER role created');
-  console.log('   ✓ INVENTORY role created');
 
   // Create Super Admin User
   console.log('🔧 Creating Super Admin user...');

@@ -6,7 +6,7 @@ const EmailService = require('./email.service.js');
 const emailService = new EmailService();
 
 class UserService {
-    static async generateEmployeePin(tenantId, generatedBy, expires_in_hours = 24) {
+  static async generateEmployeePin(tenantId, generatedBy, expires_in_hours = 24) {
     try {
       // Verify user is owner of tenant
       const user = await prisma.m_user.findFirst({
@@ -99,11 +99,11 @@ class UserService {
       };
 
     } catch (error) {
-            throw error;
+      throw error;
     }
   }
 
-    static async validatePin(pin, tenantId) {
+  static async validatePin(pin, tenantId) {
     try {
       const pinRecord = await prisma.s_registration_pin.findFirst({
         where: {
@@ -135,15 +135,15 @@ class UserService {
       };
 
     } catch (error) {
-            throw error;
+      throw error;
     }
   }
 
-    static async getEmployeesByTenant(tenantId, options = {}) {
+  static async getEmployeesByTenant(tenantId, options = {}) {
     try {
       const {
         page = 1,
-        limit = 10, 
+        limit = 10,
         search,
         isActive,
         role
@@ -213,7 +213,7 @@ class UserService {
       };
 
     } catch (error) {
-            throw error;
+      throw error;
     }
   }
 
@@ -266,7 +266,7 @@ class UserService {
       };
 
     } catch (error) {
-            throw error;
+      throw error;
     }
   }
 
@@ -308,7 +308,7 @@ class UserService {
       };
 
     } catch (error) {
-            throw error;
+      throw error;
     }
   }
 
@@ -374,7 +374,7 @@ class UserService {
       };
 
     } catch (error) {
-            throw error;
+      throw error;
     }
   }
 
@@ -402,7 +402,7 @@ class UserService {
       };
 
     } catch (error) {
-            throw error;
+      throw error;
     }
   }
 
@@ -742,11 +742,15 @@ class UserService {
       }
     });
 
-    return roles.map(role => ({
-      roleId: role.role_id,
-      roleName: role.role_name,
-      roleDescription: role.role_description
-    }));
+    return {
+      roles: roles.map(role => ({
+        role_id: role.role_id,
+        role_name: role.role_name,
+        role_code: role.role_code,
+        role_description: role.role_description,
+        role_level: role.role_level
+      }))
+    };
   }
 
   static async getUsersByRole(tenantId, roleName) {
@@ -824,7 +828,7 @@ class UserService {
     };
   }
 
-  
+
   /**
    * Get pending employee approvals for owner's tenant
    */
@@ -948,7 +952,7 @@ class UserService {
           `
         });
       } catch (emailError) {
-              }
+      }
 
       return {
         user_id,
@@ -1029,7 +1033,7 @@ class UserService {
           `
         });
       } catch (emailError) {
-              }
+      }
 
       return {
         user_id,

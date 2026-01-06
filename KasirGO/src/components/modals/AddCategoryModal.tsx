@@ -25,7 +25,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
   onSuccess,
 }) => {
   const { colors } = useTheme();
-  
+
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -42,27 +42,20 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
       const response = await createCategory(name.trim());
 
       if (response.success) {
-        Alert.alert("Berhasil!", "Kategori berhasil ditambahkan", [
-          {
-            text: "OK",
-            onPress: () => {
-              setName("");
-              setError("");
-              onSuccess();
-              onClose();
-            },
-          },
-        ]);
+        setName("");
+        setError("");
+        onSuccess();
+        onClose();
       } else {
-        Alert.alert("Error", response.message || "Gagal menambahkan kategori");
+        Alert.alert("Kesalahan", response.message || "Gagal menambahkan kategori");
       }
     } catch (error: any) {
       console.error("Error creating category:", error);
       Alert.alert(
-        "Error",
+        "Kesalahan",
         error.response?.data?.message ||
-          error.message ||
-          "Terjadi kesalahan saat menambahkan kategori"
+        error.message ||
+        "Terjadi kesalahan saat menambahkan kategori"
       );
     } finally {
       setLoading(false);

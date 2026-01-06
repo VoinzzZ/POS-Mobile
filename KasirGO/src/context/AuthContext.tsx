@@ -18,20 +18,12 @@ import {
   completeOwnerRegistrationApi,
   completeEmployeeRegistrationApi,
   registerEmployeeWithPinApi,
+  updateProfileApi,
   TenantRegistrationData,
   OwnerEmailData,
   EmployeeRegistrationData,
 } from "../api/auth";
-import TokenService, { testAsyncStorage } from "../services/tokenService";
-
-// Define Tokens interface to match the one in tokenService
-interface Tokens {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  refresh_expires_in: number;
-  tokenType?: string;
-}
+import TokenService, { testAsyncStorage, Tokens } from "../services/tokenService";
 
 // ========== TYPES ==========
 
@@ -48,6 +40,8 @@ interface User {
   roleId?: number;
   isSA?: boolean;
   lastLogin?: string;
+  user_phone?: string;
+  user_full_name?: string;
 
   // New API response properties for compatibility
   name?: string; // Alternative to user_name
@@ -80,12 +74,14 @@ interface AuthContextType {
   sendOwnerEmailVerification: (emailData: OwnerEmailData) => Promise<any>;
   confirmEmailVerification: (registration_id: number, otp_code: string) => Promise<void>;
   completeOwnerRegistration: (registration_id: number, password: string) => Promise<void>;
+  completeEmployeeRegistration: (registration_id: number, password: string) => Promise<void>;
 
   // New employee registration flow
-  registerEmployeeWithPin: (employeeData: EmployeeRegistrationData) => Promise<{ user_id: number }>;
+  registerEmployeeWithPin: (employeeData: EmployeeRegistrationData) => Promise<any>;
 
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateProfile: (data: { name?: string; phone?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -93,17 +89,19 @@ const AuthContext = createContext<AuthContextType>({
   tokens: null,
   isLoading: true,
   isAuthenticated: false,
-  login: async () => {},
+  login: async () => { },
   register: async () => ({ user_id: 0 }),
-  verifyEmail: async () => {},
-  setPassword: async () => {},
+  verifyEmail: async () => { },
+  setPassword: async () => { },
   registerOwnerTenant: async () => ({ registration_id: 0, tenant_id: 0 }),
-  sendOwnerEmailVerification: async () => {},
-  confirmEmailVerification: async () => {},
-  completeOwnerRegistration: async () => {},
-  registerEmployeeWithPin: async () => ({ registration_id: 0 }),
-  logout: async () => {},
-  refreshProfile: async () => {},
+  sendOwnerEmailVerification: async () => { },
+  confirmEmailVerification: async () => { },
+  completeOwnerRegistration: async () => { },
+  completeEmployeeRegistration: async () => { },
+  registerEmployeeWithPin: async () => ({}),
+  logout: async () => { },
+  refreshProfile: async () => { },
+  updateProfile: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -359,7 +357,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   /**
    * Register employee with PIN
    */
-  const registerEmployeeWithPin = async (employeeData: EmployeeRegistrationData): Promise<{ user_id: number }> => {
+  const registerEmployeeWithPin = async (employeeData: EmployeeRegistrationData): Promise<any> => {
     try {
       const response = await registerEmployeeWithPinApi(employeeData);
       if (!response.success) {
@@ -377,13 +375,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await getProfileApi();
       if (response.success && response.data) {
-        const updatedUser = response.data.user;
+        const profile = response.data as any;
+        const updatedUser: User = {
+          ...user,
+          user_id: profile.id || user?.user_id,
+          user_name: profile.name || user?.user_name,
+          user_full_name: profile.name || user?.user_full_name,
+          user_email: profile.email || user?.user_email,
+          user_phone: profile.phone,
+          user_role: profile.role?.role_name || user?.user_role,
+          user_is_verified: profile.isVerified !== undefined ? profile.isVerified : user?.user_is_verified,
+          tenantId: profile.tenant?.tenant_id,
+          tenantName: profile.tenant?.tenant_name,
+          lastLogin: profile.lastLogin,
+          isSA: profile.isSA,
+        };
         await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
         setUser(updatedUser);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to refresh profile:", error);
-      // Don't throw error - just log it
+      if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || error.message?.includes('Network Error')) {
+        console.log('⚠️  Backend is offline, using cached user data');
+      } else if (error.response?.status === 404) {
+        console.log('⚠️  Backend endpoint not found (404), using cached user data');
+      }
+    }
+  };
+
+  /**
+   * Update user profile
+   */
+  const updateProfile = async (data: { name?: string; phone?: string }): Promise<void> => {
+    try {
+      const response = await updateProfileApi(data);
+      if (response.success && response.data) {
+        // Refresh profile after update to get the latest data
+        await refreshProfile();
+      } else {
+        throw new Error(response.message || "Gagal memperbarui profil");
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || "Gagal memperbarui profil";
+      throw new Error(message);
     }
   };
 
@@ -406,6 +440,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         registerEmployeeWithPin,
         logout,
         refreshProfile,
+        updateProfile,
       }}
     >
       {children}

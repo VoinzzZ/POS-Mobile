@@ -107,7 +107,7 @@ export default function SlideModal({
     }
   };
 
-  if (!visible && translateX.__getValue() === SCREEN_WIDTH) {
+  if (!visible && (translateX as any).__getValue() === SCREEN_WIDTH) {
     return null;
   }
 

@@ -7,6 +7,8 @@ interface User {
   user_email: string;
   user_role: string;
   user_is_verified: boolean;
+  user_phone?: string;
+  user_full_name?: string;
 }
 
 
@@ -27,6 +29,18 @@ interface LoginResponse extends ApiResponse {
 interface RegisterResponse extends ApiResponse {
   data: {
     user_id: number;
+  };
+}
+
+export interface EmployeeRegisterResponse extends ApiResponse {
+  data: {
+    registration_id: number;
+    email: string;
+    username: string;
+    tenant_name: string;
+    role_name: string;
+    current_step: number;
+    next_step: string;
   };
 }
 
@@ -99,6 +113,17 @@ export const getProfileApi = async (): Promise<
   ApiResponse<{ user: User }>
 > => {
   const res = await api.get("/auth/profile");
+  return res.data;
+};
+
+/**
+ * Update user profile (requires authentication)
+ */
+export const updateProfileApi = async (data: {
+  name?: string;
+  phone?: string;
+}): Promise<ApiResponse<{ user: User }>> => {
+  const res = await api.put("/auth/profile", data);
   return res.data;
 };
 
@@ -254,7 +279,7 @@ export const validateEmployeePinApi = async (
  */
 export const registerEmployeeWithPinApi = async (
   employeeData: EmployeeRegistrationData
-): Promise<RegisterResponse> => {
+): Promise<EmployeeRegisterResponse> => {
   const res = await api.post("/registration/employee", employeeData);
   return res.data;
 };
@@ -297,7 +322,7 @@ export const getPendingOwnersApi = async (): Promise<
 export const getPendingEmployeesApi = async (): Promise<
   ApiResponse<{ employees: any[] }>
 > => {
-  const res = await api.get("/approvals/pending-employees");
+  const res = await api.get("/approvals/employees/pending");
   return res.data;
 };
 
@@ -305,7 +330,7 @@ export const getPendingEmployeesApi = async (): Promise<
  * Approve owner registration (Super Admin only)
  */
 export const approveOwnerApi = async (data: ApproveOwnerData): Promise<ApiResponse> => {
-  const res = await api.post("/approvals/sa-approve-owner", data);
+  const res = await api.post("/approvals/owners/approve", data);
   return res.data;
 };
 
@@ -313,7 +338,7 @@ export const approveOwnerApi = async (data: ApproveOwnerData): Promise<ApiRespon
  * Reject owner registration (Super Admin only)
  */
 export const rejectOwnerApi = async (data: RejectOwnerData): Promise<ApiResponse> => {
-  const res = await api.post("/approvals/sa-reject-owner", data);
+  const res = await api.post("/approvals/owners/reject", data);
   return res.data;
 };
 
@@ -321,7 +346,7 @@ export const rejectOwnerApi = async (data: RejectOwnerData): Promise<ApiResponse
  * Approve employee registration (Owner only)
  */
 export const approveEmployeeApi = async (data: ApproveEmployeeData): Promise<ApiResponse> => {
-  const res = await api.post("/approvals/owner-approve-employee", data);
+  const res = await api.post("/approvals/employees/approve", data);
   return res.data;
 };
 
@@ -329,7 +354,7 @@ export const approveEmployeeApi = async (data: ApproveEmployeeData): Promise<Api
  * Reject employee registration (Owner only)
  */
 export const rejectEmployeeApi = async (data: RejectEmployeeData): Promise<ApiResponse> => {
-  const res = await api.post("/approvals/owner-reject-employee", data);
+  const res = await api.post("/approvals/employees/reject", data);
   return res.data;
 };
 
@@ -381,7 +406,7 @@ export const deleteEmployeeApi = async (employeeId: number): Promise<ApiResponse
  * Get available roles
  */
 export const getRolesApi = async (): Promise<ApiResponse<{ roles: any[] }>> => {
-  const res = await api.get("/users/roles");
+  const res = await api.get("/users/roles/all");
   return res.data;
 };
 

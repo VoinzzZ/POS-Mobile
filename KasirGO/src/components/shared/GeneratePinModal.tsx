@@ -116,11 +116,11 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
           onSuccess();
         }
       } else {
-        Alert.alert("Error", response.message || "Failed to generate PIN");
+        Alert.alert("Kesalahan", response.message || "Gagal membuat PIN");
       }
     } catch (error: any) {
       console.error("Generate PIN error:", error);
-      let errorMessage = "Failed to generate PIN";
+      let errorMessage = "Gagal membuat PIN";
 
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -128,7 +128,7 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
         errorMessage = error.message;
       }
 
-      Alert.alert("Error", errorMessage);
+      Alert.alert("Kesalahan", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -155,7 +155,7 @@ const GeneratePinModal: React.FC<GeneratePinModalProps> = ({
         useNativeDriver: true,
       })
     ]).start(() => {
-      setGeneratedPin(null);  
+      setGeneratedPin(null);
       setExpiresAt(null);
       setSelectedHours(24);
       setCopied(false);
@@ -345,7 +345,7 @@ const createStyles = (colors: any, theme: string) => StyleSheet.create({
     padding: 0,
   },
   modalContainer: {
-    backgroundColor: theme === "dark" ? "#2D2D2D" : colors.surface,
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,

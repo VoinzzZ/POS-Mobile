@@ -16,7 +16,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   CategoryController.getCategories
 );
 
@@ -24,7 +24,7 @@ router.get(
 router.get(
   '/:categoryId',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   CategoryController.getCategoryById
 );
 
@@ -48,7 +48,7 @@ router.delete(
 router.get(
   '/brand/:brandId',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   CategoryController.getCategoriesByBrand
 );
 

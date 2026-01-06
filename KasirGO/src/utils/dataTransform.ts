@@ -36,7 +36,8 @@ export const transformProduct = (serverData: any) => {
     price: serverData.product_price,
     stock: serverData.product_qty,
     imageUrl: serverData.product_image_url,
-    brandId: serverData.product_brand_id,
+    brandId: serverData.brand_id || serverData.product_brand_id, // Handle both cases
+    categoryId: serverData.category_id || serverData.product_category_id,
     createdAt: serverData.product_created_at,
     updatedAt: serverData.product_updated_at,
     // Keep original fields for API calls
@@ -45,7 +46,8 @@ export const transformProduct = (serverData: any) => {
     product_price: serverData.product_price,
     product_qty: serverData.product_qty,
     product_image_url: serverData.product_image_url,
-    product_brand_id: serverData.product_brand_id,
+    product_brand_id: serverData.brand_id || serverData.product_brand_id,
+    product_category_id: serverData.category_id || serverData.product_category_id,
     product_created_at: serverData.product_created_at,
     product_updated_at: serverData.product_updated_at,
     // Nested relationships

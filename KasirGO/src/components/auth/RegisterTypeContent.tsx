@@ -29,8 +29,8 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
   };
 
   return (
-    <View style={[styles.overlay, isLand && isTab ? styles.landscapeOverlay : {}]}>
-      {isLand && isTab ? (
+    <View style={[styles.overlay, isLand ? styles.landscapeOverlay : {}]}>
+      {isLand ? (
         <View style={[styles.gridMainContainer, { backgroundColor: colors.background }]}>
           {/* Owner Option - Left side */}
           <View
@@ -42,7 +42,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
           >
             <View style={styles.optionHeader}>
               <View style={[styles.iconContainer, styles.landscapeIconContainer, { backgroundColor: colors.primary + '20' }]}>
-                <Ionicons name="business" size={48} color={colors.primary} />
+                <Ionicons name="business" size={40} color={colors.primary} />
               </View>
               <View style={styles.optionHeaderText}>
                 <Text style={[styles.optionTitle, styles.landscapeOptionTitle, { color: colors.text }]}>
@@ -76,7 +76,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
               <Text style={[styles.registerButtonText, styles.landscapeRegisterButtonText, { color: colors.background }]}>
                 Daftar sebagai Pemilik Toko
               </Text>
-              <Ionicons name="arrow-forward" size={24} color={colors.background} />
+              <Ionicons name="arrow-forward" size={20} color={colors.background} />
             </TouchableOpacity>
           </View>
 
@@ -90,7 +90,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
           >
             <View style={styles.optionHeader}>
               <View style={[styles.iconContainer, styles.landscapeIconContainer, { backgroundColor: colors.secondary + '20' }]}>
-                <Ionicons name="people" size={48} color={colors.secondary} />
+                <Ionicons name="people" size={40} color={colors.secondary} />
               </View>
               <View style={styles.optionHeaderText}>
                 <Text style={[styles.optionTitle, styles.landscapeOptionTitle, { color: colors.text }]}>
@@ -124,7 +124,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
               <Text style={[styles.registerButtonText, styles.landscapeRegisterButtonText, { color: colors.background }]}>
                 Daftar sebagai Karyawan
               </Text>
-              <Ionicons name="arrow-forward" size={24} color={colors.background} />
+              <Ionicons name="arrow-forward" size={20} color={colors.background} />
             </TouchableOpacity>
           </View>
         </View>
@@ -145,7 +145,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
             >
               <View style={styles.optionHeader}>
                 <View style={[styles.iconContainer, isLand && isTab ? styles.landscapeIconContainer : {}, { backgroundColor: colors.primary + '20' }]}>
-                  <Ionicons name="business" size={isLand && isTab ? 48 : 36} color={colors.primary} />
+                  <Ionicons name="business" size={isLand && isTab ? 48 : 44} color={colors.primary} />
                 </View>
                 <View style={styles.optionHeaderText}>
                   <Text style={[styles.optionTitle, isLand && isTab ? styles.landscapeOptionTitle : {}, { color: colors.text }]}>
@@ -179,7 +179,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
                 <Text style={[styles.registerButtonText, isLand && isTab ? styles.landscapeRegisterButtonText : {}, { color: colors.background }]}>
                   Daftar sebagai Pemilik Toko
                 </Text>
-                <Ionicons name="arrow-forward" size={isLand && isTab ? 24 : 18} color={colors.background} />
+                <Ionicons name="arrow-forward" size={isLand && isTab ? 24 : 20} color={colors.background} />
               </TouchableOpacity>
             </View>
 
@@ -192,7 +192,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
             >
               <View style={styles.optionHeader}>
                 <View style={[styles.iconContainer, isLand && isTab ? styles.landscapeIconContainer : {}, { backgroundColor: colors.secondary + '20' }]}>
-                  <Ionicons name="people" size={isLand && isTab ? 48 : 36} color={colors.secondary} />
+                  <Ionicons name="people" size={isLand && isTab ? 48 : 44} color={colors.secondary} />
                 </View>
                 <View style={styles.optionHeaderText}>
                   <Text style={[styles.optionTitle, isLand && isTab ? styles.landscapeOptionTitle : {}, { color: colors.text }]}>
@@ -226,7 +226,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
                 <Text style={[styles.registerButtonText, isLand && isTab ? styles.landscapeRegisterButtonText : {}, { color: colors.background }]}>
                   Daftar sebagai Karyawan
                 </Text>
-                <Ionicons name="arrow-forward" size={isLand && isTab ? 24 : 18} color={colors.background} />
+                <Ionicons name="arrow-forward" size={isLand && isTab ? 24 : 20} color={colors.background} />
               </TouchableOpacity>
             </View>
           </View>
@@ -239,35 +239,33 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 80,
-    paddingBottom: 40,
+    paddingTop: 60,
+    paddingBottom: 30,
   },
   landscapeOverlay: {
     flex: 1,
-    paddingTop: 40,
+    paddingTop: 20,
     paddingBottom: 20,
+    justifyContent: 'center',
   },
   scrollContent: {
     flexGrow: 1,
     width: '100%',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 30,
   },
   landscapeScrollContent: {
     paddingHorizontal: 40,
     paddingVertical: 20,
   },
   optionsContainer: {
-    gap: 24,
-    marginVertical: 20,
+    gap: 20,
     width: '100%',
-    flex: 1,
     justifyContent: 'center',
-    maxHeight: "100%",
   },
   landscapeOptionsContainer: {
     flexDirection: 'row',
@@ -278,31 +276,30 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   gridMainContainer: {
-    flex: 1,
     flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingVertical: 40,
-    justifyContent: 'space-between',
-    alignItems: 'stretch',
-    gap: 10,
+    paddingHorizontal: 80,
+    paddingVertical: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 40,
   },
   optionCard: {
     borderRadius: 20,
     padding: 24,
     borderWidth: 2,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    justifyContent: 'flex-start',
-    minHeight: 260,
+    justifyContent: 'space-between',
   },
   gridOptionCard: {
     flex: 1,
-    padding: 32,
-    minHeight: 320,
+    padding: 24,
+    width: 0,
+    minHeight: 350,
   },
   optionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   iconContainer: {
     width: 64,
@@ -313,68 +310,69 @@ const styles = StyleSheet.create({
     marginRight: 20,
   },
   landscapeIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    marginRight: 24,
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    marginRight: 16,
   },
   optionHeaderText: {
     flex: 1,
   },
   optionTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontFamily: 'Inter_600SemiBold',
     marginBottom: 4,
   },
   landscapeOptionTitle: {
-    fontSize: 28,
+    fontSize: 22,
   },
   optionSubtitle: {
     fontSize: 16,
     fontFamily: 'Inter_400Regular',
-    lineHeight: 22,
+    lineHeight: 24,
   },
   landscapeOptionSubtitle: {
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 15,
+    lineHeight: 20,
   },
   featuresList: {
     gap: 8,
     marginTop: 8,
+    marginBottom: 8,
   },
   featureItem: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Inter_400Regular',
-    lineHeight: 22,
+    lineHeight: 21,
   },
   landscapeFeatureItem: {
-    fontSize: 18,
-    lineHeight: 28,
+    fontSize: 13,
+    lineHeight: 19,
   },
   registerButton: {
-    borderRadius: 18,
-    paddingVertical: 18,
+    borderRadius: 16,
+    paddingVertical: 16,
     paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 16,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
   landscapeRegisterButton: {
-    paddingVertical: 22,
-    paddingHorizontal: 32,
-    marginTop: 32,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginTop: 12,
   },
   registerButtonText: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Inter_600SemiBold',
-    marginRight: 10,
+    marginRight: 8,
   },
   landscapeRegisterButtonText: {
-    fontSize: 24,
+    fontSize: 16,
   },
 });

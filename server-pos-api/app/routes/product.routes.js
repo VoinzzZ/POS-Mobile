@@ -16,7 +16,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.getProducts
 );
 
@@ -24,7 +24,7 @@ router.get(
 router.get(
   '/infinite',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.getProductsInfinite
 );
 
@@ -32,7 +32,7 @@ router.get(
 router.get(
   '/search',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.searchProductsInfinite
 );
 
@@ -40,7 +40,7 @@ router.get(
 router.get(
   '/mobile',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.getProductsMobile
 );
 
@@ -48,7 +48,7 @@ router.get(
 router.get(
   '/mobile/search',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.searchProductsMobile
 );
 
@@ -56,7 +56,7 @@ router.get(
 router.get(
   '/mobile/quick',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.getProductsQuickLoad
 );
 
@@ -64,7 +64,7 @@ router.get(
 router.get(
   '/:productId',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.getProductById
 );
 
@@ -88,7 +88,7 @@ router.delete(
 router.get(
   '/category/:categoryId',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.getProductsByCategory
 );
 
@@ -96,7 +96,7 @@ router.get(
 router.get(
   '/brand/:brandId',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.getProductsByBrand
 );
 
@@ -120,7 +120,7 @@ router.patch(
 router.patch(
   '/:productId/stock',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.updateProductStock
 );
 

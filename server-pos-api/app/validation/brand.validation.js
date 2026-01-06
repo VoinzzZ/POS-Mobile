@@ -28,17 +28,7 @@ const createBrandValidation = Joi.object({
       'string.uri': 'URL logo brand tidak valid'
     }),
 
-  tenant_id: Joi.number()
-    .integer()
-    .positive()
-    .required()
-    .messages({
-      'number.base': 'Tenant ID harus berupa angka',
-      'number.integer': 'Tenant ID harus berupa angka bulat',
-      'number.positive': 'Tenant ID harus berupa angka positif',
-      'any.required': 'Tenant ID wajib diisi'
-    }),
-
+  /* tenant_id is validated from req.user, not req.body */
   is_active: Joi.boolean()
     .optional()
     .default(true)

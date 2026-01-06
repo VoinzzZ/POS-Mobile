@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput, Animated, Clipboard } from "react-native";
 import PagerView from "react-native-pager-view";
 import { useAuth } from "../../src/context/AuthContext";
-import { Store as StoreIcon, Users as UsersIcon, Receipt, Settings, Search, Key, UserPlus, UserCheck, UserX, Copy, Check } from "lucide-react-native";
+import { Store as StoreIcon, Users as UsersIcon, Receipt, Settings, Search, Key, UserPlus, UserCheck, UserX, Copy, Check, ClipboardCheck } from "lucide-react-native";
 import OwnerBottomNav from "../../src/components/navigation/OwnerBottomNav";
 import { useRouter } from "expo-router";
 import { getAllUsers, User, getPinHistory, PinHistory } from "../../src/api/user";
@@ -11,6 +11,9 @@ import GeneratePinModal from "../../src/components/shared/GeneratePinModal";
 import PinHistoryModal from "../../src/components/shared/PinHistoryModal";
 import StoreInfoForm from "../../src/components/admin/StoreInfoForm";
 import ReceiptPreview from "../../src/components/admin/ReceiptPreview";
+import ApproveEmployeeModal from "../../src/components/owner/ApproveEmployeeModal";
+import RejectEmployeeModal from "../../src/components/owner/RejectEmployeeModal";
+import { getPendingEmployeesApi } from "../../src/api/auth";
 
 type TabType = "store" | "cashiers" | "receipt";
 
@@ -32,6 +35,11 @@ export default function OwnerStore() {
   const [activePin, setActivePin] = useState<PinHistory | null>(null);
   const [copied, setCopied] = useState(false);
   const [storeDataForReceipt, setStoreDataForReceipt] = useState<any>(null);
+  const [pendingEmployees, setPendingEmployees] = useState<any[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
   const pagerRef = useRef<PagerView>(null);
 
@@ -72,6 +80,20 @@ export default function OwnerStore() {
     }
   };
 
+  const fetchPendingEmployees = async () => {
+    setLoadingPending(true);
+    try {
+      const response = await getPendingEmployeesApi();
+      if (response.success && response.data) {
+        setPendingEmployees(Array.isArray(response.data) ? response.data : []);
+      }
+    } catch (error) {
+      console.error("Error fetching pending employees:", error);
+    } finally {
+      setLoadingPending(false);
+    }
+  };
+
   const handleTabPress = (index: number) => {
     if (index !== activeTabIndex) {
       triggerHaptic();
@@ -82,6 +104,7 @@ export default function OwnerStore() {
       // Check for active PIN when switching to cashiers tab
       if (tabs[index].key === "cashiers") {
         checkActivePin();
+        fetchPendingEmployees();
       }
 
       // Load store data when switching to store tab
@@ -118,6 +141,7 @@ export default function OwnerStore() {
       // Check for active PIN when switching to cashiers tab
       if (tabs[index].key === "cashiers") {
         checkActivePin();
+        fetchPendingEmployees();
       }
 
       // Load store data when switching to store tab
@@ -149,9 +173,10 @@ export default function OwnerStore() {
     setLoading(true);
     await fetchUsers();
 
-    // Check for active PIN when loading data
+    // Check for active PIN and pending employees when loading data
     if (activeTab === "cashiers" || activeTabIndex === 1) {
       await checkActivePin();
+      await fetchPendingEmployees();
     }
 
     // Load store data for receipt preview if on store or receipt tab
@@ -174,9 +199,10 @@ export default function OwnerStore() {
     setRefreshing(true);
     await fetchUsers();
 
-    // Check for active PIN when refreshing
+    // Check for active PIN and pending employees when refreshing
     if (activeTab === "cashiers" || activeTabIndex === 1) {
       await checkActivePin();
+      await fetchPendingEmployees();
     }
 
     // Load store data for receipt preview if on store or receipt tab
@@ -343,6 +369,54 @@ export default function OwnerStore() {
               </TouchableOpacity>
             )}
 
+            {/* Pending Approvals Section */}
+            {pendingEmployees.length > 0 && (
+              <View style={[styles.section, { marginTop: 16 }]}>
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Menunggu Persetujuan ({pendingEmployees.length})</Text>
+                {loadingPending ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  </View>
+                ) : (
+                  pendingEmployees.map((employee) => (
+                    <View key={employee.user_id} style={[styles.userCard, { backgroundColor: colors.card }]}>
+                      <View style={[styles.userAvatar, { backgroundColor: "#f59e0b" + "20" }]}>
+                        <UserPlus size={24} color="#f59e0b" />
+                      </View>
+                      <View style={styles.userInfo}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.userName, { color: colors.text }]}>{employee.user_full_name}</Text>
+                            <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{employee.user_email}</Text>
+                          </View>
+                          <View style={styles.approvalActions}>
+                            <TouchableOpacity
+                              style={[styles.approveBtn, { backgroundColor: colors.primary, padding: 8 }]}
+                              onPress={() => {
+                                setSelectedEmployee(employee);
+                                setShowApproveModal(true);
+                              }}
+                            >
+                              <UserCheck size={20} color="#ffffff" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.rejectBtn, { backgroundColor: "#ef4444", padding: 8 }]}
+                              onPress={() => {
+                                setSelectedEmployee(employee);
+                                setShowRejectModal(true);
+                              }}
+                            >
+                              <UserX size={20} color="#ffffff" />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </View>
+            )}
+
             {/* Search Bar */}
             <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
               <Search size={20} color={colors.textSecondary} />
@@ -435,6 +509,32 @@ export default function OwnerStore() {
       <PinHistoryModal
         visible={showHistoryModal}
         onClose={() => setShowHistoryModal(false)}
+      />
+
+      {/* Approve Employee Modal */}
+      <ApproveEmployeeModal
+        visible={showApproveModal}
+        employee={selectedEmployee}
+        onClose={() => {
+          setShowApproveModal(false);
+          setSelectedEmployee(null);
+        }}
+        onSuccess={() => {
+          fetchPendingEmployees();
+        }}
+      />
+
+      {/* Reject Employee Modal */}
+      <RejectEmployeeModal
+        visible={showRejectModal}
+        employee={selectedEmployee}
+        onClose={() => {
+          setShowRejectModal(false);
+          setSelectedEmployee(null);
+        }}
+        onSuccess={() => {
+          fetchPendingEmployees();
+        }}
       />
     </Animated.View>
   );
@@ -702,5 +802,21 @@ const styles = StyleSheet.create({
   expiryText: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  approvalActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  approveBtn: {
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rejectBtn: {
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

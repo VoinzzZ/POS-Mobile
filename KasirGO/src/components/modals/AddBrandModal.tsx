@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { X, ChevronDown } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
-import { createBrand, getAllCategories, Category } from "../../api/product";
+import { createBrand } from "../../api/product";
 
 interface AddBrandModalProps {
   visible: boolean;
@@ -26,30 +26,11 @@ const AddBrandModal: React.FC<AddBrandModalProps> = ({
   onSuccess,
 }) => {
   const { colors } = useTheme();
-  
+
   const [name, setName] = useState("");
-  const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (visible) {
-      loadCategories();
-    }
-  }, [visible]);
-
-  const loadCategories = async () => {
-    try {
-      const response = await getAllCategories();
-      if (response.success && response.data) {
-        setCategories(response.data);
-      }
-    } catch (error) {
-      console.error("Error loading categories:", error);
-    }
-  };
 
   const handleSubmit = async () => {
     // Validation
@@ -60,31 +41,23 @@ const AddBrandModal: React.FC<AddBrandModalProps> = ({
 
     setLoading(true);
     try {
-      const response = await createBrand(name.trim(), categoryId);
+      const response = await createBrand(name.trim());
 
       if (response.success) {
-        Alert.alert("Berhasil!", "Brand berhasil ditambahkan", [
-          {
-            text: "OK",
-            onPress: () => {
-              setName("");
-              setCategoryId(null);
-              setError("");
-              onSuccess();
-              onClose();
-            },
-          },
-        ]);
+        setName("");
+        setError("");
+        onSuccess();
+        onClose();
       } else {
-        Alert.alert("Error", response.message || "Gagal menambahkan brand");
+        Alert.alert("Kesalahan", response.message || "Gagal menambahkan brand");
       }
     } catch (error: any) {
       console.error("Error creating brand:", error);
       Alert.alert(
-        "Error",
+        "Kesalahan",
         error.response?.data?.message ||
-          error.message ||
-          "Terjadi kesalahan saat menambahkan brand"
+        error.message ||
+        "Terjadi kesalahan saat menambahkan brand"
       );
     } finally {
       setLoading(false);
@@ -93,16 +66,12 @@ const AddBrandModal: React.FC<AddBrandModalProps> = ({
 
   const handleClose = () => {
     setName("");
-    setCategoryId(null);
     setError("");
     onClose();
   };
 
-  const getSelectedCategoryName = () => {
-    if (!categoryId) return "Pilih Kategori (Opsional)";
-    const category = categories.find(c => c.category_id === categoryId);
-    return category ? category.category_name : "Pilih Kategori (Opsional)";
-  };
+
+
 
   return (
     <Modal
@@ -144,54 +113,7 @@ const AddBrandModal: React.FC<AddBrandModalProps> = ({
             />
             {error && <Text style={styles.errorText}>{error}</Text>}
 
-            <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>
-              Kategori
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.picker,
-                { borderColor: colors.border, backgroundColor: colors.surface },
-              ]}
-              onPress={() => setShowCategoryPicker(!showCategoryPicker)}
-            >
-              <Text style={[styles.pickerText, { color: categoryId ? colors.text : colors.textSecondary }]}>
-                {getSelectedCategoryName()}
-              </Text>
-              <ChevronDown size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
 
-            {showCategoryPicker && (
-              <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.pickerItem}
-                  onPress={() => {
-                    setCategoryId(null);
-                    setShowCategoryPicker(false);
-                  }}
-                >
-                  <Text style={[styles.pickerItemText, { color: colors.textSecondary }]}>
-                    Tanpa Kategori
-                  </Text>
-                </TouchableOpacity>
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category.category_id}
-                    style={[
-                      styles.pickerItem,
-                      categoryId === category.category_id && { backgroundColor: colors.primary + "20" },
-                    ]}
-                    onPress={() => {
-                      setCategoryId(category.category_id);
-                      setShowCategoryPicker(false);
-                    }}
-                  >
-                    <Text style={[styles.pickerItemText, { color: colors.text }]}>
-                      {category.category_name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
           </ScrollView>
 
           {/* Footer */}

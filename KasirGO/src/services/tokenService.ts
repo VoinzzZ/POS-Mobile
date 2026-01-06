@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { refreshTokenApi } from '../api/tokenRefresh';
 
-interface Tokens {
+export interface Tokens {
   access_token: string;
   refresh_token: string;
   expires_in: number;
@@ -245,21 +245,32 @@ export class TokenService {
    * Perform the actual token refresh API call
    */
   private static async performTokenRefresh(refreshToken: string): Promise<Tokens> {
-    console.log('📤 Calling refresh token API...');
-    const response = await refreshTokenApi(refreshToken);
-    
-    if (response.success && response.data?.tokens) {
-      const newTokens = {
-        access_token: response.data.tokens.access_token,
-        refresh_token: response.data.tokens.refresh_token,
-        expires_in: response.data.tokens.expires_in,
-        refresh_expires_in: response.data.tokens.refresh_expires_in,
-      };
-      await this.storeTokens(newTokens);
-      console.log('✅ Tokens refreshed and stored successfully');
-      return newTokens;
-    } else {
-      throw new Error('Invalid refresh token response');
+    try {
+      console.log('📤 Calling refresh token API...');
+      const response = await refreshTokenApi(refreshToken);
+
+      if (response.success && response.data?.tokens) {
+        const newTokens = {
+          access_token: response.data.tokens.access_token,
+          refresh_token: response.data.tokens.refresh_token,
+          expires_in: response.data.tokens.expires_in,
+          refresh_expires_in: response.data.tokens.refresh_expires_in,
+        };
+        await this.storeTokens(newTokens);
+        console.log('✅ Tokens refreshed and stored successfully');
+        return newTokens;
+      } else {
+        throw new Error('Invalid refresh token response');
+      }
+    } catch (error: any) {
+      if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || error.message?.includes('Network Error')) {
+        console.log('❌ Error refreshing access token: Backend is offline');
+      } else if (error.response?.status === 404) {
+        console.log('❌ Error refreshing access token: Endpoint not found (404)');
+      } else {
+        console.log('❌ Error refreshing access token:', error.message);
+      }
+      throw error;
     }
   }
 
@@ -308,7 +319,7 @@ export class TokenService {
 
       const now = Math.floor(Date.now() / 1000);
       const refreshTokenExpiration = tokens.issuedAt + tokens.refresh_expires_in;
-      
+
       return now < refreshTokenExpiration;
     } catch (error) {
       console.error('❌ Error checking refresh token validity:', error);

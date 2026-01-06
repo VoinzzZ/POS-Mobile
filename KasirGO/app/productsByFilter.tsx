@@ -47,12 +47,12 @@ export default function ProductsByFilterScreen() {
 
   const loadProducts = async () => {
     if (!type || !id) return;
-    
+
     setLoading(true);
     try {
       let response;
       const filterId = parseInt(id);
-      
+
       if (type === "category") {
         response = await getProductsByCategory(filterId);
       } else if (type === "brand") {
@@ -86,8 +86,8 @@ export default function ProductsByFilterScreen() {
       `Menambahkan "${product.name}" ke keranjang?`,
       [
         { text: "Batal", style: "cancel" },
-        { 
-          text: "Tambah", 
+        {
+          text: "Tambah",
           onPress: () => {
             // TODO: Add to cart logic here
             Alert.alert("Berhasil", `${product.name} ditambahkan ke keranjang!`);
@@ -140,23 +140,23 @@ export default function ProductsByFilterScreen() {
           Rp {product.price.toLocaleString("id-ID")}
         </Text>
         <View style={styles.productMeta}>
-          {product.brand?.category && (
+          {product.m_brand?.m_category && (
             <View style={[styles.badge, { backgroundColor: "#3b82f6" + "20" }]}>
               <Text style={[styles.badgeText, { color: "#3b82f6" }]}>
-                {product.brand.category.name}
+                {product.m_brand.m_category.category_name}
               </Text>
             </View>
           )}
-          {product.brand && (
+          {product.m_brand && (
             <View style={[styles.badge, { backgroundColor: "#f59e0b" + "20" }]}>
               <Text style={[styles.badgeText, { color: "#f59e0b" }]}>
-                {product.brand.name}
+                {product.m_brand.brand_name}
               </Text>
             </View>
           )}
         </View>
-        <Text style={[styles.productStock, { 
-          color: product.stock < 10 ? "#ef4444" : colors.textSecondary 
+        <Text style={[styles.productStock, {
+          color: product.stock < 10 ? "#ef4444" : colors.textSecondary
         }]}>
           Stok: {product.stock}
         </Text>
@@ -181,7 +181,7 @@ export default function ProductsByFilterScreen() {
         </View>
       ) : user?.role === "CASHIER" ? (
         <TouchableOpacity
-          style={[styles.addButton, { 
+          style={[styles.addButton, {
             backgroundColor: product.stock > 0 ? colors.primary : colors.border,
             opacity: product.stock > 0 ? 1 : 0.5
           }]}

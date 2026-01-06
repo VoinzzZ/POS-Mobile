@@ -16,7 +16,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   BrandController.getBrands
 );
 
@@ -24,7 +24,7 @@ router.get(
 router.get(
   '/:brandId',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN', 'KASIR']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   BrandController.getBrandById
 );
 

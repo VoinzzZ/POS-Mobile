@@ -24,8 +24,7 @@ class CategoryController {
 
       const existingCategory = await categoryService.getCategoryByName(
         categoryData.category_name,
-        categoryData.tenant_id,
-        categoryData.brand_id
+        categoryData.tenant_id
       );
 
       if (existingCategory) {
@@ -61,7 +60,7 @@ class CategoryController {
 
       const filters = {
         tenant_id: tenantId,
-        ...(brand_id && { brand_id }),
+        // brand_id removed
         ...(is_active !== undefined && { is_active }),
         ...(search && { search })
       };
@@ -151,8 +150,7 @@ class CategoryController {
       if (updateData.category_name && updateData.category_name !== existingCategory.category_name) {
         const duplicateCategory = await categoryService.getCategoryByName(
           updateData.category_name,
-          tenantId,
-          updateData.brand_id || existingCategory.brand_id
+          tenantId
         );
 
         if (duplicateCategory && duplicateCategory.category_id !== parseInt(categoryId)) {
@@ -240,11 +238,12 @@ class CategoryController {
       const { tenantId } = req.user;
       const { isActiveOnly = true } = req.query;
 
-      const categories = await categoryService.getCategoriesByBrand(
-        brandId,
-        tenantId,
-        isActiveOnly === 'false' ? false : true
-      );
+      const categories = []; // Deprecated
+      // await categoryService.getCategoriesByBrand(
+      //   brandId,
+      //   tenantId,
+      //   isActiveOnly === 'false' ? false : true
+      // );
 
       res.status(200).json({
         success: true,

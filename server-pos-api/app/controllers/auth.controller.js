@@ -134,6 +134,26 @@ class AuthController {
       });
     }
   }
+
+  static async updateProfile(req, res) {
+    try {
+      const { userId } = req.user;
+      const updateData = req.body;
+
+      const result = await AuthService.updateUserProfile(userId, updateData);
+
+      res.status(200).json({
+        success: true,
+        message: 'Profil berhasil diperbarui',
+        data: result
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Gagal memperbarui profil'
+      });
+    }
+  }
 }
 
 module.exports = AuthController;

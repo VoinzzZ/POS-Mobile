@@ -15,7 +15,8 @@ export default function OwnerVerificationScreen() {
 
   // OTP states
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+  // const [timeLeft, setTimeLeft] = useState(600); // MOVED TO COMPONENT
+  const [resendTrigger, setResendTrigger] = useState(0); // New trigger
   const [canResend, setCanResend] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -32,40 +33,32 @@ export default function OwnerVerificationScreen() {
     StatusBar.setTranslucent(true);
   }, []);
 
-  // Timer countdown
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
+  // Timer countdown isolated in Component
+  const handleTimeUp = React.useCallback(() => {
+    setCanResend(true);
   }, []);
 
   // OTP handlers
-  const handleOtpChange = (value: string, index: number) => {
-    const newOtpCode = [...otpCode];
-    newOtpCode[index] = value;
-    setOtpCode(newOtpCode);
+  const handleOtpChange = React.useCallback((value: string, index: number) => {
+    setOtpCode((prev) => {
+      const newOtpCode = [...prev];
+      newOtpCode[index] = value;
+      return newOtpCode;
+    });
 
     // Auto focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
-  };
+  }, []);
 
-  const handleKeyPress = (e: any, index: number) => {
+  const handleKeyPress = React.useCallback((e: any, index: number) => {
     if (e.nativeEvent.key === 'Backspace' && !otpCode[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
-  };
+  }, [otpCode]);
 
-  const handleVerifyOtp = async (code?: string) => {
+  const handleVerifyOtp = React.useCallback(async (code?: string) => {
     const finalCode = code || otpCode.join('');
 
     if (finalCode.length !== 6) {
@@ -93,9 +86,28 @@ export default function OwnerVerificationScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [otpCode, params, confirmEmailVerification, router]);
 
-  const handleResendOtp = async () => {
+  const handleResendOtp = React.useCallback(async () => {
+    // We need current state of canResend and resendLoading, but they change over time.
+    // However, this function is called from a button that might be re-rendered.
+    // If we include them in deps, the function recreation might still trigger child re-renders if passed down.
+    // But since we are extracting OTP inputs which don't use this, it might be fine.
+    // Let's passed the values from the component processing the click if possible or accept some re-creation.
+    // Wait, the OTP component doesn't use handleResendOtp. The parent does.
+    // Actually, EmailVerificationContent receives it.
+    // Let's implement it with refs for values if we want absolute stability or just standard deps.
+    // Standard deps are fine as long as the OTP Input component (which is separate) doesn't receive it.
+    // But EmailVerificationContent DOES receive it.
+    // If EmailVerificationContent re-renders, does it destroy the OTP inputs?
+    // Not if the OTP inputs are in a React.memo component.
+
+    // So standard implementation here is fine.
+
+    // NOTE: The original implementation accessed state directly. 
+    // We will use a ref-based approach or just standard state access. 
+    // Since `canResend` changes infrequently (only when timer hits 0), it's fine.
+
     if (!canResend || resendLoading) return;
 
     setResendLoading(true);
@@ -110,7 +122,7 @@ export default function OwnerVerificationScreen() {
 
       await sendOwnerEmailVerification(requestData);
 
-      setTimeLeft(600);
+      setResendTrigger(prev => prev + 1);
       setCanResend(false);
       setOtpCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
@@ -121,15 +133,15 @@ export default function OwnerVerificationScreen() {
     } finally {
       setResendLoading(false);
     }
-  };
+  }, [canResend, resendLoading, params, sendOwnerEmailVerification]);
 
-  const handlePasteOtp = (pastedText: string) => {
+  const handlePasteOtp = React.useCallback((pastedText: string) => {
     const digits = pastedText.replace(/\D/g, '').slice(0, 6);
     if (digits.length === 6) {
       const newOtpCode = digits.split('');
       setOtpCode(newOtpCode);
     }
-  };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -155,8 +167,10 @@ export default function OwnerVerificationScreen() {
           colors={colors}
           otpCode={otpCode}
           setOtpCode={setOtpCode}
-          timeLeft={timeLeft}
-          setTimeLeft={setTimeLeft}
+          // timeLeft={timeLeft} REMOVED
+          // setTimeLeft={setTimeLeft} REMOVED
+          resendTrigger={resendTrigger} // NEW
+          onTimeUp={handleTimeUp} // NEW
           canResend={canResend}
           setCanResend={setCanResend}
           loading={loading}

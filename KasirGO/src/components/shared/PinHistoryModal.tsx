@@ -49,7 +49,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
           useNativeDriver: true,
         })
       ]).start();
-      
+
       loadPins(1, selectedStatus);
     } else {
       // Animate out: fade out and slide down
@@ -72,7 +72,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
     if (pageNum === 1) {
       setLoading(true);
     }
-    
+
     try {
       const response = await getPinHistory(pageNum, 10, status);
       if (response.success) {
@@ -85,7 +85,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
       }
     } catch (error) {
       console.error("Error loading PIN history:", error);
-      Alert.alert("Error", "Failed to load PIN history");
+      Alert.alert("Kesalahan", "Gagal memuat riwayat PIN");
     } finally {
       if (pageNum === 1) {
         setLoading(false);
@@ -113,14 +113,14 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
       const response = await revokePin(pinId);
       if (response.success) {
         // Update the pin status in the list
-        setPins(prev => prev.map(pin => 
+        setPins(prev => prev.map(pin =>
           pin.id === pinId ? { ...pin, status: 'revoked', revokedAt: new Date().toISOString() } : pin
         ));
-        Alert.alert("Success", response.message);
+        Alert.alert("Berhasil", response.message);
       }
     } catch (error: any) {
       console.error("Error revoking PIN:", error);
-      Alert.alert("Error", error.response?.data?.message || "Failed to revoke PIN");
+      Alert.alert("Kesalahan", error.response?.data?.message || "Gagal mencabut PIN");
     }
   };
 
@@ -180,7 +180,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.pinDetails}>
         <View style={styles.detailRow}>
           <Clock size={14} color={colors.textSecondary} />
@@ -188,7 +188,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
             Kdl: {formatDate(item.expiresAt)}
           </Text>
         </View>
-        
+
         {item.createdBy && (
           <View style={styles.detailRow}>
             <User size={14} color={colors.textSecondary} />
@@ -197,7 +197,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
             </Text>
           </View>
         )}
-        
+
         <View style={styles.detailRow}>
           <Calendar size={14} color={colors.textSecondary} />
           <Text style={[styles.detailText, { color: colors.textSecondary }]}>
@@ -205,7 +205,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
           </Text>
         </View>
       </View>
-      
+
       {item.status === 'active' && (
         <View style={styles.actionRow}>
           <TouchableOpacity
@@ -338,7 +338,7 @@ const PinHistoryModal: React.FC<PinHistoryModalProps> = ({
                   onEndReachedThreshold={0.1}
                   showsVerticalScrollIndicator={false}
                 />
-                
+
                 {loading && pins.length > 0 && (
                   <View style={styles.loadingMoreContainer}>
                     <ActivityIndicator color={colors.primary} />
@@ -362,7 +362,7 @@ const createStyles = (colors: any, theme: string) => StyleSheet.create({
     padding: 0,
   },
   modalContainer: {
-    backgroundColor: theme === "dark" ? "#2D2D2D" : colors.surface,
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,

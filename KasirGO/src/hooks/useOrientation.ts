@@ -14,7 +14,7 @@ export const useOrientation = () => {
 
       const adjustedWidth = Math.min(width, height);
       const adjustedWidthInDP = adjustedWidth * PixelRatio.get() / 160;
-      setIsTab(adjustedWidthInDP >= 600);
+      setIsTab(adjustedWidthInDP >= 500);
     };
 
     const subscription = Dimensions.addEventListener('change', onChange);
@@ -26,7 +26,7 @@ export const useOrientation = () => {
     const initialHeight = initialDimensions.height;
     const adjustedWidth = Math.min(initialWidth, initialHeight);
     const adjustedWidthInDP = adjustedWidth * PixelRatio.get() / 160;
-    setIsTab(adjustedWidthInDP >= 600);
+    setIsTab(adjustedWidthInDP >= 500);
 
     return () => {
       subscription?.remove();

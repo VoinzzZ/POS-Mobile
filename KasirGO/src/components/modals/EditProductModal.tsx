@@ -10,8 +10,9 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Switch,
 } from "react-native";
-import { X, Camera, Upload } from "lucide-react-native";
+import { X, Camera, Upload, RefreshCw } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -29,6 +30,7 @@ interface EditProductModalProps {
   product: Product | null;
   onClose: () => void;
   onSuccess: () => void;
+  onDelete?: (id: number, name: string) => void;
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({
@@ -36,9 +38,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
   product,
   onClose,
   onSuccess,
+  onDelete,
 }) => {
   const { colors } = useTheme();
-  
+
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
@@ -46,17 +49,24 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
   const [brandId, setBrandId] = useState<number | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
-  
+  const [sku, setSku] = useState("");
+  const [description, setDescription] = useState("");
+  const [cost, setCost] = useState("");
+  const [minStock, setMinStock] = useState("");
+  const [isTrackStock, setIsTrackStock] = useState(true);
+  const [isSellable, setIsSellable] = useState(true);
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [filteredBrands, setFilteredBrands] = useState<Brand[]>([]);
-  
+
   const [loading, setLoading] = useState(false);
-  
+
   const [errors, setErrors] = useState<{
     name?: string;
     price?: string;
     stock?: string;
+    category?: string;
   }>({});
 
   // Load product data when modal opens
@@ -66,10 +76,17 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
       setPrice(product.product_price.toString());
       setStock(product.product_qty.toString());
       // Set categoryId from product's category
-      const productCategoryId = product.m_category?.category_id || null;
+      // Set categoryId from product's category directly (preferred) or fallback to brand's category
+      const productCategoryId = product.categoryId || product.product_category_id || product.m_brand?.m_category?.category_id || null;
       setCategoryId(productCategoryId);
       setBrandId(product.product_brand_id || null);
       setExistingImageUrl(product.product_image_url || null);
+      setSku(product.product_sku || "");
+      setDescription(product.product_description || "");
+      setCost(product.product_cost?.toString() || "");
+      setMinStock(product.product_min_stock?.toString() || "");
+      setIsTrackStock(product.is_track_stock ?? true);
+      setIsSellable(product.is_sellable ?? true);
       setImageUri(null); // Reset new image
       loadCategoriesAndBrands();
     }
@@ -81,11 +98,11 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         getAllCategories(),
         getAllBrands(),
       ]);
-      
+
       if (categoriesRes.success && categoriesRes.data) {
         setCategories(categoriesRes.data);
       }
-      
+
       if (brandsRes.success && brandsRes.data) {
         setBrands(brandsRes.data);
       }
@@ -94,19 +111,17 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     }
   };
 
-  // Filter brands based on selected category
   useEffect(() => {
     if (categoryId) {
       const filtered = brands.filter(b => b.brand_category_id === categoryId);
       setFilteredBrands(filtered);
-      // Reset brand selection if current brand is not in filtered list
       if (brandId && !filtered.find(b => b.brand_id === brandId)) {
         setBrandId(null);
       }
     } else {
       setFilteredBrands(brands);
     }
-  }, [categoryId, brands]);
+  }, [categoryId, brands, brandId]);
 
   const validateInputs = (): boolean => {
     const newErrors: typeof errors = {};
@@ -131,12 +146,18 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const generateSku = () => {
+    const random = Math.floor(1000 + Math.random() * 9000);
+    const prefix = name.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, "P");
+    setSku(`${prefix}${random}`);
+  };
+
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== "granted") {
       Alert.alert(
-        "Permission Denied",
+        "Izin Ditolak",
         "Kami memerlukan izin untuk mengakses galeri foto Anda."
       );
       return;
@@ -156,10 +177,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
+
     if (status !== "granted") {
       Alert.alert(
-        "Permission Denied",
+        "Izin Ditolak",
         "Kami memerlukan izin untuk mengakses kamera Anda."
       );
       return;
@@ -182,42 +203,39 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
     setLoading(true);
     try {
-      // Prepare product data
       const productData: any = {
         product_name: name.trim(),
         product_price: Number(price),
         product_qty: Number(stock),
+        product_cost: cost ? Number(cost) : null,
+        product_sku: sku.trim() || null,
+        product_description: description.trim() || null,
+        product_min_stock: minStock ? Number(minStock) : null,
+        is_track_stock: isTrackStock,
+        is_sellable: isSellable,
         product_brand_id: brandId || null,
+        product_category_id: categoryId || null,
       };
 
-      // Add new image if selected
       if (imageUri) {
         productData.image = prepareImageFile(imageUri, name);
       }
 
-      // Update product
       const response = await updateProduct(product.product_id, productData);
 
       if (response.success) {
-        Alert.alert("Berhasil!", "Produk berhasil diupdate", [
-          {
-            text: "OK",
-            onPress: () => {
-              onSuccess();
-              onClose();
-            },
-          },
-        ]);
+        onSuccess();
+        onClose();
       } else {
-        Alert.alert("Error", response.message || "Gagal mengupdate produk");
+        Alert.alert("Kesalahan", response.message || "Gagal mengupdate produk");
       }
     } catch (error: any) {
       console.error("Error updating product:", error);
       Alert.alert(
-        "Error",
+        "Kesalahan",
         error.response?.data?.message ||
-          error.message ||
-          "Terjadi kesalahan saat mengupdate produk"
+        error.message ||
+        "Terjadi kesalahan saat mengupdate produk"
       );
     } finally {
       setLoading(false);
@@ -343,6 +361,59 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
               )}
             </View>
 
+            {/* SKU */}
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.label, { color: colors.text }]}>
+                SKU (Opsional)
+              </Text>
+              <View style={styles.skuInputContainer}>
+                <View
+                  style={[
+                    styles.input,
+                    { borderColor: colors.border, flex: 1, marginRight: 8 },
+                  ]}
+                >
+                  <TextInput
+                    style={{ color: colors.text, flex: 1 }}
+                    placeholder="Contoh: SKU-12345"
+                    placeholderTextColor={colors.textSecondary}
+                    value={sku}
+                    onChangeText={setSku}
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={generateSku}
+                  style={[styles.generateButton, { backgroundColor: colors.primary }]}
+                >
+                  <RefreshCw size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Description */}
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.label, { color: colors.text }]}>
+                Deskripsi (Opsional)
+              </Text>
+              <View
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  { borderColor: colors.border },
+                ]}
+              >
+                <TextInput
+                  style={{ color: colors.text, textAlignVertical: "top" }}
+                  placeholder="Deskripsi produk..."
+                  placeholderTextColor={colors.textSecondary}
+                  multiline={true}
+                  numberOfLines={4}
+                  value={description}
+                  onChangeText={setDescription}
+                />
+              </View>
+            </View>
+
             {/* Price */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: colors.text }]}>
@@ -371,6 +442,28 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
               {errors.price && (
                 <Text style={styles.errorText}>{errors.price}</Text>
               )}
+            </View>
+
+            {/* Cost Price */}
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.label, { color: colors.text }]}>
+                Harga Modal (Opsional)
+              </Text>
+              <View
+                style={[
+                  styles.input,
+                  { borderColor: colors.border },
+                ]}
+              >
+                <TextInput
+                  style={{ color: colors.text, flex: 1 }}
+                  placeholder="Contoh: 3000"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="numeric"
+                  value={cost}
+                  onChangeText={setCost}
+                />
+              </View>
             </View>
 
             {/* Stock */}
@@ -403,13 +496,60 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
               )}
             </View>
 
-            {/* Category Dropdown */}
+            {/* Min Stock */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: colors.text }]}>
-                Kategori *
+                Stok Minimum (Opsional)
+              </Text>
+              <View
+                style={[
+                  styles.input,
+                  { borderColor: colors.border },
+                ]}
+              >
+                <TextInput
+                  style={{ color: colors.text, flex: 1 }}
+                  placeholder="Contoh: 5"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="numeric"
+                  value={minStock}
+                  onChangeText={setMinStock}
+                />
+              </View>
+            </View>
+
+            {/* Toggles Row */}
+            <View style={styles.togglesRow}>
+              <View style={styles.toggleField}>
+                <Text style={[styles.label, { color: colors.text, marginBottom: 0 }]}>
+                  Lacak Stok
+                </Text>
+                <Switch
+                  value={isTrackStock}
+                  onValueChange={setIsTrackStock}
+                  trackColor={{ false: "#334155", true: colors.primary }}
+                  thumbColor="#fff"
+                />
+              </View>
+              <View style={styles.toggleField}>
+                <Text style={[styles.label, { color: colors.text, marginBottom: 0 }]}>
+                  Dapat Dijual
+                </Text>
+                <Switch
+                  value={isSellable}
+                  onValueChange={setIsSellable}
+                  trackColor={{ false: "#334155", true: colors.primary }}
+                  thumbColor="#fff"
+                />
+              </View>
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.label, { color: colors.text }]}>
+                Kategori (Opsional)
               </Text>
               <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-                Pilih kategori terlebih dahulu untuk melihat brand yang tersedia
+                Brand akan difilter berdasarkan kategori yang dipilih
               </Text>
               <View style={[styles.dropdownContainer, { borderColor: colors.border }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -455,39 +595,33 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                   ))}
                 </ScrollView>
               </View>
+              {errors.category && (
+                <Text style={styles.errorText}>{errors.category}</Text>
+              )}
             </View>
 
-            {/* Brand Dropdown */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: colors.text }]}>
                 Brand (Opsional)
               </Text>
-              {!categoryId && (
-                <Text style={[styles.warningText, { color: "#f59e0b" }]}>
-                  ⚠️ Pilih kategori terlebih dahulu untuk melihat brand
-                </Text>
-              )}
               {categoryId && filteredBrands.length === 0 && (
                 <Text style={[styles.warningText, { color: colors.textSecondary }]}>
-                  Tidak ada brand untuk kategori ini. Tambahkan brand terlebih dahulu.
+                  Tidak ada brand untuk kategori ini.
                 </Text>
               )}
               <View style={[
-                styles.dropdownContainer, 
-                { 
+                styles.dropdownContainer,
+                {
                   borderColor: colors.border,
-                  opacity: !categoryId ? 0.5 : 1 
                 }
               ]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <TouchableOpacity
                     onPress={() => setBrandId(null)}
-                    disabled={!categoryId}
                     style={[
                       styles.dropdownChip,
                       !brandId && { backgroundColor: colors.primary },
                       { borderColor: colors.border },
-                      !categoryId && { opacity: 0.5 },
                     ]}
                   >
                     <Text
@@ -503,12 +637,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                     <TouchableOpacity
                       key={brand.brand_id}
                       onPress={() => setBrandId(brand.brand_id)}
-                      disabled={!categoryId}
                       style={[
                         styles.dropdownChip,
                         brandId === brand.brand_id && { backgroundColor: colors.primary },
                         { borderColor: colors.border },
-                        !categoryId && { opacity: 0.5 },
                       ]}
                     >
                       <Text
@@ -531,11 +663,16 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
           {/* Footer Buttons */}
           <View style={styles.modalFooter}>
             <TouchableOpacity
-              onPress={handleClose}
-              style={[styles.button, styles.cancelButton]}
+              onPress={() => {
+                if (product && onDelete) {
+                  onDelete(product.product_id, product.product_name);
+                  onClose();
+                }
+              }}
+              style={[styles.button, styles.cancelButton, { backgroundColor: "#ef4444" + "20" }]}
               disabled={loading}
             >
-              <Text style={styles.cancelButtonText}>Batal</Text>
+              <Text style={[styles.cancelButtonText, { color: "#ef4444" }]}>Hapus</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSubmit}
@@ -655,6 +792,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  textArea: {
+    height: 100,
+    paddingTop: 10,
+  },
+  skuInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  generateButton: {
+    padding: 12,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  togglesRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+    gap: 12,
+  },
+  toggleField: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
   errorText: {
     color: "#ef4444",
     fontSize: 12,
@@ -707,7 +874,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#334155",
   },
   cancelButtonText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "600",
   },

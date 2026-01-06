@@ -23,7 +23,7 @@ const createBrand = async (brandData) => {
     });
     return brand;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -64,7 +64,7 @@ const getBrands = async (filters = {}) => {
 
     return brands;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -83,7 +83,6 @@ const getBrandById = async (brand_id, includeRelations = true) => {
         },
         _count: {
           select: {
-            m_category: true,
             m_product: true
           }
         }
@@ -91,7 +90,7 @@ const getBrandById = async (brand_id, includeRelations = true) => {
     });
     return brand;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -126,7 +125,6 @@ const updateBrand = async (brand_id, updateData) => {
         },
         _count: {
           select: {
-            m_category: true,
             m_product: true
           }
         }
@@ -134,7 +132,7 @@ const updateBrand = async (brand_id, updateData) => {
     });
     return brand;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -145,7 +143,6 @@ const deleteBrand = async (brand_id, deleted_by = null) => {
       include: {
         _count: {
           select: {
-            m_category: true,
             m_product: true
           }
         }
@@ -156,8 +153,8 @@ const deleteBrand = async (brand_id, deleted_by = null) => {
       throw new Error('Brand not found');
     }
 
-    if (existingBrand._count.m_category > 0 || existingBrand._count.m_product > 0) {
-      throw new Error('Cannot delete brand that has associated categories or products');
+    if (existingBrand._count.m_product > 0) {
+      throw new Error('Cannot delete brand that has associated products');
     }
 
     const brand = await prisma.m_brand.update({
@@ -172,7 +169,7 @@ const deleteBrand = async (brand_id, deleted_by = null) => {
     });
     return brand;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -187,7 +184,7 @@ const getBrandByName = async (brand_name, tenant_id) => {
     });
     return brand;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -221,7 +218,7 @@ const toggleBrandStatus = async (brand_id, updated_by = null) => {
     });
     return brand;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 

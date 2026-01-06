@@ -20,8 +20,8 @@ interface OwnerEmailVerificationContentProps {
   colors: any;
   otpCode: string[];
   setOtpCode: React.Dispatch<React.SetStateAction<string[]>>;
-  timeLeft: number;
-  setTimeLeft: React.Dispatch<React.SetStateAction<number>>;
+  // timeLeft: number; // REMOVED
+  // setTimeLeft: React.Dispatch<React.SetStateAction<number>>; // REMOVED
   canResend: boolean;
   setCanResend: React.Dispatch<React.SetStateAction<boolean>>;
   loading: boolean;
@@ -41,12 +41,119 @@ interface OwnerEmailVerificationContentProps {
   formatTime: (seconds: number) => string;
 }
 
+
+interface OTPInputSectionProps {
+  otpCode: string[];
+  colors: any;
+  inputRefs: React.MutableRefObject<(TextInput | null)[]>;
+  handleOtpChange: (value: string, index: number) => void;
+  handleKeyPress: (e: any, index: number) => void;
+  handlePasteOtp: (pastedText: string) => void;
+}
+
+const OTPInputSection = React.memo(({
+  otpCode,
+  colors,
+  inputRefs,
+  handleOtpChange,
+  handleKeyPress,
+  handlePasteOtp
+}: OTPInputSectionProps) => {
+  return (
+    <View style={styles.otpInputContainer}>
+      {otpCode.map((digit, index) => (
+        <TextInput
+          key={index}
+          ref={(ref) => (inputRefs.current[index] = ref)}
+          style={[
+            styles.otpInput,
+            {
+              backgroundColor: colors.card,
+              borderColor: digit ? colors.primary : colors.border,
+              color: colors.text,
+            }
+          ]}
+          value={digit}
+          onChangeText={(value) => handleOtpChange(value, index)}
+          onKeyPress={(e) => handleKeyPress(e, index)}
+          keyboardType="number-pad"
+          maxLength={1}
+          secureTextEntry={false}
+          textAlign="center"
+          autoFocus={index === 0}
+          selectTextOnFocus
+          onContentSizeChange={() => {
+            // Handle paste event
+            if (digit.length > 1) {
+              handlePasteOtp(digit);
+            }
+          }}
+        />
+      ))}
+    </View>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison to ensure strict equality check for props if needed
+  // Usually shallow compare is enough if props are stable
+  // checking individual input stability
+  return prevProps.otpCode === nextProps.otpCode &&
+    prevProps.colors === nextProps.colors &&
+    prevProps.handleOtpChange === nextProps.handleOtpChange;
+});
+
+
+interface CountdownTimerProps {
+  initialSeconds: number;
+  onTimeUp: () => void;
+  resetTrigger: number;
+  formatTime: (seconds: number) => string;
+  colors: any;
+}
+
+const CountdownTimer = React.memo(({ initialSeconds, onTimeUp, resetTrigger, formatTime, colors }: CountdownTimerProps) => {
+  const [timeLeft, setTimeLeft] = useState(initialSeconds);
+
+  useEffect(() => {
+    setTimeLeft(initialSeconds);
+  }, [resetTrigger, initialSeconds]);
+
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      onTimeUp();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          onTimeUp();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, onTimeUp]);
+
+  if (timeLeft <= 0) return null;
+
+  return (
+    <View style={styles.timerContainer}>
+      <Text style={[styles.timerText, { color: colors.textSecondary }]}>
+        Kode akan kadaluarsa dalam
+      </Text>
+      <Text style={[styles.timerValue, { color: colors.primary }]}>
+        {formatTime(timeLeft)}
+      </Text>
+    </View>
+  );
+});
+
 export default function OwnerEmailVerificationContent({
   colors,
   otpCode,
   setOtpCode,
-  timeLeft,
-  setTimeLeft,
   canResend,
   setCanResend,
   loading,
@@ -63,8 +170,10 @@ export default function OwnerEmailVerificationContent({
   handleVerifyOtp,
   handleResendOtp,
   handlePasteOtp,
-  formatTime
-}: OwnerEmailVerificationContentProps) {
+  formatTime,
+  resendTrigger,
+  onTimeUp
+}: OwnerEmailVerificationContentProps & { resendTrigger: number, onTimeUp: () => void }) {
 
   // Real API verification
   const handleVerifyOtpUI = async (code?: string) => {
@@ -145,8 +254,8 @@ export default function OwnerEmailVerificationContent({
 
       await sendOwnerEmailVerification(requestData);
 
-      setTimeLeft(600); // Reset timer to 10 minutes
-      setCanResend(false);
+      handleResendOtp(); // Call parent handler to update trigger
+
       setOtpCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
 
@@ -163,6 +272,7 @@ export default function OwnerEmailVerificationContent({
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20} // Adjust based on header/statusbar
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -238,50 +348,26 @@ export default function OwnerEmailVerificationContent({
             <Text style={[styles.otpLabel, { color: colors.text }]}>
               Masukkan Kode OTP
             </Text>
-            <View style={styles.otpInputContainer}>
-              {otpCode.map((digit, index) => (
-                <TextInput
-                  key={index}
-                  ref={(ref) => (inputRefs.current[index] = ref)}
-                  style={[
-                    styles.otpInput,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: digit ? colors.primary : colors.border,
-                      color: colors.text,
-                    }
-                  ]}
-                  value={digit}
-                  onChangeText={(value) => handleOtpChange(value, index)}
-                  onKeyPress={(e) => handleKeyPress(e, index)}
-                  keyboardType="number-pad"
-                  maxLength={1}
-                  secureTextEntry={false}
-                  textAlign="center"
-                  autoFocus={index === 0}
-                  selectTextOnFocus
-                  onContentSizeChange={() => {
-                    // Handle paste event
-                    if (digit.length > 1) {
-                      handlePasteOtp(digit);
-                    }
-                  }}
-                />
-              ))}
-            </View>
+            <OTPInputSection
+              otpCode={otpCode}
+              colors={colors}
+              inputRefs={inputRefs}
+              handleOtpChange={handleOtpChange}
+              handleKeyPress={handleKeyPress}
+              handlePasteOtp={handlePasteOtp}
+            />
           </View>
 
           {/* Timer */}
-          {timeLeft > 0 && (
-            <View style={styles.timerContainer}>
-              <Text style={[styles.timerText, { color: colors.textSecondary }]}>
-                Kode akan kadaluarsa dalam
-              </Text>
-              <Text style={[styles.timerValue, { color: colors.primary }]}>
-                {formatTime(timeLeft)}
-              </Text>
-            </View>
-          )}
+          <CountdownTimer
+            initialSeconds={600}
+            onTimeUp={onTimeUp}
+            resetTrigger={resendTrigger}
+            formatTime={formatTime}
+            colors={colors}
+          />
+
+
 
           {/* Resend OTP */}
           {canResend && (
@@ -333,29 +419,29 @@ export default function OwnerEmailVerificationContent({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingTop: 80,
+    // justifyContent: 'flex-end', // Removed to allow full screen use
+    // paddingTop: 80, // Removed to elliminate empty space
+    backgroundColor: 'transparent', // Ensure it doesn't block background
   },
   keyboardAvoid: {
     flex: 1,
-    width: '100%',
   },
   scrollContainer: {
     flex: 1,
-    width: '100%',
   },
   scrollContent: {
     flexGrow: 1,
     width: '100%',
     maxWidth: 500,
+    alignSelf: 'center', // Center content horizontally on larger screens
     paddingHorizontal: 24,
-    justifyContent: 'center',
+    justifyContent: 'center', // Keep center but verify scrolling works
     paddingVertical: 20,
-    paddingBottom: 100, // Extra padding for fixed button
+    paddingBottom: 150, // Extra padding for fixed button and keyboard space
   },
   header: {
     marginBottom: 24,
+    marginTop: 40, // Add some top margin for status bar
   },
   headerContent: {
     alignItems: 'center',

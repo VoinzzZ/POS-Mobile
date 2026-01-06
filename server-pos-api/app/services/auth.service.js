@@ -9,99 +9,99 @@ class AuthService {
     }
 
     return await prisma.$transaction(async (tx) => {
-    // Find user with relations
-    const user = await tx.m_user.findFirst({
-      where: {
-        user_email: email,
-        deleted_at: null
-      },
-      include: {
-        m_role: true,
-        m_tenant: true
-      }
-    });
-
-    if (!user) {
-      throw new Error("Email atau password salah");
-    }
-
-    // Check if user is locked
-    if (user.user_locked_until && user.user_locked_until > new Date()) {
-      throw new Error("Akun dikunci sementara. Silakan coba lagi nanti");
-    }
-
-    // Check if user is active
-    if (!user.is_active) {
-      throw new Error("Akun tidak aktif. Hubungi administrator");
-    }
-
-    // Check if email is verified
-    if (!user.user_is_verified) {
-      throw new Error("Email belum diverifikasi. Silakan periksa email Anda");
-    }
-
-    // Check tenant status for non-SA users
-    if (!user.is_sa && user.m_tenant) {
-      if (user.m_tenant.tenant_status !== 'APPROVED') {
-        throw new Error("Toko belum disetujui oleh administrator. Mohon menunggu persetujuan");
-      }
-
-      if (!user.m_tenant.is_active) {
-        throw new Error("Toko tidak aktif. Hubungi administrator");
-      }
-    }
-
-    // Verify password
-    const isPasswordValid = await PasswordService.comparePassword(password, user.user_password);
-    if (!isPasswordValid) {
-      // Increment login attempts
-      const newAttempts = user.user_login_attempts + 1;
-      const maxAttempts = 5;
-
-      await tx.m_user.update({
-        where: { user_id: user.user_id },
-        data: {
-          user_login_attempts: newAttempts,
-          user_locked_until: newAttempts >= maxAttempts
-            ? new Date(Date.now() + 30 * 60 * 1000) // Lock for 30 minutes
-            : null
+      // Find user with relations
+      const user = await tx.m_user.findFirst({
+        where: {
+          user_email: email,
+          deleted_at: null
+        },
+        include: {
+          m_role: true,
+          m_tenant: true
         }
       });
 
-      throw new Error("Email atau password salah");
-    }
-
-    // Reset login attempts on successful login
-    await tx.m_user.update({
-      where: { user_id: user.user_id },
-      data: {
-        user_last_login: new Date(),
-        user_login_attempts: 0,
-        user_locked_until: null
+      if (!user) {
+        throw new Error("Email atau password salah");
       }
-    });
 
-  
-    // Generate tokens using generateTokenPair for complete structure
-    const tokenPayload = {
-      userId: user.user_id,
-      email: user.user_email,
-      role: user.m_role?.role_name || 'SA',
-      name: user.user_full_name || user.user_name,
-      tenantId: user.tenant_id,
-      is_sa: user.is_sa
-    };
+      // Check if user is locked
+      if (user.user_locked_until && user.user_locked_until > new Date()) {
+        throw new Error("Akun dikunci sementara. Silakan coba lagi nanti");
+      }
 
-    const rawTokens = JWTService.generateTokenPair(tokenPayload);
+      // Check if user is active
+      if (!user.is_active) {
+        throw new Error("Akun tidak aktif. Hubungi administrator");
+      }
 
-    // Transform to snake_case for frontend compatibility
-    const tokens = {
-      access_token: rawTokens.accessToken,
-      refresh_token: rawTokens.refreshToken,
-      expires_in: rawTokens.expiresIn,
-      refresh_expires_in: rawTokens.refreshExpiresIn,
-      tokenType: rawTokens.tokenType
-    };
+      // Check if email is verified
+      if (!user.user_is_verified) {
+        throw new Error("Email belum diverifikasi. Silakan periksa email Anda");
+      }
+
+      // Check tenant status for non-SA users
+      if (!user.is_sa && user.m_tenant) {
+        if (user.m_tenant.tenant_status !== 'APPROVED') {
+          throw new Error("Toko belum disetujui oleh administrator. Mohon menunggu persetujuan");
+        }
+
+        if (!user.m_tenant.is_active) {
+          throw new Error("Toko tidak aktif. Hubungi administrator");
+        }
+      }
+
+      // Verify password
+      const isPasswordValid = await PasswordService.comparePassword(password, user.user_password);
+      if (!isPasswordValid) {
+        // Increment login attempts
+        const newAttempts = user.user_login_attempts + 1;
+        const maxAttempts = 5;
+
+        await tx.m_user.update({
+          where: { user_id: user.user_id },
+          data: {
+            user_login_attempts: newAttempts,
+            user_locked_until: newAttempts >= maxAttempts
+              ? new Date(Date.now() + 30 * 60 * 1000) // Lock for 30 minutes
+              : null
+          }
+        });
+
+        throw new Error("Email atau password salah");
+      }
+
+      // Reset login attempts on successful login
+      await tx.m_user.update({
+        where: { user_id: user.user_id },
+        data: {
+          user_last_login: new Date(),
+          user_login_attempts: 0,
+          user_locked_until: null
+        }
+      });
+
+
+      // Generate tokens using generateTokenPair for complete structure
+      const tokenPayload = {
+        userId: user.user_id,
+        email: user.user_email,
+        role: user.m_role?.role_name || 'SA',
+        name: user.user_full_name || user.user_name,
+        tenantId: user.tenant_id,
+        is_sa: user.is_sa
+      };
+
+      const rawTokens = JWTService.generateTokenPair(tokenPayload);
+
+      // Transform to snake_case for frontend compatibility
+      const tokens = {
+        access_token: rawTokens.accessToken,
+        refresh_token: rawTokens.refreshToken,
+        expires_in: rawTokens.expiresIn,
+        refresh_expires_in: rawTokens.refreshExpiresIn,
+        tokenType: rawTokens.tokenType
+      };
 
       return {
         user: {
@@ -202,30 +202,30 @@ class AuthService {
     }
   }
 
-    static async getUserProfile(userId) {
+  static async getUserProfile(userId) {
     const user = await prisma.m_user.findFirst({
-    where: {
-      user_id: userId,
-      deleted_at: null
-    },
-    include: {
-      m_role: {
-        select: {
-          role_id: true,
-          role_name: true,
-          role_description: true
-        }
+      where: {
+        user_id: userId,
+        deleted_at: null
       },
-      m_tenant: {
-        select: {
-          tenant_id: true,
-          tenant_name: true,
-          tenant_status: true,
-          is_active: true
+      include: {
+        m_role: {
+          select: {
+            role_id: true,
+            role_name: true,
+            role_description: true
+          }
+        },
+        m_tenant: {
+          select: {
+            tenant_id: true,
+            tenant_name: true,
+            tenant_status: true,
+            is_active: true
+          }
         }
       }
-    }
-  });
+    });
 
     if (!user) {
       throw new Error("User tidak ditemukan");
@@ -241,6 +241,47 @@ class AuthService {
       isSA: user.is_sa,
       isVerified: user.user_is_verified,
       lastLogin: user.user_last_login
+    };
+  }
+
+  static async updateUserProfile(userId, updateData) {
+    const user = await prisma.m_user.findFirst({
+      where: {
+        user_id: userId,
+        deleted_at: null
+      }
+    });
+
+    if (!user) {
+      throw new Error("User tidak ditemukan");
+    }
+
+    const { name, phone } = updateData;
+
+    const data = {
+      user_full_name: name || user.user_full_name,
+      user_phone: phone !== undefined ? phone : user.user_phone,
+      updated_at: new Date()
+    };
+
+    const updatedUser = await prisma.m_user.update({
+      where: { user_id: userId },
+      data,
+      include: {
+        m_role: true,
+        m_tenant: true
+      }
+    });
+
+    return {
+      id: updatedUser.user_id,
+      name: updatedUser.user_full_name || updatedUser.user_name,
+      email: updatedUser.user_email,
+      phone: updatedUser.user_phone,
+      role: updatedUser.m_role?.role_name || 'SA',
+      isSA: updatedUser.is_sa,
+      isVerified: updatedUser.user_is_verified,
+      lastLogin: updatedUser.user_last_login
     };
   }
 }

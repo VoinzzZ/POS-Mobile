@@ -17,6 +17,8 @@ class ProductController {
       const { tenantId, userId } = req.user;
       const productData = {
         ...value,
+        brand_id: value.brand_id || value.product_brand_id || null,
+        category_id: value.category_id || value.product_category_id || null,
         tenant_id: tenantId,
         created_by: userId,
         updated_by: userId

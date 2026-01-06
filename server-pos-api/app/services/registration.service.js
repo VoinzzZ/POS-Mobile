@@ -9,7 +9,7 @@ function generateOTP() {
 }
 
 class RegistrationService {
-    static async ownerRegisterStep1(data) {
+  static async ownerRegisterStep1(data) {
     const { tenant_name, tenant_phone, tenant_email, tenant_address, tenant_description } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -80,11 +80,10 @@ class RegistrationService {
   }
 
 
-    static async ownerRegisterStep2(data) {
+  static async ownerRegisterStep2(data) {
     const { registration_tenant_id, user_name, user_email, user_full_name, user_phone } = data;
 
     return await prisma.$transaction(async (tx) => {
-            // Find registration
       const registration = await tx.s_registration_tenant.findUnique({
         where: { id: registration_tenant_id },
         include: { m_tenant: true, m_user: true }
@@ -94,11 +93,10 @@ class RegistrationService {
         throw new Error('Registration tidak ditemukan');
       }
 
-      if (registration.current_step !== 1) {
+      if (registration.current_step !== 1 && registration.current_step !== 2) {
         throw new Error(`Step tidak valid. Current step: ${registration.current_step}`);
       }
 
-      // Check if username already exists
       const existingUsername = await tx.m_user.findFirst({
         where: {
           user_name,
@@ -111,7 +109,6 @@ class RegistrationService {
         throw new Error('Username sudah digunakan. Silakan pilih username lain');
       }
 
-      // Check if email already exists
       const existingEmail = await tx.m_user.findFirst({
         where: {
           user_email,
@@ -124,7 +121,6 @@ class RegistrationService {
         throw new Error('Email sudah terdaftar. Gunakan email lain');
       }
 
-      // Get OWNER role
       const ownerRole = await tx.m_role.findFirst({
         where: {
           role_code: 'OWNER',
@@ -137,7 +133,6 @@ class RegistrationService {
         throw new Error('Role OWNER tidak ditemukan. Hubungi administrator');
       }
 
-      // Update user with real information
       await tx.m_user.update({
         where: { user_id: registration.user_id },
         data: {
@@ -150,7 +145,6 @@ class RegistrationService {
         }
       });
 
-      // Update registration tracking
       await tx.s_registration_tenant.update({
         where: { id: registration_tenant_id },
         data: {
@@ -164,9 +158,8 @@ class RegistrationService {
         }
       });
 
-      // Generate and save OTP
       const otpCode = generateOTP();
-      const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
       await tx.s_email_verification.create({
         data: {
@@ -178,7 +171,6 @@ class RegistrationService {
         }
       });
 
-      // Send OTP via email
       try {
         await emailService.sendOtpEmail(user_email, otpCode);
       } catch (emailError) {
@@ -196,7 +188,7 @@ class RegistrationService {
     });
   }
 
-    static async ownerRegisterStep3(data) {
+  static async ownerRegisterStep3(data) {
     const { user_id, otp_code } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -274,7 +266,7 @@ class RegistrationService {
     });
   }
 
-    static async ownerRegisterStep4(data) {
+  static async ownerRegisterStep4(data) {
     const { user_id, password } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -337,7 +329,7 @@ class RegistrationService {
   }
 
 
-    static async validateEmployeePin(pin_code) {
+  static async validateEmployeePin(pin_code) {
     return await prisma.$transaction(async (tx) => {
       // Validate PIN
       const pin = await tx.s_registration_pin.findFirst({
@@ -388,11 +380,10 @@ class RegistrationService {
   }
 
 
-    static async employeeRegisterStep1(data) {
+  static async employeeRegisterStep1(data) {
     const { pin: registration_pin_code, user_name, user_email, user_full_name, user_phone } = data;
 
     return await prisma.$transaction(async (tx) => {
-      // Validate PIN
       const pin = await tx.s_registration_pin.findFirst({
         where: {
           code: registration_pin_code,
@@ -406,66 +397,122 @@ class RegistrationService {
         throw new Error('PIN registrasi tidak valid atau sudah digunakan');
       }
 
-      // Check PIN expiry
       if (new Date() > pin.expires_at) {
         throw new Error('PIN sudah kadaluarsa. Silakan minta PIN baru dari owner');
       }
 
-      // Check PIN usage limit
       if (pin.current_uses >= pin.max_uses) {
         throw new Error('PIN sudah mencapai batas penggunaan');
       }
 
-      // Check if username exists
       const existingUsername = await tx.m_user.findFirst({
-        where: { user_name, deleted_at: null }
+        where: {
+          user_name,
+          deleted_at: null
+        }
       });
 
       if (existingUsername) {
-        throw new Error('Username sudah digunakan. Silakan pilih username lain');
+        if (existingUsername.user_email !== user_email) {
+          throw new Error('Username sudah digunakan. Silakan pilih username lain');
+        }
       }
 
-      // Check if email exists
       const existingEmail = await tx.m_user.findFirst({
         where: { user_email, deleted_at: null }
       });
 
+      let userId;
+
       if (existingEmail) {
-        throw new Error('Email sudah terdaftar. Gunakan email lain');
-      }
-
-      // Create employee user
-      const newEmployee = await tx.m_user.create({
-        data: {
-          user_name,
-          user_email,
-          user_full_name,
-          user_phone,
-          tenant_id: pin.tenant_id,
-          role_id: pin.invited_role_id,
-          registration_type: 'EMPLOYEE',
-          registration_step: 1,
-          is_active: false,
-          created_by: pin.created_by
+        if (existingEmail.user_is_verified) {
+          throw new Error('Email sudah terdaftar. Gunakan email lain');
         }
-      });
 
-      // Create registration tracking
-      await tx.s_registration_user.create({
-        data: {
-          user_id: newEmployee.user_id,
-          registration_pin_id: pin.id,
-          current_step: 1,
-          temp_user_data: {
+        // Resend OTP for unverified user
+        userId = existingEmail.user_id;
+
+        await tx.m_user.update({
+          where: { user_id: userId },
+          data: {
+            user_name,
+            user_full_name,
+            user_phone,
+            tenant_id: pin.tenant_id,
+            role_id: pin.invited_role_id,
+            registration_type: 'EMPLOYEE',
+            registration_step: 1,
+            is_active: false,
+            created_by: pin.created_by
+          }
+        });
+
+        const existingReg = await tx.s_registration_user.findUnique({
+          where: { user_id: userId }
+        });
+
+        if (existingReg) {
+          await tx.s_registration_user.update({
+            where: { id: existingReg.id },
+            data: {
+              registration_pin_id: pin.id,
+              current_step: 1,
+              temp_user_data: {
+                user_name,
+                user_email,
+                user_full_name,
+                user_phone
+              }
+            }
+          });
+        } else {
+          await tx.s_registration_user.create({
+            data: {
+              user_id: userId,
+              registration_pin_id: pin.id,
+              current_step: 1,
+              temp_user_data: {
+                user_name,
+                user_email,
+                user_full_name,
+                user_phone
+              }
+            }
+          });
+        }
+      } else {
+        const newEmployee = await tx.m_user.create({
+          data: {
             user_name,
             user_email,
             user_full_name,
-            user_phone
+            user_phone,
+            tenant_id: pin.tenant_id,
+            role_id: pin.invited_role_id,
+            registration_type: 'EMPLOYEE',
+            registration_step: 1,
+            is_active: false,
+            created_by: pin.created_by
           }
-        }
-      });
+        });
 
-      // Update PIN usage
+        userId = newEmployee.user_id;
+
+        await tx.s_registration_user.create({
+          data: {
+            user_id: userId,
+            registration_pin_id: pin.id,
+            current_step: 1,
+            temp_user_data: {
+              user_name,
+              user_email,
+              user_full_name,
+              user_phone
+            }
+          }
+        });
+      }
+
       await tx.s_registration_pin.update({
         where: { id: pin.id },
         data: {
@@ -475,13 +522,12 @@ class RegistrationService {
         }
       });
 
-      // Generate and save OTP
       const otpCode = generateOTP();
       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
       await tx.s_email_verification.create({
         data: {
-          user_id: newEmployee.user_id,
+          user_id: userId,
           email: user_email,
           code: otpCode,
           expires_at: otpExpiresAt,
@@ -489,14 +535,13 @@ class RegistrationService {
         }
       });
 
-      // Send OTP via email
       try {
         await emailService.sendOtpEmail(user_email, otpCode);
       } catch (emailError) {
-              }
+      }
 
       return {
-        user_id: newEmployee.user_id,
+        user_id: userId,
         user_email,
         user_name,
         tenant_name: pin.m_tenant.tenant_name,
@@ -508,7 +553,7 @@ class RegistrationService {
     });
   }
 
-    static async employeeRegisterStep2(data) {
+  static async employeeRegisterStep2(data) {
     const { user_id, otp_code } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -587,7 +632,7 @@ class RegistrationService {
   }
 
 
-    static async employeeRegisterStep3(data) {
+  static async employeeRegisterStep3(data) {
     const { user_id, password } = data;
 
     return await prisma.$transaction(async (tx) => {

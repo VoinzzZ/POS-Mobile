@@ -28,7 +28,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
   const [activeInput, setActiveInput] = useState<string | null>(null); // Track which input is currently focused
   const saveStatusOpacity = useRef(new Animated.Value(0)).current;
   const saveStatusScale = useRef(new Animated.Value(0.8)).current;
-  
+
   const [formData, setFormData] = useState<UpdateStoreData>({
     store_name: "",
     store_address: "",
@@ -37,7 +37,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
     store_logo_url: "",
     store_description: "",
   });
-  
+
   const originalData = useRef<UpdateStoreData>({});
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -245,7 +245,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Error', 'Gallery access permission is required to upload logo');
+      Alert.alert('Kesalahan', 'Izin akses galeri diperlukan untuk mengunggah logo');
       return;
     }
 
@@ -270,15 +270,15 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
             originalData.current = { ...updatedData };
             setHasChanges(false);
           }
-          Alert.alert('Success', 'Logo uploaded successfully!');
+          Alert.alert('Berhasil', 'Logo berhasil diunggah!');
           updateStore(response.data.store); // Update internal store state
           onStoreUpdate?.(response.data.store); // Notify parent component with updated data
         }
       } catch (error: any) {
         console.error('Error uploading logo:', error);
         Alert.alert(
-          'Error',
-          error.response?.data?.message || 'Failed to upload logo'
+          'Kesalahan',
+          error.response?.data?.message || 'Gagal mengunggah logo'
         );
       } finally {
         setUploadingLogo(false);
@@ -288,12 +288,12 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
 
   const handleDeleteLogo = async () => {
     Alert.alert(
-      'Confirmation',
-      'Are you sure you want to delete the logo?',
+      'Konfirmasi',
+      'Apakah Anda yakin ingin menghapus logo?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Batal', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Hapus',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -343,11 +343,11 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
         <View style={styles.header}>
           <Building2 size={24} color={colors.primary} />
           <Text style={[styles.title, { color: colors.text }]}>
-            Store Information
+            Informasi Toko
           </Text>
         </View>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          This data will be displayed on transaction receipts. Changes will be saved automatically.
+          Data ini akan ditampilkan pada struk transaksi. Perubahan akan disimpan secara otomatis.
         </Text>
 
         {/* Form Fields */}
@@ -355,7 +355,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
           {/* Nama Toko */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>
-              Store Name <Text style={styles.required}>*</Text>
+              Nama Toko <Text style={styles.required}>*</Text>
             </Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Store size={20} color={colors.textSecondary} />
@@ -363,7 +363,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 style={[styles.input, { color: colors.text }]}
                 value={formData.store_name}
                 onChangeText={(text) => updateFormData({ store_name: text })}
-                placeholder="Example: Berkah Store"
+                placeholder="Contoh: Toko Berkah"
                 placeholderTextColor={colors.textSecondary}
                 onFocus={() => setActiveInput('store_name')}
                 onBlur={() => setActiveInput(null)}
@@ -373,14 +373,14 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
 
           {/* Alamat */}
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Address</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Alamat</Text>
             <View style={[styles.inputContainer, styles.textAreaContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Building2 size={20} color={colors.textSecondary} style={styles.iconTop} />
               <TextInput
                 style={[styles.input, styles.textArea, { color: colors.text }]}
                 value={formData.store_address || ""}
                 onChangeText={(text) => updateFormData({ store_address: text })}
-                placeholder="Example Street No. 123, City"
+                placeholder="Contoh: Jl. Merdeka No. 123, Kota"
                 placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={3}
@@ -392,7 +392,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
 
           {/* Telepon */}
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Phone</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Telepon</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Phone size={20} color={colors.textSecondary} />
               <TextInput
@@ -429,8 +429,8 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
 
           {/* Logo Upload */}
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Store Logo</Text>
-            
+            <Text style={[styles.label, { color: colors.text }]}>Logo Toko</Text>
+
             {/* Current Logo Display */}
             {formData.store_logo_url && (
               <View style={[styles.logoContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -452,7 +452,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 </TouchableOpacity>
               </View>
             )}
-            
+
             {/* Upload Button */}
             <TouchableOpacity
               style={[styles.uploadButton, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -462,25 +462,25 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
               {uploadingLogo ? (
                 <>
                   <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={[styles.uploadButtonText, { color: colors.text }]}>Uploading...</Text>
+                  <Text style={[styles.uploadButtonText, { color: colors.text }]}>Mengunggah...</Text>
                 </>
               ) : (
                 <>
                   <Upload size={20} color={colors.primary} />
-                  <Text style={[styles.uploadButtonText, { color: colors.text }]}>Select Logo</Text>
+                  <Text style={[styles.uploadButtonText, { color: colors.text }]}>Pilih Logo</Text>
                 </>
               )}
             </TouchableOpacity>
-            
+
             <Text style={[styles.hint, { color: colors.textSecondary }]}>
-              Select logo image to be displayed on receipts (max 2MB)
+              Pilih gambar logo untuk ditampilkan pada struk (maks 2MB)
             </Text>
           </View>
 
           {/* Deskripsi */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>
-              Description / Tagline
+              Deskripsi / Tagline
             </Text>
             <View style={[styles.inputContainer, styles.textAreaContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <FileText size={20} color={colors.textSecondary} style={styles.iconTop} />
@@ -488,7 +488,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 style={[styles.input, styles.textArea, { color: colors.text }]}
                 value={formData.store_description || ""}
                 onChangeText={(text) => updateFormData({ store_description: text })}
-                placeholder="Serving with whole heart"
+                placeholder="Melayani dengan sepenuh hati"
                 placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={2}
@@ -514,25 +514,25 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
           {saveStatus === 'saving' && (
             <>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={[styles.statusText, { color: colors.text }]}>Saving...</Text>
+              <Text style={[styles.statusText, { color: colors.text }]}>Menyimpan...</Text>
             </>
           )}
           {saveStatus === 'saved' && (
             <>
               <Check size={16} color="#10b981" />
-              <Text style={[styles.statusText, { color: "#10b981" }]}>Saved successfully!</Text>
+              <Text style={[styles.statusText, { color: "#10b981" }]}>Berhasil disimpan!</Text>
             </>
           )}
           {saveStatus === 'error' && (
             <>
               <AlertCircle size={16} color="#ef4444" />
-              <Text style={[styles.statusText, { color: "#ef4444" }]}>Save failed. Please try again.</Text>
+              <Text style={[styles.statusText, { color: "#ef4444" }]}>Gagal menyimpan. Silakan coba lagi.</Text>
             </>
           )}
           {saveStatus === 'idle' && hasChanges && !isTyping && (
             <>
               <View style={[styles.statusDot, { backgroundColor: '#f59e0b' }]} />
-              <Text style={[styles.statusText, { color: colors.text }]}>Changes will be saved automatically</Text>
+              <Text style={[styles.statusText, { color: colors.text }]}>Perubahan akan disimpan otomatis</Text>
             </>
           )}
         </Animated.View>

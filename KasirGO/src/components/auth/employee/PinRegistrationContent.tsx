@@ -147,7 +147,7 @@ export default function PinRegistrationContent({ onBackToRegisterType }: PinRegi
           user_name: employeeData.user_name,
           user_full_name: employeeData.user_full_name,
           user_phone: employeeData.user_phone,
-          registration_id: response.data?.user_id,
+          registration_id: response.data?.registration_id,
           tenant_name: response.data?.tenant_name,
           role_name: response.data?.role_name,
         };
@@ -253,225 +253,225 @@ export default function PinRegistrationContent({ onBackToRegisterType }: PinRegi
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-          {/* PIN Section - Shown when PIN not yet validated */}
-          {!pinValidated && (
-            <>
-              <View style={styles.sectionContainer}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  PIN Registrasi
-                </Text>
+            {/* PIN Section - Shown when PIN not yet validated */}
+            {!pinValidated && (
+              <>
+                <View style={styles.sectionContainer}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    PIN Registrasi
+                  </Text>
 
-                <View style={styles.pinInputContainer}>
+                  <View style={styles.pinInputContainer}>
+                    <TextInput
+                      style={[
+                        styles.pinInput,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: errors.pin_registration ? colors.error : colors.border,
+                          color: colors.text
+                        }
+                      ]}
+                      value={employeeData.pin_registration}
+                      onChangeText={(value) => handleInputChange('pin_registration', value)}
+                      placeholder="PIN Registrasi"
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      secureTextEntry={false}
+                      textAlign="center"
+                      editable={!pinValidationLoading}
+                    />
+                  </View>
+
+                  {errors.pin_registration && (
+                    <Text style={[styles.errorText, { color: colors.error }]}>
+                      {errors.pin_registration}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Validate PIN Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.nextButton,
+                    pinValidationLoading && styles.buttonDisabled,
+                    { backgroundColor: pinValidationLoading ? colors.disabled : colors.primary }
+                  ]}
+                  onPress={handleValidatePin}
+                  disabled={pinValidationLoading}
+                >
+                  <Text style={[styles.nextButtonText, { color: colors.background }]}>
+                    {pinValidationLoading ? 'Memvalidasi...' : 'Validasi PIN'}
+                  </Text>
+                  <ArrowRight size={20} color="white" style={styles.buttonIcon} />
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* User Data Section - Shown after PIN is validated */}
+            {pinValidated && (
+              <>
+                {/* PIN Validation Success Card */}
+                <View style={[styles.successCard, { backgroundColor: colors.success + '10', borderColor: colors.success, marginBottom: 20 }]}>
+                  <View style={styles.successCardHeader}>
+                    <CheckCircle size={20} color={colors.success} />
+                    <Text style={[styles.successCardTitle, { color: colors.success }]}>
+                      PIN Valid
+                    </Text>
+                  </View>
+                  <View style={styles.infoCardList}>
+                    <View style={styles.infoItem}>
+                      <View style={[styles.bulletPoint, { backgroundColor: colors.success }]} />
+                      <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                        Toko: {pinInfo.tenant_name || 'N/A'}
+                      </Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <View style={[styles.bulletPoint, { backgroundColor: colors.success }]} />
+                      <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                        Peran: {pinInfo.role_name || 'N/A'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.sectionContainer}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    Data Diri Karyawan
+                  </Text>
+                </View>
+
+                {/* Email */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>
+                    Email
+                  </Text>
                   <TextInput
                     style={[
-                      styles.pinInput,
+                      styles.input,
                       {
                         backgroundColor: colors.card,
-                        borderColor: errors.pin_registration ? colors.error : colors.border,
+                        borderColor: errors.user_email ? colors.error : colors.border,
                         color: colors.text
                       }
                     ]}
-                    value={employeeData.pin_registration}
-                    onChangeText={(value) => handleInputChange('pin_registration', value)}
-                    placeholder="PIN Registrasi"
+                    value={employeeData.user_email}
+                    onChangeText={(value) => handleInputChange('user_email', value)}
+                    placeholder="contoh@email.com"
                     placeholderTextColor={colors.textSecondary}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    secureTextEntry={false}
-                    textAlign="center"
-                    editable={!pinValidationLoading}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoComplete="email"
                   />
-                </View>
-
-                {errors.pin_registration && (
-                  <Text style={[styles.errorText, { color: colors.error }]}>
-                    {errors.pin_registration}
-                  </Text>
-                )}
-              </View>
-
-              {/* Validate PIN Button */}
-              <TouchableOpacity
-                style={[
-                  styles.nextButton,
-                  pinValidationLoading && styles.buttonDisabled,
-                  { backgroundColor: pinValidationLoading ? colors.disabled : colors.primary }
-                ]}
-                onPress={handleValidatePin}
-                disabled={pinValidationLoading}
-              >
-                <Text style={[styles.nextButtonText, { color: colors.background }]}>
-                  {pinValidationLoading ? 'Memvalidasi...' : 'Validasi PIN'}
-                </Text>
-                <ArrowRight size={20} color="white" style={styles.buttonIcon} />
-              </TouchableOpacity>
-            </>
-          )}
-
-          {/* User Data Section - Shown after PIN is validated */}
-          {pinValidated && (
-            <>
-              {/* PIN Validation Success Card */}
-              <View style={[styles.successCard, { backgroundColor: colors.success + '10', borderColor: colors.success, marginBottom: 20 }]}>
-                <View style={styles.successCardHeader}>
-                  <CheckCircle size={20} color={colors.success} />
-                  <Text style={[styles.successCardTitle, { color: colors.success }]}>
-                    PIN Valid
-                  </Text>
-                </View>
-                <View style={styles.infoCardList}>
-                  <View style={styles.infoItem}>
-                    <View style={[styles.bulletPoint, { backgroundColor: colors.success }]} />
-                    <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-                      Toko: {pinInfo.tenant_name || 'N/A'}
+                  {errors.user_email && (
+                    <Text style={[styles.errorText, { color: colors.error }]}>
+                      {errors.user_email}
                     </Text>
-                  </View>
-                  <View style={styles.infoItem}>
-                    <View style={[styles.bulletPoint, { backgroundColor: colors.success }]} />
-                    <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-                      Peran: {pinInfo.role_name || 'N/A'}
-                    </Text>
-                  </View>
+                  )}
                 </View>
-              </View>
 
-              <View style={styles.sectionContainer}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Data Diri Karyawan
-                </Text>
-              </View>
-
-              {/* Email */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>
-                  Email
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: errors.user_email ? colors.error : colors.border,
-                      color: colors.text
-                    }
-                  ]}
-                  value={employeeData.user_email}
-                  onChangeText={(value) => handleInputChange('user_email', value)}
-                  placeholder="contoh@email.com"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                />
-                {errors.user_email && (
-                  <Text style={[styles.errorText, { color: colors.error }]}>
-                    {errors.user_email}
+                {/* Username */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>
+                    Nama pengguna
                   </Text>
-                )}
-              </View>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: errors.user_name ? colors.error : colors.border,
+                        color: colors.text
+                      }
+                    ]}
+                    value={employeeData.user_name}
+                    onChangeText={(value) => handleInputChange('user_name', value)}
+                    placeholder="Masukan nama pengguna"
+                    placeholderTextColor={colors.textSecondary}
+                    autoCapitalize="none"
+                    autoComplete="username"
+                  />
+                  {errors.user_name && (
+                    <Text style={[styles.errorText, { color: colors.error }]}>
+                      {errors.user_name}
+                    </Text>
+                  )}
+                </View>
 
-              {/* Username */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>
-                  Nama pengguna
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: errors.user_name ? colors.error : colors.border,
-                      color: colors.text
-                    }
-                  ]}
-                  value={employeeData.user_name}
-                  onChangeText={(value) => handleInputChange('user_name', value)}
-                  placeholder="Masukan nama pengguna"
-                  placeholderTextColor={colors.textSecondary}
-                  autoCapitalize="none"
-                  autoComplete="username"
-                />
-                {errors.user_name && (
-                  <Text style={[styles.errorText, { color: colors.error }]}>
-                    {errors.user_name}
+                {/* Nama Lengkap */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>
+                    Nama Lengkap
                   </Text>
-                )}
-              </View>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: errors.user_full_name ? colors.error : colors.border,
+                        color: colors.text
+                      }
+                    ]}
+                    value={employeeData.user_full_name}
+                    onChangeText={(value) => handleInputChange('user_full_name', value)}
+                    placeholder="Masukan nama lengkap"
+                    placeholderTextColor={colors.textSecondary}
+                    autoComplete="name"
+                  />
+                  {errors.user_full_name && (
+                    <Text style={[styles.errorText, { color: colors.error }]}>
+                      {errors.user_full_name}
+                    </Text>
+                  )}
+                </View>
 
-              {/* Nama Lengkap */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>
-                  Nama Lengkap
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: errors.user_full_name ? colors.error : colors.border,
-                      color: colors.text
-                    }
-                  ]}
-                  value={employeeData.user_full_name}
-                  onChangeText={(value) => handleInputChange('user_full_name', value)}
-                  placeholder="Masukan nama lengkap"
-                  placeholderTextColor={colors.textSecondary}
-                  autoComplete="name"
-                />
-                {errors.user_full_name && (
-                  <Text style={[styles.errorText, { color: colors.error }]}>
-                    {errors.user_full_name}
+                {/* Nomor Telepon */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.label, { color: colors.text }]}>
+                    Nomor Telepon
                   </Text>
-                )}
-              </View>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: errors.user_phone ? colors.error : colors.border,
+                        color: colors.text
+                      }
+                    ]}
+                    value={employeeData.user_phone}
+                    onChangeText={(value) => handleInputChange('user_phone', value)}
+                    placeholder="Contoh: 08123456789"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="phone-pad"
+                    autoComplete="tel"
+                  />
+                  {errors.user_phone && (
+                    <Text style={[styles.errorText, { color: colors.error }]}>
+                      {errors.user_phone}
+                    </Text>
+                  )}
+                </View>
 
-              {/* Nomor Telepon */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>
-                  Nomor Telepon
-                </Text>
-                <TextInput
+                {/* Complete Registration Button */}
+                <TouchableOpacity
                   style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: errors.user_phone ? colors.error : colors.border,
-                      color: colors.text
-                    }
+                    styles.nextButton,
+                    loading && styles.buttonDisabled,
+                    { backgroundColor: loading ? colors.disabled : colors.primary }
                   ]}
-                  value={employeeData.user_phone}
-                  onChangeText={(value) => handleInputChange('user_phone', value)}
-                  placeholder="Contoh: 08123456789"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="phone-pad"
-                  autoComplete="tel"
-                />
-                {errors.user_phone && (
-                  <Text style={[styles.errorText, { color: colors.error }]}>
-                    {errors.user_phone}
+                  onPress={handleCompleteRegistration}
+                  disabled={loading}
+                >
+                  <Text style={[styles.nextButtonText, { color: colors.background }]}>
+                    {loading ? 'Memproses...' : 'Lanjutkan ke Verifikasi'}
                   </Text>
-                )}
-              </View>
+                  <ArrowRight size={20} color="white" style={styles.buttonIcon} />
+                </TouchableOpacity>
+              </>
+            )}
 
-              {/* Complete Registration Button */}
-              <TouchableOpacity
-                style={[
-                  styles.nextButton,
-                  loading && styles.buttonDisabled,
-                  { backgroundColor: loading ? colors.disabled : colors.primary }
-                ]}
-                onPress={handleCompleteRegistration}
-                disabled={loading}
-              >
-                <Text style={[styles.nextButtonText, { color: colors.background }]}>
-                  {loading ? 'Memproses...' : 'Lanjutkan ke Verifikasi'}
-                </Text>
-                <ArrowRight size={20} color="white" style={styles.buttonIcon} />
-              </TouchableOpacity>
-            </>
-          )}
-
-            </ScrollView>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     flex: 1,
   },
-    nextButton: {
+  nextButton: {
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,

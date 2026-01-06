@@ -21,7 +21,7 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
-  image_url?: string;
+  image_url?: string | null;
 }
 
 interface TransactionEditModalProps {
@@ -68,11 +68,11 @@ export default function TransactionEditModal({
 
         // Convert transaction items to cart items
         const cartItems: CartItem[] = transactionResponse.data.items.map((item) => ({
-          product_id: item.transaction_item_product_id,
-          name: item.product.product_name,
-          price: item.transaction_item_price,
-          quantity: item.transaction_item_quantity,
-          image_url: item.product.product_image_url,
+          product_id: item.productId,
+          name: item.product.name,
+          price: item.price,
+          quantity: item.quantity,
+          image_url: item.product.imageUrl,
         }));
         setCart(cartItems);
       }
@@ -80,14 +80,11 @@ export default function TransactionEditModal({
       // Load all products
       const productsResponse = await getAllProducts();
       if (productsResponse.success && productsResponse.data) {
-        const productsList = Array.isArray(productsResponse.data)
-          ? productsResponse.data
-          : productsResponse.data.data || [];
-        setProducts(productsList);
+        setProducts(productsResponse.data);
       }
     } catch (error: any) {
       console.error("Error loading data:", error);
-      Alert.alert("Error", "Gagal memuat data transaksi");
+      Alert.alert("Kesalahan", "Gagal memuat data transaksi");
       onClose();
     } finally {
       setLoading(false);
@@ -109,11 +106,11 @@ export default function TransactionEditModal({
       setCart([
         ...cart,
         {
-          product_id: product.product_id,
-          name: product.product_name,
-          price: product.product_price,
+          product_id: product.id,
+          name: product.name,
+          price: product.price,
           quantity: 1,
-          image_url: product.product_image_url,
+          image_url: product.imageUrl,
         },
       ]);
     }
@@ -160,13 +157,13 @@ export default function TransactionEditModal({
       const response = await transactionService.updateTransaction(transactionId!, payload);
 
       if (response.success) {
-        console.log("✅ Transaction updated successfully");
+        console.log("✅ Transaksi berhasil diperbarui");
         onSaved();
         onClose();
       }
     } catch (error: any) {
       console.error("Error updating transaction:", error);
-      Alert.alert("Error", error.response?.data?.message || "Gagal mengupdate transaksi");
+      Alert.alert("Kesalahan", error.response?.data?.message || "Gagal mengupdate transaksi");
     } finally {
       setSaving(false);
     }
@@ -181,11 +178,11 @@ export default function TransactionEditModal({
   };
 
   const filteredProducts = products.filter((product) =>
-    product.product_name.toLowerCase().includes(searchQuery.toLowerCase())
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <SlideModal visible={visible} onClose={onClose} backgroundColor={colors.background}>
+    <SlideModal visible={visible} onClose={onClose} backgroundColor={colors.card}>
       {loading ? (
         <View style={[styles.container, styles.centered]}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -212,109 +209,109 @@ export default function TransactionEditModal({
 
           {/* Cart Section - Full Width */}
           <View style={[styles.cartSectionFullWidth, { backgroundColor: colors.surface }]}>
-              <View style={styles.cartHeader}>
-                <ShoppingCart size={20} color={colors.text} />
-                <Text style={[styles.cartTitle, { color: colors.text }]}>
-                  Keranjang ({cart.length})
+            <View style={styles.cartHeader}>
+              <ShoppingCart size={20} color={colors.text} />
+              <Text style={[styles.cartTitle, { color: colors.text }]}>
+                Keranjang ({cart.length})
+              </Text>
+            </View>
+
+            <ScrollView style={styles.cartList} showsVerticalScrollIndicator={false}>
+              {cart.length === 0 ? (
+                <Text style={[styles.emptyCart, { color: colors.textSecondary }]}>
+                  Keranjang kosong
                 </Text>
-              </View>
+              ) : (
+                cart.map((item) => (
+                  <View
+                    key={item.product_id}
+                    style={[styles.cartItem, { borderBottomColor: colors.border }]}
+                  >
+                    <View style={styles.cartItemInfo}>
+                      <Text style={[styles.cartItemName, { color: colors.text }]} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.cartItemPrice, { color: colors.textSecondary }]}>
+                        {formatCurrency(item.price)}
+                      </Text>
+                    </View>
 
-              <ScrollView style={styles.cartList} showsVerticalScrollIndicator={false}>
-                {cart.length === 0 ? (
-                  <Text style={[styles.emptyCart, { color: colors.textSecondary }]}>
-                    Keranjang kosong
-                  </Text>
-                ) : (
-                  cart.map((item) => (
-                    <View
-                      key={item.product_id}
-                      style={[styles.cartItem, { borderBottomColor: colors.border }]}
-                    >
-                      <View style={styles.cartItemInfo}>
-                        <Text style={[styles.cartItemName, { color: colors.text }]} numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                        <Text style={[styles.cartItemPrice, { color: colors.textSecondary }]}>
-                          {formatCurrency(item.price)}
-                        </Text>
-                      </View>
-
-                      <View style={styles.cartItemActions}>
-                        <View style={styles.quantityControls}>
-                          <TouchableOpacity
-                            onPress={() => updateQuantity(item.product_id, -1)}
-                            style={[styles.quantityButton, { backgroundColor: colors.background }]}
-                          >
-                            <Minus size={16} color={colors.text} />
-                          </TouchableOpacity>
-                          <Text style={[styles.quantity, { color: colors.text }]}>
-                            {item.quantity}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => updateQuantity(item.product_id, 1)}
-                            style={[styles.quantityButton, { backgroundColor: colors.background }]}
-                          >
-                            <Plus size={16} color={colors.text} />
-                          </TouchableOpacity>
-                        </View>
-
+                    <View style={styles.cartItemActions}>
+                      <View style={styles.quantityControls}>
                         <TouchableOpacity
-                          onPress={() => removeFromCart(item.product_id)}
-                          style={styles.deleteButton}
+                          onPress={() => updateQuantity(item.product_id, -1)}
+                          style={[styles.quantityButton, { backgroundColor: colors.background }]}
                         >
-                          <Trash2 size={16} color="#ef4444" />
+                          <Minus size={16} color={colors.text} />
+                        </TouchableOpacity>
+                        <Text style={[styles.quantity, { color: colors.text }]}>
+                          {item.quantity}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => updateQuantity(item.product_id, 1)}
+                          style={[styles.quantityButton, { backgroundColor: colors.background }]}
+                        >
+                          <Plus size={16} color={colors.text} />
                         </TouchableOpacity>
                       </View>
 
-                      <Text style={[styles.cartItemSubtotal, { color: colors.primary }]}>
-                        {formatCurrency(item.price * item.quantity)}
-                      </Text>
+                      <TouchableOpacity
+                        onPress={() => removeFromCart(item.product_id)}
+                        style={styles.deleteButton}
+                      >
+                        <Trash2 size={16} color="#ef4444" />
+                      </TouchableOpacity>
                     </View>
-                  ))
-                )}
-              </ScrollView>
 
-              {/* Total & Actions */}
-              <View style={[styles.cartFooter, { borderTopColor: colors.border }]}>
-                <View style={styles.totalSection}>
-                  <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>Total:</Text>
-                  <Text style={[styles.totalAmount, { color: colors.primary }]}>
-                    {formatCurrency(calculateTotal())}
-                  </Text>
-                </View>
+                    <Text style={[styles.cartItemSubtotal, { color: colors.primary }]}>
+                      {formatCurrency(item.price * item.quantity)}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
 
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={[styles.cancelButton, { backgroundColor: colors.background }]}
-                    onPress={handleCancel}
-                    disabled={saving}
-                  >
-                    <X size={20} color={colors.text} />
-                    <Text style={[styles.cancelButtonText, { color: colors.text }]}>Batal</Text>
-                  </TouchableOpacity>
+            {/* Total & Actions */}
+            <View style={[styles.cartFooter, { borderTopColor: colors.border }]}>
+              <View style={styles.totalSection}>
+                <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>Total:</Text>
+                <Text style={[styles.totalAmount, { color: colors.primary }]}>
+                  {formatCurrency(calculateTotal())}
+                </Text>
+              </View>
 
-                  <TouchableOpacity
-                    style={[
-                      styles.saveButton,
-                      { backgroundColor: colors.primary },
-                      (saving || cart.length === 0) && styles.disabledButton,
-                    ]}
-                    onPress={handleSave}
-                    disabled={saving || cart.length === 0}
-                  >
-                    {saving ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <>
-                        <Save size={20} color="#fff" />
-                        <Text style={styles.saveButtonText}>Simpan</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={[styles.cancelButton, { backgroundColor: colors.background }]}
+                  onPress={handleCancel}
+                  disabled={saving}
+                >
+                  <X size={20} color={colors.text} />
+                  <Text style={[styles.cancelButtonText, { color: colors.text }]}>Batal</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton,
+                    { backgroundColor: colors.primary },
+                    (saving || cart.length === 0) && styles.disabledButton,
+                  ]}
+                  onPress={handleSave}
+                  disabled={saving || cart.length === 0}
+                >
+                  {saving ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Save size={20} color="#fff" />
+                      <Text style={styles.saveButtonText}>Simpan</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
           </View>
+        </View>
       )}
     </SlideModal>
   );

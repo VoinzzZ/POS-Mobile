@@ -21,10 +21,10 @@ api.interceptors.request.use(
     try {
       // Skip token for auth and registration validation endpoints to avoid infinite loops
       if (config.url?.includes('/auth/login') ||
-          config.url?.includes('/auth/register') ||
-          config.url?.includes('/auth/set-password') ||
-          config.url?.includes('/auth/refresh-token') ||
-          config.url?.includes('/registration/employee/validate-pin')) {
+        config.url?.includes('/auth/register') ||
+        config.url?.includes('/auth/set-password') ||
+        config.url?.includes('/auth/refresh-token') ||
+        config.url?.includes('/registration/employee/validate-pin')) {
         return config;
       }
 
@@ -54,6 +54,7 @@ api.interceptors.response.use(
       message: error.message,
       code: error.code,
       response: error.response?.status,
+      data: error.response?.data,
       url: error.config?.url,
       baseURL: error.config?.baseURL
     });
@@ -64,10 +65,10 @@ api.interceptors.response.use(
 
     // Skip token refresh for auth and registration validation endpoints to avoid infinite loops
     const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
-                          originalRequest.url?.includes('/auth/register') ||
-                          originalRequest.url?.includes('/auth/set-password') ||
-                          originalRequest.url?.includes('/auth/refresh-token') ||
-                          originalRequest.url?.includes('/registration/employee/validate-pin');
+      originalRequest.url?.includes('/auth/register') ||
+      originalRequest.url?.includes('/auth/set-password') ||
+      originalRequest.url?.includes('/auth/refresh-token') ||
+      originalRequest.url?.includes('/registration/employee/validate-pin');
 
     // Handle 401 errors (token expired) with retry mechanism, but skip for auth endpoints
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {

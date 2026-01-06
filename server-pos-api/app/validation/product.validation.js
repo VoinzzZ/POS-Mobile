@@ -14,7 +14,7 @@ const createProductValidation = Joi.object({
 
   product_description: Joi.string()
     .max(1000)
-    .allow('')
+    .allow(null, '')
     .optional()
     .messages({
       'string.max': 'Deskripsi produk maksimal 1000 karakter'
@@ -22,7 +22,7 @@ const createProductValidation = Joi.object({
 
   product_sku: Joi.string()
     .max(50)
-    .allow('')
+    .allow(null, '')
     .optional()
     .messages({
       'string.max': 'SKU produk maksimal 50 karakter'
@@ -39,7 +39,7 @@ const createProductValidation = Joi.object({
       'number.positive': 'Brand ID harus berupa angka positif'
     }),
 
-  category_id: Joi.number()
+  product_category_id: Joi.number()
     .integer()
     .positive()
     .allow(null)
@@ -50,10 +50,21 @@ const createProductValidation = Joi.object({
       'number.positive': 'Category ID harus berupa angka positif'
     }),
 
+  product_brand_id: Joi.number()
+    .integer()
+    .positive()
+    .allow(null)
+    .optional()
+    .messages({
+      'number.base': 'Brand ID harus berupa angka',
+      'number.integer': 'Brand ID harus berupa angka bulat',
+      'number.positive': 'Brand ID harus berupa angka positif'
+    }),
+
   tenant_id: Joi.number()
     .integer()
     .positive()
-    .required()
+    .optional()
     .messages({
       'number.base': 'Tenant ID harus berupa angka',
       'number.integer': 'Tenant ID harus berupa angka bulat',
@@ -349,10 +360,105 @@ const productFiltersValidation = Joi.object({
     .optional()
 });
 
+const bulkCreateProductsValidation = Joi.object({
+  products: Joi.array()
+    .items(createProductValidation)
+    .min(1)
+    .max(100)
+    .required()
+    .messages({
+      'array.base': 'Products harus berupa array',
+      'array.min': 'Minimal 1 produk untuk bulk create',
+      'array.max': 'Maksimal 100 produk untuk bulk create',
+      'any.required': 'Products tidak boleh kosong'
+    })
+});
+
+const bulkUpdateProductsValidation = Joi.object({
+  updates: Joi.array()
+    .items(Joi.object({
+      product_id: Joi.number()
+        .integer()
+        .positive()
+        .required()
+        .messages({
+          'number.base': 'Product ID harus berupa angka',
+          'number.integer': 'Product ID harus berupa angka bulat',
+          'number.positive': 'Product ID harus berupa angka positif',
+          'any.required': 'Product ID tidak boleh kosong'
+        }),
+      data: updateProductValidation.required()
+    }))
+    .min(1)
+    .max(100)
+    .required()
+    .messages({
+      'array.base': 'Updates harus berupa array',
+      'array.min': 'Minimal 1 produk untuk bulk update',
+      'array.max': 'Maksimal 100 produk untuk bulk update',
+      'any.required': 'Updates tidak boleh kosong'
+    })
+});
+
+const bulkDeleteProductsValidation = Joi.object({
+  product_ids: Joi.array()
+    .items(Joi.number().integer().positive())
+    .min(1)
+    .max(100)
+    .required()
+    .messages({
+      'array.base': 'Product IDs harus berupa array',
+      'array.min': 'Minimal 1 produk untuk bulk delete',
+      'array.max': 'Maksimal 100 produk untuk bulk delete',
+      'any.required': 'Product IDs tidak boleh kosong'
+    })
+});
+
+const imageUploadValidation = Joi.object({
+  mimetype: Joi.string()
+    .valid('image/jpeg', 'image/jpg', 'image/png', 'image/webp')
+    .required()
+    .messages({
+      'any.only': 'Format gambar harus JPEG, PNG, atau WebP',
+      'any.required': 'Format gambar tidak boleh kosong'
+    }),
+  size: Joi.number()
+    .max(5242880)
+    .required()
+    .messages({
+      'number.max': 'Ukuran gambar maksimal 5MB',
+      'any.required': 'Ukuran gambar tidak boleh kosong'
+    })
+});
+
+const stockUpdateValidation = Joi.object({
+  quantity: Joi.number()
+    .integer()
+    .min(0)
+    .required()
+    .messages({
+      'number.base': 'Quantity harus berupa angka',
+      'number.integer': 'Quantity harus berupa angka bulat',
+      'number.min': 'Quantity tidak boleh negatif',
+      'any.required': 'Quantity tidak boleh kosong'
+    }),
+  operation: Joi.string()
+    .valid('set', 'add', 'subtract')
+    .default('set')
+    .messages({
+      'any.only': 'Operation tidak valid. Pilihan: set, add, subtract'
+    })
+});
+
 module.exports = {
   createProductValidation,
   updateProductValidation,
   paginationValidation,
   infiniteScrollValidation,
-  productFiltersValidation
+  productFiltersValidation,
+  bulkCreateProductsValidation,
+  bulkUpdateProductsValidation,
+  bulkDeleteProductsValidation,
+  imageUploadValidation,
+  stockUpdateValidation
 };

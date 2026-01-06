@@ -19,19 +19,19 @@ export default function CashierBottomNav() {
       path: "/dashboard",
     },
     {
-      name: "Workspace",
+      name: "Transaksi",
       icon: ShoppingCart,
       route: "/(cashier)/workspace",
       path: "/workspace",
     },
     {
-      name: "History",
+      name: "Riwayat",
       icon: History,
       route: "/(cashier)/history",
       path: "/history",
     },
     {
-      name: "Stock",
+      name: "Stok",
       icon: Package,
       route: "/(cashier)/stock",
       path: "/stock",

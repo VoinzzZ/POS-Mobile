@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { X } from "lucide-react-native";
+import { X, Trash2 } from "lucide-react-native";
+import { TouchableWithoutFeedback } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { updateCategory, Category } from "../../api/product";
 
@@ -18,6 +19,7 @@ interface EditCategoryModalProps {
   category: Category | null;
   onClose: () => void;
   onSuccess: () => void;
+  onDelete: (id: number, name: string) => void;
 }
 
 const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
@@ -25,9 +27,10 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
   category,
   onClose,
   onSuccess,
+  onDelete,
 }) => {
   const { colors } = useTheme();
-  
+
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,26 +55,19 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
       const response = await updateCategory(category.category_id, name.trim());
 
       if (response.success) {
-        Alert.alert("Berhasil!", "Kategori berhasil diupdate", [
-          {
-            text: "OK",
-            onPress: () => {
-              setError("");
-              onSuccess();
-              onClose();
-            },
-          },
-        ]);
+        setError("");
+        onSuccess();
+        onClose();
       } else {
-        Alert.alert("Error", response.message || "Gagal mengupdate kategori");
+        Alert.alert("Kesalahan", response.message || "Gagal mengupdate kategori");
       }
     } catch (error: any) {
       console.error("Error updating category:", error);
       Alert.alert(
-        "Error",
+        "Kesalahan",
         error.response?.data?.message ||
-          error.message ||
-          "Terjadi kesalahan saat mengupdate kategori"
+        error.message ||
+        "Terjadi kesalahan saat mengupdate kategori"
       );
     } finally {
       setLoading(false);
@@ -92,71 +88,72 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
       transparent={true}
       onRequestClose={handleClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
-              Edit Kategori
-            </Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <X size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
+      <TouchableWithoutFeedback onPress={handleClose}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Edit Kategori
+                </Text>
+                <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+                  <X size={24} color={colors.text} />
+                </TouchableOpacity>
+              </View>
 
-          {/* Body */}
-          <View style={styles.modalBody}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Nama Kategori *
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                { borderColor: error ? "#ef4444" : colors.border, color: colors.text },
-              ]}
-              placeholder="Contoh: Makanan, Minuman, Snack"
-              placeholderTextColor={colors.textSecondary}
-              value={name}
-              onChangeText={(text) => {
-                setName(text);
-                if (error) setError("");
-              }}
-              autoFocus
-            />
-            {error && <Text style={styles.errorText}>{error}</Text>}
-          </View>
+              {/* Body */}
+              <View style={styles.modalBody}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Nama Kategori *
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { borderColor: error ? "#ef4444" : colors.border, color: colors.text },
+                  ]}
+                  placeholder="Contoh: Makanan, Minuman, Snack"
+                  placeholderTextColor={colors.textSecondary}
+                  value={name}
+                  onChangeText={(text) => {
+                    setName(text);
+                    if (error) setError("");
+                  }}
+                  autoFocus
+                />
+                {error && <Text style={styles.errorText}>{error}</Text>}
+              </View>
 
-          {/* Footer */}
-          <View style={styles.modalFooter}>
-            <TouchableOpacity
-              onPress={handleClose}
-              style={[styles.button, styles.cancelButton]}
-              disabled={loading}
-            >
-              <Text style={styles.cancelButtonText}>Batal</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSubmit}
-              style={[
-                styles.button,
-                styles.submitButton,
-                { backgroundColor: colors.primary },
-                loading && { opacity: 0.7 },
-              ]}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <ActivityIndicator size="small" color="#fff" />
-                  <Text style={styles.submitButtonText}>Menyimpan...</Text>
-                </>
-              ) : (
-                <Text style={styles.submitButtonText}>Simpan</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+              {/* Footer */}
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  onPress={() => onDelete(category.category_id, category.category_name)}
+                  style={[styles.button, styles.deleteButton]}
+                  disabled={loading}
+                >
+                  <Trash2 size={20} color="#ef4444" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  style={[
+                    styles.button,
+                    styles.submitButton,
+                    { backgroundColor: colors.primary },
+                    loading && { opacity: 0.7 },
+                  ]}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.submitButtonText}>Simpan</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
@@ -227,7 +224,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: "#ef4444" + "20",
+  },
   submitButton: {
+    flex: 2,
     backgroundColor: "#4ECDC4",
   },
   submitButtonText: {

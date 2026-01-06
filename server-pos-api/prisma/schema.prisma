@@ -125,7 +125,6 @@ model m_brand {
   updated_at        DateTime     @updatedAt
   deleted_at        DateTime?
   m_tenant          m_tenant     @relation(fields: [tenant_id], references: [tenant_id])
-  m_category        m_category[]
   m_product         m_product[]
 
   @@index([tenant_id])
@@ -137,7 +136,6 @@ model m_category {
   category_id          Int         @id @default(autoincrement())
   category_name        String
   category_description String?     @db.Text
-  brand_id             Int
   tenant_id            Int
   is_active            Boolean     @default(true)
   created_by           Int?
@@ -146,40 +144,41 @@ model m_category {
   created_at           DateTime    @default(now())
   updated_at           DateTime    @updatedAt
   deleted_at           DateTime?
-  m_brand              m_brand     @relation(fields: [brand_id], references: [brand_id])
   m_tenant             m_tenant    @relation(fields: [tenant_id], references: [tenant_id])
   m_product            m_product[]
 
-  @@index([brand_id])
   @@index([tenant_id])
   @@index([is_active])
   @@map("m_category")
 }
 
 model m_product {
-  product_id          Int        @id @default(autoincrement())
-  product_name        String
-  product_description String?    @db.Text
-  product_sku         String?    @unique
-  brand_id            Int?
-  category_id         Int?
-  tenant_id           Int
-  product_price       Decimal    @db.Decimal(10, 2)
-  product_cost        Decimal?   @db.Decimal(10, 2)
-  product_qty         Int        @default(0)
-  product_min_stock   Int?       @default(5)
-  is_active           Boolean    @default(true)
-  is_track_stock      Boolean    @default(true)
-  is_sellable         Boolean    @default(true)
-  created_by          Int?
-  updated_by          Int?
-  deleted_by          Int?
-  created_at          DateTime   @default(now())
-  updated_at          DateTime   @updatedAt
-  deleted_at          DateTime?
-  m_brand             m_brand?    @relation(fields: [brand_id], references: [brand_id])
-  m_category          m_category? @relation(fields: [category_id], references: [category_id])
-  m_tenant            m_tenant   @relation(fields: [tenant_id], references: [tenant_id])
+  product_id            Int                     @id @default(autoincrement())
+  product_name          String
+  product_description   String?                 @db.Text
+  product_sku           String?                 @unique
+  brand_id              Int?
+  category_id           Int?
+  tenant_id             Int
+  product_price         Decimal                 @db.Decimal(10, 2)
+  product_cost          Decimal?                @db.Decimal(10, 2)
+  product_qty           Int                     @default(0)
+  product_min_stock     Int?                    @default(5)
+  is_active             Boolean                 @default(true)
+  is_track_stock        Boolean                 @default(true)
+  is_sellable           Boolean                 @default(true)
+  created_by            Int?
+  updated_by            Int?
+  deleted_by            Int?
+  created_at            DateTime                @default(now())
+  updated_at            DateTime                @updatedAt
+  deleted_at            DateTime?
+  m_brand               m_brand?                @relation(fields: [brand_id], references: [brand_id])
+  m_category            m_category?             @relation(fields: [category_id], references: [category_id])
+  m_tenant              m_tenant                @relation(fields: [tenant_id], references: [tenant_id])
+  t_stock_movement      t_stock_movement[]
+  t_purchase_order_item t_purchase_order_item[]
+  t_stock_opname        t_stock_opname[]
 
   @@index([brand_id])
   @@index([category_id])
@@ -348,4 +347,107 @@ enum verification_type {
   REGISTRATION
   PASSWORD_RESET
   EMAIL_CHANGE
+}
+
+enum movement_type {
+  IN
+  OUT
+  ADJUSTMENT
+  RETURN
+}
+
+enum reference_type {
+  PURCHASE
+  SALE
+  ADJUSTMENT
+  RETURN
+  OPNAME
+}
+
+enum po_status {
+  DRAFT
+  PENDING
+  RECEIVED
+  CANCELLED
+}
+
+model t_stock_movement {
+  movement_id    Int            @id @default(autoincrement())
+  product_id     Int
+  movement_type  movement_type
+  quantity       Int
+  cost_per_unit  Decimal?       @db.Decimal(10, 2)
+  reference_type reference_type
+  reference_id   Int?
+  notes          String?        @db.Text
+  before_qty     Int
+  after_qty      Int
+  tenant_id      Int
+  created_by     Int?
+  created_at     DateTime       @default(now())
+  m_product      m_product      @relation(fields: [product_id], references: [product_id])
+
+  @@index([product_id])
+  @@index([tenant_id])
+  @@index([movement_type])
+  @@index([created_at])
+  @@map("t_stock_movement")
+}
+
+model t_purchase_order {
+  po_id                 Int                     @id @default(autoincrement())
+  po_number             String                  @unique
+  supplier_name         String
+  po_date               DateTime
+  po_status             po_status               @default(PENDING)
+  total_amount          Decimal                 @db.Decimal(12, 2)
+  notes                 String?                 @db.Text
+  tenant_id             Int
+  created_by            Int?
+  updated_by            Int?
+  created_at            DateTime                @default(now())
+  updated_at            DateTime                @updatedAt
+  received_at           DateTime?
+  t_purchase_order_item t_purchase_order_item[]
+
+  @@index([tenant_id])
+  @@index([po_status])
+  @@index([po_date])
+  @@map("t_purchase_order")
+}
+
+model t_purchase_order_item {
+  po_item_id    Int              @id @default(autoincrement())
+  po_id         Int
+  product_id    Int
+  quantity      Int
+  cost_per_unit Decimal          @db.Decimal(10, 2)
+  subtotal      Decimal          @db.Decimal(12, 2)
+  t_purchase_order t_purchase_order @relation(fields: [po_id], references: [po_id], onDelete: Cascade)
+  m_product     m_product        @relation(fields: [product_id], references: [product_id])
+
+  @@index([po_id])
+  @@index([product_id])
+  @@map("t_purchase_order_item")
+}
+
+model t_stock_opname {
+  opname_id  Int       @id @default(autoincrement())
+  product_id Int
+  system_qty Int
+  actual_qty Int
+  difference Int
+  notes      String?   @db.Text
+  tenant_id  Int
+  created_by Int?
+  created_at DateTime  @default(now())
+  processed  Boolean   @default(false)
+  processed_at DateTime?
+  m_product  m_product @relation(fields: [product_id], references: [product_id])
+
+  @@index([product_id])
+  @@index([tenant_id])
+  @@index([created_at])
+  @@index([processed])
+  @@map("t_stock_opname")
 }

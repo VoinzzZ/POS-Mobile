@@ -135,7 +135,7 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
       <View style={[styles.loadingContainer, { backgroundColor: colors.card }]}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-          Loading preview...
+          Memuat pratinjau...
         </Text>
       </View>
     );
@@ -147,10 +147,10 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
         {/* Header */}
         <View style={styles.header}>
           <Receipt size={24} color={colors.primary} />
-          <Text style={[styles.title, { color: colors.text }]}>Receipt Preview</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Pratinjau Struk</Text>
         </View>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Receipt preview with your store data
+          Pratinjau struk dengan data toko Anda
         </Text>
 
         {/* Receipt Preview */}
@@ -175,8 +175,8 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
                   resizeMode="contain"
                 />
               )}
-                <Text style={[styles.storeName, { color: "#000000" }]}>
-                {storeData?.store_name || "Store Name"}
+              <Text style={[styles.storeName, { color: "#000000" }]}>
+                {storeData?.store_name || "Nama Toko"}
               </Text>
               {storeData?.store_description && (
                 <Text style={[styles.storeDescription, { color: "#666666" }]}>
@@ -190,7 +190,7 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
               )}
               {(storeData?.store_phone || storeData?.store_email) && (
                 <Text style={[styles.storeInfo, { color: "#666666" }]}>
-                  {storeData?.store_phone && `Phone: ${storeData.store_phone}`}
+                  {storeData?.store_phone && `Telepon: ${storeData.store_phone}`}
                   {storeData?.store_phone && storeData?.store_email && " | "}
                   {storeData?.store_email && `Email: ${storeData.store_email}`}
                 </Text>
@@ -203,7 +203,7 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
             <View style={styles.transactionInfo}>
               <View style={styles.infoRow}>
                 <Text style={[styles.infoLabel, { color: "#666666" }]}>
-                  Transaction No.
+                  No. Transaksi
                 </Text>
                 <Text style={[styles.infoValue, { color: "#000000" }]}>
                   {sampleTransaction.id}
@@ -211,7 +211,7 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
               </View>
               <View style={styles.infoRow}>
                 <Text style={[styles.infoLabel, { color: "#666666" }]}>
-                  Date
+                  Tanggal
                 </Text>
                 <Text style={[styles.infoValue, { color: "#000000" }]}>
                   {sampleTransaction.date}
@@ -219,7 +219,7 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
               </View>
               <View style={styles.infoRow}>
                 <Text style={[styles.infoLabel, { color: "#666666" }]}>
-                  Cashier
+                  Kasir
                 </Text>
                 <Text style={[styles.infoValue, { color: "#000000" }]}>
                   {sampleTransaction.cashier}
@@ -232,7 +232,7 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
             {/* Items */}
             <View style={styles.items}>
               <Text style={[styles.sectionTitle, { color: "#000000" }]}>
-                Purchase Details
+                Detail Pembelian
               </Text>
               {sampleTransaction.items.map((item, idx) => (
                 <View key={idx} style={[styles.item, { borderBottomColor: "#e5e7eb" }]}>
@@ -268,20 +268,20 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
                 </Text>
               </View>
               <View style={styles.totalRow}>
-                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Method:</Text>
+                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Metode:</Text>
                 <Text style={[styles.paymentValue, { color: "#000000" }]}>
-                  {sampleTransaction.paymentMethod === 'CASH' ? 'Cash' :
-                   sampleTransaction.paymentMethod === 'QRIS' ? 'QRIS' : 'Debit'}
+                  {sampleTransaction.paymentMethod === 'CASH' ? 'Tunai' :
+                    sampleTransaction.paymentMethod === 'QRIS' ? 'QRIS' : 'Debit'}
                 </Text>
               </View>
               <View style={styles.totalRow}>
-                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Pay:</Text>
+                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Bayar:</Text>
                 <Text style={[styles.paymentValue, { color: "#000000" }]}>
                   {formatCurrency(sampleTransaction.payment)}
                 </Text>
               </View>
               <View style={styles.totalRow}>
-                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Change:</Text>
+                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Kembali:</Text>
                 <Text style={[styles.paymentValue, { color: "#000000" }]}>
                   {formatCurrency(sampleTransaction.change)}
                 </Text>
@@ -293,10 +293,10 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
             {/* Footer */}
             <View style={styles.receiptFooter}>
               <Text style={[styles.footerText, { color: "#666666" }]}>
-                Thank you for your visit!
+                Terima kasih atas kunjungan Anda!
               </Text>
               <Text style={[styles.footerText, { color: "#666666" }]}>
-                Made by KasirGo - @VoinzzZ
+                Dibuat oleh KasirGo - @VoinzzZ
               </Text>
             </View>
           </View>
@@ -308,9 +308,9 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
           <View style={[styles.infoBox, { backgroundColor: colors.card + "80", borderColor: "#3b82f6" }]}>
             <Info size={20} color="#3b82f6" />
             <View style={styles.infoBoxContent}>
-              <Text style={[styles.infoBoxTitle, { color: "#3b82f6" }]}>Information</Text>
+              <Text style={[styles.infoBoxTitle, { color: "#3b82f6" }]}>Informasi</Text>
               <Text style={[styles.infoBoxText, { color: colors.textSecondary }]}>
-                This preview shows how the receipt will print with your store data
+                Pratinjau ini menunjukkan bagaimana struk akan tercetak dengan data toko Anda
               </Text>
             </View>
           </View>
@@ -319,22 +319,22 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
           <View style={[styles.infoBox, { backgroundColor: colors.card + "80", borderColor: "#10b981" }]}>
             <CheckCircle size={20} color="#10b981" />
             <View style={styles.infoBoxContent}>
-              <Text style={[styles.infoBoxTitle, { color: "#10b981" }]}>Current Store Data</Text>
+              <Text style={[styles.infoBoxTitle, { color: "#10b981" }]}>Data Toko Saat Ini</Text>
               <View style={styles.dataList}>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Name: {storeData?.store_name || "-"}
+                  • Nama: {storeData?.store_name || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Address: {storeData?.store_address || "-"}
+                  • Alamat: {storeData?.store_address || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Phone: {storeData?.store_phone || "-"}
+                  • Telepon: {storeData?.store_phone || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
                   • Email: {storeData?.store_email || "-"}
                 </Text>
                 <Text style={[styles.dataItem, { color: colors.textSecondary }]}>
-                  • Logo: {storeData?.store_logo_url ? "✓ Available" : "✗ Not set"}
+                  • Logo: {storeData?.store_logo_url ? "✓ Tersedia" : "✗ Belum diatur"}
                 </Text>
               </View>
             </View>

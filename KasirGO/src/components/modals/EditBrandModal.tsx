@@ -9,16 +9,18 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  TouchableWithoutFeedback,
 } from "react-native";
-import { X, ChevronDown } from "lucide-react-native";
+import { X, ChevronDown, Trash2 } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
-import { updateBrand, Brand, getAllCategories, Category } from "../../api/product";
+import { updateBrand, Brand } from "../../api/product";
 
 interface EditBrandModalProps {
   visible: boolean;
   brand: Brand | null;
   onClose: () => void;
   onSuccess: () => void;
+  onDelete: (id: number, name: string) => void;
 }
 
 const EditBrandModal: React.FC<EditBrandModalProps> = ({
@@ -26,39 +28,21 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
   brand,
   onClose,
   onSuccess,
+  onDelete,
 }) => {
   const { colors } = useTheme();
-  
+
   const [name, setName] = useState("");
-  const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (visible) {
-      loadCategories();
-    }
-  }, [visible]);
 
   useEffect(() => {
     if (brand) {
       setName(brand.brand_name);
-      setCategoryId(brand.brand_category_id || null);
     }
   }, [brand]);
 
-  const loadCategories = async () => {
-    try {
-      const response = await getAllCategories();
-      if (response.success && response.data) {
-        setCategories(response.data);
-      }
-    } catch (error) {
-      console.error("Error loading categories:", error);
-    }
-  };
 
   const handleSubmit = async () => {
     if (!brand) return;
@@ -71,29 +55,22 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
 
     setLoading(true);
     try {
-      const response = await updateBrand(brand.brand_id, name.trim(), categoryId);
+      const response = await updateBrand(brand.brand_id, name.trim());
 
       if (response.success) {
-        Alert.alert("Berhasil!", "Brand berhasil diupdate", [
-          {
-            text: "OK",
-            onPress: () => {
-              setError("");
-              onSuccess();
-              onClose();
-            },
-          },
-        ]);
+        setError("");
+        onSuccess();
+        onClose();
       } else {
-        Alert.alert("Error", response.message || "Gagal mengupdate brand");
+        Alert.alert("Kesalahan", response.message || "Gagal mengupdate brand");
       }
     } catch (error: any) {
       console.error("Error updating brand:", error);
       Alert.alert(
-        "Error",
+        "Kesalahan",
         error.response?.data?.message ||
-          error.message ||
-          "Terjadi kesalahan saat mengupdate brand"
+        error.message ||
+        "Terjadi kesalahan saat mengupdate brand"
       );
     } finally {
       setLoading(false);
@@ -102,15 +79,9 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
 
   const handleClose = () => {
     setError("");
-    setShowCategoryPicker(false);
     onClose();
   };
 
-  const getSelectedCategoryName = () => {
-    if (!categoryId) return "Pilih Kategori (Opsional)";
-    const category = categories.find(c => c.category_id === categoryId);
-    return category ? category.category_name : "Pilih Kategori (Opsional)";
-  };
 
   if (!brand) return null;
 
@@ -121,120 +92,72 @@ const EditBrandModal: React.FC<EditBrandModalProps> = ({
       transparent={true}
       onRequestClose={handleClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
-              Edit Brand
-            </Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <X size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Body */}
-          <ScrollView style={styles.modalBody}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Nama Brand *
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                { borderColor: error ? "#ef4444" : colors.border, color: colors.text },
-              ]}
-              placeholder="Contoh: Coca-Cola, Indomie, ABC"
-              placeholderTextColor={colors.textSecondary}
-              value={name}
-              onChangeText={(text) => {
-                setName(text);
-                if (error) setError("");
-              }}
-              autoFocus
-            />
-            {error && <Text style={styles.errorText}>{error}</Text>}
-
-            <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>
-              Kategori
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.picker,
-                { borderColor: colors.border, backgroundColor: colors.surface },
-              ]}
-              onPress={() => setShowCategoryPicker(!showCategoryPicker)}
-            >
-              <Text style={[styles.pickerText, { color: categoryId ? colors.text : colors.textSecondary }]}>
-                {getSelectedCategoryName()}
-              </Text>
-              <ChevronDown size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-
-            {showCategoryPicker && (
-              <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <TouchableOpacity
-                  style={styles.pickerItem}
-                  onPress={() => {
-                    setCategoryId(null);
-                    setShowCategoryPicker(false);
-                  }}
-                >
-                  <Text style={[styles.pickerItemText, { color: colors.textSecondary }]}>
-                    Tanpa Kategori
-                  </Text>
+      <TouchableWithoutFeedback onPress={handleClose}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Edit Brand
+                </Text>
+                <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+                  <X size={24} color={colors.text} />
                 </TouchableOpacity>
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category.category_id}
-                    style={[
-                      styles.pickerItem,
-                      categoryId === category.category_id && { backgroundColor: colors.primary + "20" },
-                    ]}
-                    onPress={() => {
-                      setCategoryId(category.category_id);
-                      setShowCategoryPicker(false);
-                    }}
-                  >
-                    <Text style={[styles.pickerItemText, { color: colors.text }]}>
-                      {category.category_name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
               </View>
-            )}
-          </ScrollView>
 
-          {/* Footer */}
-          <View style={styles.modalFooter}>
-            <TouchableOpacity
-              onPress={handleClose}
-              style={[styles.button, styles.cancelButton]}
-              disabled={loading}
-            >
-              <Text style={styles.cancelButtonText}>Batal</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSubmit}
-              style={[
-                styles.button,
-                styles.submitButton,
-                { backgroundColor: colors.primary },
-                loading && { opacity: 0.7 },
-              ]}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <ActivityIndicator size="small" color="#fff" />
-                  <Text style={styles.submitButtonText}>Menyimpan...</Text>
-                </>
-              ) : (
-                <Text style={styles.submitButtonText}>Simpan</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+              {/* Body */}
+              <ScrollView style={styles.modalBody}>
+                <Text style={[styles.label, { color: colors.text }]}>
+                  Nama Brand *
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { borderColor: error ? "#ef4444" : colors.border, color: colors.text },
+                  ]}
+                  placeholder="Contoh: Coca-Cola, Indomie, ABC"
+                  placeholderTextColor={colors.textSecondary}
+                  value={name}
+                  onChangeText={(text) => {
+                    setName(text);
+                    if (error) setError("");
+                  }}
+                  autoFocus
+                />
+                {error && <Text style={styles.errorText}>{error}</Text>}
+              </ScrollView>
+
+              {/* Footer */}
+              <View style={styles.modalFooter}>
+                <TouchableOpacity
+                  onPress={() => brand && onDelete(brand.brand_id, brand.brand_name)}
+                  style={[styles.button, styles.deleteButton]}
+                  disabled={loading}
+                >
+                  <Trash2 size={20} color="#ef4444" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  style={[
+                    styles.button,
+                    styles.submitButton,
+                    { backgroundColor: colors.primary },
+                    loading && { opacity: 0.7 },
+                  ]}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.submitButtonText}>Simpan</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
@@ -332,7 +255,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: "#ef4444" + "20",
+  },
   submitButton: {
+    flex: 2,
     backgroundColor: "#4ECDC4",
   },
   submitButtonText: {

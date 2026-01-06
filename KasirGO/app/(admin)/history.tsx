@@ -9,11 +9,12 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { History, Settings, Receipt, ChevronRight, Trash2, Edit } from "lucide-react-native";
+import { History, Settings, Receipt, ChevronRight, Trash2, Edit, Filter, ChevronLeft } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter, useFocusEffect } from "expo-router";
 import { transactionService, Transaction } from "../../src/api/transaction";
+import TransactionFilterModal from "../../src/components/modals/TransactionFilterModal";
 
 export default function HistoryScreen() {
   const { colors } = useTheme();
@@ -22,33 +23,51 @@ export default function HistoryScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
-  // Auto-refresh when screen comes into focus
+  const [filters, setFilters] = useState<any>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTransactions, setTotalTransactions] = useState(0);
+
+  const [stats, setStats] = useState({
+    totalAmount: 0,
+    completedCount: 0,
+    lockedCount: 0,
+  });
+
   useFocusEffect(
     useCallback(() => {
       console.log('🔄 Admin History screen focused - Refreshing transactions...');
       fetchTransactions();
-    }, [])
+    }, [filters, currentPage])
   );
 
   const fetchTransactions = async () => {
     try {
-      // Admin hanya melihat transaksi LOCKED (kemarin & sebelumnya, bukan hari ini)
       const params: any = {
-        page: 1,
-        limit: 100,
-        status: 'LOCKED', // Hanya tampilkan yang sudah LOCKED
+        page: currentPage,
+        limit: 10,
+        ...filters,
       };
-      
+
       const response = await transactionService.getAllTransactions(params);
       console.log('📦 Transaction Response:', JSON.stringify(response, null, 2));
       if (response.success) {
-        // Check if data is array directly or nested in data.data
-        const transactionsData = Array.isArray(response.data) 
-          ? response.data 
+        const transactionsData = Array.isArray(response.data)
+          ? response.data
           : (response.data?.data || []);
+        const pagination = response.data?.pagination;
+
         console.log('✅ Transactions loaded:', transactionsData.length);
         setTransactions(transactionsData);
+
+        if (pagination) {
+          setTotalPages(pagination.totalPages || 1);
+          setTotalTransactions(pagination.total || 0);
+        }
+
+        calculateStats(transactionsData);
       }
     } catch (error) {
       console.error('❌ Error fetching transactions:', error);
@@ -56,6 +75,36 @@ export default function HistoryScreen() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const calculateStats = (data: Transaction[]) => {
+    const totalAmount = data.reduce((sum, t) => sum + t.total, 0);
+    const completedCount = data.filter(t => t.status === 'COMPLETED').length;
+    const lockedCount = data.filter(t => t.status === 'LOCKED').length;
+
+    setStats({ totalAmount, completedCount, lockedCount });
+  };
+
+  const handleApplyFilter = (newFilters: any) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
+  const handleClearFilter = () => {
+    setFilters({});
+    setCurrentPage(1);
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
     }
   };
 
@@ -134,26 +183,23 @@ export default function HistoryScreen() {
     );
   };
 
-
-  // Filter changes are handled by useFocusEffect dependency
-
   const handleTransactionPress = (transaction: Transaction) => {
     const cashierInfo = transaction.cashier ? `\nKasir: ${transaction.cashier.userName}` : '';
     const items = transaction.items?.map(item =>
       `${item.product.name} (${item.quantity}x) - ${formatCurrency(item.subtotal)}`
     ).join('\n') || '';
-    
+
     // Admin dapat melakukan berbagai aksi pada transaksi
     const actions: {
       text: string;
       style?: 'default' | 'cancel' | 'destructive';
       onPress?: () => void;
     }[] = [
-      {
-        text: 'Tutup',
-        style: 'cancel' as const,
-      },
-    ];
+        {
+          text: 'Tutup',
+          style: 'cancel' as const,
+        },
+      ];
 
     // Tambah opsi cetak struk untuk transaksi COMPLETED/LOCKED
     if (transaction.status === 'COMPLETED' || transaction.status === 'LOCKED') {
@@ -174,7 +220,7 @@ export default function HistoryScreen() {
       text: 'Hapus Transaksi',
       onPress: () => handleDeleteTransaction(transaction.id, transaction.status),
     });
-    
+
     Alert.alert(
       `Detail Transaksi #${transaction.id}`,
       `Status: ${getStatusText(transaction.status)}${cashierInfo}\nTotal: ${formatCurrency(transaction.total)}\n\nProduk:\n${items}`,
@@ -255,7 +301,7 @@ export default function HistoryScreen() {
             <Text style={[styles.actionButtonText, { color: colors.primary }]}>Cetak</Text>
           </TouchableOpacity>
         )}
-        
+
         {/* Edit Transaksi - Admin bisa edit semua, termasuk LOCKED */}
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: '#10b98115' }]}
@@ -264,7 +310,7 @@ export default function HistoryScreen() {
           <Edit size={16} color="#10b981" />
           <Text style={[styles.actionButtonText, { color: '#10b981' }]}>Edit</Text>
         </TouchableOpacity>
-        
+
         {/* Hapus Transaksi - admin bisa hapus semua */}
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: '#ef444415' }]}
@@ -283,16 +329,54 @@ export default function HistoryScreen() {
         <View>
           <Text style={[styles.title, { color: colors.text }]}>Riwayat Transaksi</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Transaksi kemarin & sebelumnya
+            Kelola dan pantau transaksi
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={() => router.push('/(admin)/settings')}
-          style={styles.settingsBtn}
-        >
-          <Settings size={24} color={colors.textSecondary} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={() => setShowFilterModal(true)}
+            style={[styles.filterBtn, { backgroundColor: colors.card }]}
+          >
+            <Filter size={20} color={Object.keys(filters).length > 0 ? colors.primary : colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(admin)/settings')}
+            style={styles.settingsBtn}
+          >
+            <Settings size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Statistics Summary */}
+      <View style={styles.statsContainer}>
+        <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.statValue, { color: colors.primary }]}>{formatCurrency(stats.totalAmount)}</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Revenue</Text>
+        </View>
+        <View style={{ gap: 8, flex: 1 }}>
+          <View style={[styles.miniStatCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.miniStatValue, { color: '#10b981' }]}>{stats.completedCount}</Text>
+            <Text style={[styles.miniStatLabel, { color: colors.textSecondary }]}>Selesai</Text>
+          </View>
+          <View style={[styles.miniStatCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.miniStatValue, { color: '#6b7280' }]}>{stats.lockedCount}</Text>
+            <Text style={[styles.miniStatLabel, { color: colors.textSecondary }]}>Terkunci</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Filter Info Bar */}
+      {Object.keys(filters).length > 0 && (
+        <View style={[styles.filterInfoBar, { backgroundColor: colors.primary + '15' }]}>
+          <Text style={[styles.filterInfoText, { color: colors.primary }]}>
+            Filter aktif: {Object.keys(filters).length} kriteria
+          </Text>
+          <TouchableOpacity onPress={handleClearFilter}>
+            <Text style={[styles.clearFilterText, { color: colors.primary }]}>Hapus Filter</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {loading ? (
         <View style={[styles.centered, { flex: 1 }]}>
@@ -314,23 +398,55 @@ export default function HistoryScreen() {
               Belum ada transaksi
             </Text>
             <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-              Riwayat transaksi akan muncul di sini
+              Coba ubah filter atau tarik ke bawah untuk refresh
             </Text>
           </View>
         </ScrollView>
       ) : (
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          {transactions.map(renderTransactionItem)}
-        </ScrollView>
+        <>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          >
+            {transactions.map(renderTransactionItem)}
+          </ScrollView>
+
+          {/* Pagination Controls */}
+          <View style={[styles.paginationContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+            <TouchableOpacity
+              style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}
+              onPress={handlePrevPage}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft size={20} color={currentPage === 1 ? colors.textSecondary : colors.text} />
+            </TouchableOpacity>
+
+            <Text style={[styles.pageInfo, { color: colors.text }]}>
+              Halaman {currentPage} dari {totalPages}
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.pageButton, currentPage === totalPages && styles.pageButtonDisabled]}
+              onPress={handleNextPage}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight size={20} color={currentPage === totalPages ? colors.textSecondary : colors.text} />
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
       <AdminBottomNav />
+
+      <TransactionFilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApplyFilter={handleApplyFilter}
+        currentFilters={filters}
+      />
     </View>
   );
 }
@@ -366,6 +482,59 @@ const styles = StyleSheet.create({
   },
   settingsBtn: {
     padding: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 12,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1.5,
+    padding: 16,
+    borderRadius: 12,
+    justifyContent: 'center',
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+  },
+  miniStatCard: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  miniStatValue: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  miniStatLabel: {
+    fontSize: 12,
+  },
+  filterInfoBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 8,
+  },
+  filterInfoText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  clearFilterText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   centered: {
     justifyContent: 'center',
@@ -484,5 +653,23 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  pageButton: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  pageButtonDisabled: {
+    opacity: 0.5,
+  },
+  pageInfo: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

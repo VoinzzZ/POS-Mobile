@@ -4,13 +4,12 @@ export interface User {
   user_id: number;
   user_name: string;
   user_email: string;
-  user_role: string; // Role name (OWNER, ADMIN, CASHIER, INVENTORY, etc.)
+  user_role: string;
   user_is_verified: boolean;
   user_is_active: boolean;
   user_created_at: string;
   user_updated_at: string;
 
-  // CamelCase aliases for frontend use
   id: number;
   userName: string;
   userEmail: string;

@@ -20,28 +20,6 @@ const createCategoryValidation = Joi.object({
       'string.max': 'Deskripsi kategori maksimal 500 karakter'
     }),
 
-  brand_id: Joi.number()
-    .integer()
-    .positive()
-    .required()
-    .messages({
-      'number.base': 'Brand ID harus berupa angka',
-      'number.integer': 'Brand ID harus berupa angka bulat',
-      'number.positive': 'Brand ID harus berupa angka positif',
-      'any.required': 'Brand ID wajib diisi'
-    }),
-
-  tenant_id: Joi.number()
-    .integer()
-    .positive()
-    .required()
-    .messages({
-      'number.base': 'Tenant ID harus berupa angka',
-      'number.integer': 'Tenant ID harus berupa angka bulat',
-      'number.positive': 'Tenant ID harus berupa angka positif',
-      'any.required': 'Tenant ID wajib diisi'
-    }),
-
   is_active: Joi.boolean()
     .default(true)
 });
@@ -63,16 +41,6 @@ const updateCategoryValidation = Joi.object({
     .optional()
     .messages({
       'string.max': 'Deskripsi kategori maksimal 500 karakter'
-    }),
-
-  brand_id: Joi.number()
-    .integer()
-    .positive()
-    .optional()
-    .messages({
-      'number.base': 'Brand ID harus berupa angka',
-      'number.integer': 'Brand ID harus berupa angka bulat',
-      'number.positive': 'Brand ID harus berupa angka positif'
     }),
 
   is_active: Joi.boolean()

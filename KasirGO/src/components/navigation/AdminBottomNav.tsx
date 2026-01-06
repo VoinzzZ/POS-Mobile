@@ -11,28 +11,19 @@ export default function AdminBottomNav() {
 
   const tabs = [
     {
-      name: "Dashboard",
-      icon: LayoutDashboard,
-      route: "/(admin)/dashboard",
-      path: "/dashboard",
-    },
-    {
-      name: "Products",
       icon: Package,
       route: "/(admin)/products",
       path: "/products",
     },
     {
-      name: "History",
+      icon: LayoutDashboard,
+      route: "/(admin)/dashboard",
+      path: "/dashboard",
+    },
+    {
       icon: History,
       route: "/(admin)/history",
       path: "/history",
-    },
-    {
-      name: "Toko",
-      icon: Store,
-      route: "/(admin)/store",
-      path: "/store",
     },
   ];
 
@@ -46,7 +37,7 @@ export default function AdminBottomNav() {
 
         return (
           <TouchableOpacity
-            key={tab.name}
+            key={tab.route}
             style={styles.tab}
             onPress={() => router.push(tab.route as any)}
           >
@@ -56,7 +47,6 @@ export default function AdminBottomNav() {
               strokeWidth={active ? 2.5 : 2}
             />
             <Text style={[styles.label, active && styles.labelActive, { color: active ? colors.primary : colors.textSecondary }]}>
-              {tab.name}
             </Text>
           </TouchableOpacity>
         );

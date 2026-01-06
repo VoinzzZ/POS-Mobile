@@ -1,15 +1,20 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from "react-native";
-import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight, Moon, Sun } from "lucide-react-native";
-import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
+import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight, Moon, Sun, ArrowLeft, Clock } from "lucide-react-native";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter } from "expo-router";
+import EditProfileModal from "../../src/components/modals/EditProfileModal";
 
 export default function SettingsScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshProfile } = useAuth();
   const { theme, toggleTheme, colors } = useTheme();
   const router = useRouter();
+  const [isEditModalVisible, setIsEditModalVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    refreshProfile();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert("Keluar", "Apakah Anda yakin ingin keluar?", [
@@ -30,32 +35,36 @@ export default function SettingsScreen() {
       icon: User,
       title: "Profil",
       subtitle: "Kelola informasi profil Anda",
-      onPress: () => {},
+      onPress: () => setIsEditModalVisible(true),
     },
     {
       icon: Bell,
       title: "Notifikasi",
       subtitle: "Atur preferensi notifikasi",
-      onPress: () => {},
+      onPress: () => { },
     },
     {
       icon: Lock,
       title: "Keamanan",
       subtitle: "Password dan pengaturan keamanan",
-      onPress: () => {},
+      onPress: () => { },
     },
     {
       icon: HelpCircle,
       title: "Bantuan & Dukungan",
       subtitle: "Dapatkan bantuan dan hubungi support",
-      onPress: () => {},
+      onPress: () => { },
     },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <ArrowLeft size={24} color={colors.text} />
+        </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Pengaturan</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView style={styles.scrollView}>
@@ -82,19 +91,55 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* User Info Card */}
+
         <View style={[styles.userCard, { backgroundColor: colors.card }]}>
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={styles.avatarText}>{user?.user_name?.charAt(0).toUpperCase()}</Text>
-          </View>
-          <View style={styles.userInfo}>
-            <Text style={[styles.userName, { color: colors.text }]}>{user?.user_name}</Text>
-            <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.user_email}</Text>
-            <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>{user?.user_role}</Text>
+          <View style={styles.userCardHeader}>
+            <View style={styles.userMainInfo}>
+              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                <Text style={styles.avatarText}>
+                  {(user?.user_full_name || user?.user_name || "U")?.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.userBasicInfo}>
+                <Text style={[styles.userName, { color: colors.text }]}>
+                  {user?.user_full_name || user?.user_name}
+                </Text>
+                <View style={[styles.roleBadge, { backgroundColor: `${colors.primary}20` }]}>
+                  <Text style={[styles.roleText, { color: colors.primary }]}>{user?.user_role}</Text>
+                </View>
+              </View>
             </View>
+            <TouchableOpacity
+              style={[styles.editButton, { backgroundColor: colors.background }]}
+              onPress={() => setIsEditModalVisible(true)}
+            >
+              <User size={18} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.userDetailsSection, { borderTopColor: colors.border }]}>
+            {user?.lastLogin && (
+              <View style={styles.detailRow}>
+                <View style={[styles.detailIconContainer, { backgroundColor: colors.background }]}>
+                  <Clock size={20} color={colors.primary} />
+                </View>
+                <View style={styles.detailContent}>
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Login Terakhir</Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
+                    {new Date(user?.lastLogin).toLocaleString('id-ID', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
         </View>
+
 
         {/* Settings Options */}
         <View style={styles.section}>
@@ -128,10 +173,13 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         <View style={{ height: 20 }} />
-      </ScrollView>
+      </ScrollView >
 
-      <AdminBottomNav />
-    </View>
+      <EditProfileModal
+        visible={isEditModalVisible}
+        onClose={() => setIsEditModalVisible(false)}
+      />
+    </View >
   );
 }
 
@@ -140,9 +188,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerSpacer: {
+    width: 32,
   },
   title: {
     fontSize: 24,
@@ -177,12 +234,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   userCard: {
-    flexDirection: "row",
     marginHorizontal: 20,
     marginBottom: 20,
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  userCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 20,
+  },
+  userMainInfo: {
+    flexDirection: "row",
     alignItems: "center",
+    flex: 1,
   },
   avatar: {
     width: 64,
@@ -190,36 +264,90 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   avatarText: {
     fontSize: 28,
     fontWeight: "700",
     color: "#ffffff",
   },
-  userInfo: {
+  userBasicInfo: {
     marginLeft: 16,
     flex: 1,
   },
   userName: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  editButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userDetailsSection: {
+    borderTopWidth: 1,
+    paddingTop: 16,
+    gap: 12,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  detailIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  detailIcon: {
+    fontSize: 20,
+  },
+  detailContent: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 15,
     fontWeight: "600",
+  },
+  roleBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+  },
+  roleText: {
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  userInfo: {
+    marginLeft: 16,
+    flex: 1,
   },
   userEmail: {
     fontSize: 14,
     marginTop: 4,
   },
-  roleBadge: {
-    backgroundColor: "#064e3b",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: "flex-start",
-    marginTop: 8,
-  },
-  roleText: {
-    fontSize: 12,
-    color: "#10b981",
-    fontWeight: "600",
+  userPhone: {
+    fontSize: 14,
+    marginTop: 2,
   },
   section: {
     marginHorizontal: 20,
