@@ -11,6 +11,9 @@ const storeRoutes = require('./store.routes');
 const stockRoutes = require('./stock.routes');
 const purchaseRoutes = require('./purchase.routes');
 const opnameRoutes = require('./opname.routes');
+const transactionRoutes = require('./transaction.routes');
+const financialReportRoutes = require('./financial-report.routes');
+const cashDrawerRoutes = require('./cash-drawer.routes');
 
 const router = express.Router();
 
@@ -26,5 +29,8 @@ router.use('/store', storeRoutes);
 router.use('/stock', stockRoutes);
 router.use('/purchases', purchaseRoutes);
 router.use('/opname', opnameRoutes);
+router.use('/transactions', transactionRoutes);
+router.use('/financial', financialReportRoutes);
+router.use('/cash-drawer', cashDrawerRoutes);
 
 module.exports = router;

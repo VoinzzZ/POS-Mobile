@@ -9,7 +9,7 @@ const { uploadStoreLogo, handleMulterError } = require('../middlewares/upload.mi
 router.get(
   '/',
   verifyToken,
-  requireRole(['OWNER', 'ADMIN']),
+  requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   StoreController.getStoreSettings
 );
 

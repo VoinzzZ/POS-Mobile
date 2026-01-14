@@ -43,12 +43,12 @@ export default function EditTransactionScreen() {
   const loadTransactionAndProducts = async () => {
     try {
       setLoading(true);
-      
+
       // Load transaction detail
       const transactionResponse = await transactionService.getTransactionDetail(Number(id));
       if (transactionResponse.success && transactionResponse.data) {
         setTransaction(transactionResponse.data);
-        
+
         // Convert transaction items to cart items
         const cartItems: CartItem[] = transactionResponse.data.items.map(item => ({
           productId: item.productId,
@@ -63,9 +63,9 @@ export default function EditTransactionScreen() {
       // Load all products
       const productsResponse = await getAllProducts();
       if (productsResponse.success && productsResponse.data) {
-        const productsList = Array.isArray(productsResponse.data) 
-          ? productsResponse.data 
-          : productsResponse.data.data || [];
+        const productsList: Product[] = Array.isArray(productsResponse.data)
+          ? productsResponse.data
+          : (productsResponse.data as any).data || [];
         setProducts(productsList);
       }
     } catch (error: any) {
@@ -79,7 +79,7 @@ export default function EditTransactionScreen() {
 
   const addToCart = (product: Product) => {
     const existingItem = cart.find(item => item.productId === product.id);
-    
+
     if (existingItem) {
       // Increase quantity
       setCart(cart.map(item =>
@@ -94,7 +94,7 @@ export default function EditTransactionScreen() {
         name: product.name,
         price: product.price,
         quantity: 1,
-        imageUrl: product.imageUrl,
+        imageUrl: product.imageUrl || undefined,
       }]);
     }
   };
@@ -125,16 +125,16 @@ export default function EditTransactionScreen() {
 
     try {
       setSaving(true);
-      
+
       const payload = {
         items: cart.map(item => ({
-          productId: item.productId,
+          product_id: item.productId,
           quantity: item.quantity,
         })),
       };
 
       const response = await transactionService.updateTransaction(Number(id), payload);
-      
+
       if (response.success) {
         console.log('✅ Transaction updated successfully');
         // Navigate back immediately - history screen will auto-refresh
@@ -200,7 +200,7 @@ export default function EditTransactionScreen() {
             onChangeText={setSearchQuery}
           />
 
-          <ScrollView 
+          <ScrollView
             style={styles.productsList}
             contentContainerStyle={styles.productsContent}
             showsVerticalScrollIndicator={false}
@@ -273,7 +273,7 @@ export default function EditTransactionScreen() {
                       {formatCurrency(item.price)}
                     </Text>
                   </View>
-                  
+
                   <View style={styles.cartItemActions}>
                     <View style={styles.quantityControls}>
                       <TouchableOpacity

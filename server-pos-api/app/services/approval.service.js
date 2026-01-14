@@ -18,7 +18,7 @@ class ApprovalService {
           user_id,
           registration_type: 'OWNER',
           approved_at: null,
-        rejected_at: null,
+          rejected_at: null,
           deleted_at: null
         },
         include: { m_tenant: true }
@@ -87,7 +87,7 @@ class ApprovalService {
     });
   }
 
-    static async saRejectOwner(data) {
+  static async saRejectOwner(data) {
     const { user_id, rejected_by, rejection_reason } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -97,7 +97,7 @@ class ApprovalService {
           user_id,
           registration_type: 'OWNER',
           approved_at: null,
-        rejected_at: null,
+          rejected_at: null,
           deleted_at: null
         },
         include: { m_tenant: true }
@@ -166,7 +166,7 @@ class ApprovalService {
     });
   }
 
-    static async ownerApproveEmployee(data) {
+  static async ownerApproveEmployee(data) {
     const { user_id, role_id, approved_by, notes } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -176,7 +176,7 @@ class ApprovalService {
           user_id,
           registration_type: 'EMPLOYEE',
           approved_at: null,
-        rejected_at: null,
+          rejected_at: null,
           deleted_at: null
         },
         include: { m_tenant: true }
@@ -226,7 +226,6 @@ class ApprovalService {
       await tx.m_user.update({
         where: { user_id },
         data: {
-          approved_at: { not: null },
           is_active: true,
           role_id,
           approved_by,
@@ -246,7 +245,7 @@ class ApprovalService {
 
       return {
         user_id,
-        approved_at: { not: null },
+        approved_at: new Date(),
         role_id,
         role_name: role.role_name,
         tenant_name: employee.m_tenant.tenant_name,
@@ -255,7 +254,7 @@ class ApprovalService {
     });
   }
 
-    static async ownerRejectEmployee(data) {
+  static async ownerRejectEmployee(data) {
     const { user_id, rejected_by, rejection_reason } = data;
 
     return await prisma.$transaction(async (tx) => {
@@ -265,7 +264,7 @@ class ApprovalService {
           user_id,
           registration_type: 'EMPLOYEE',
           approved_at: null,
-        rejected_at: null,
+          rejected_at: null,
           deleted_at: null
         },
         include: { m_tenant: true }
@@ -324,7 +323,7 @@ class ApprovalService {
     });
   }
 
-    static async getPendingOwnerApprovals() {
+  static async getPendingOwnerApprovals() {
     const pendingOwners = await prisma.m_user.findMany({
       where: {
         registration_type: 'OWNER',
@@ -368,7 +367,7 @@ class ApprovalService {
     }));
   }
 
-    static async getPendingEmployeeApprovals(tenant_id) {
+  static async getPendingEmployeeApprovals(tenant_id) {
     const pendingEmployees = await prisma.m_user.findMany({
       where: {
         tenant_id,

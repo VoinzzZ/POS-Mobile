@@ -9,6 +9,7 @@ export interface User {
   user_is_active: boolean;
   user_created_at: string;
   user_updated_at: string;
+  user_last_login?: string;
 
   id: number;
   userName: string;
@@ -96,48 +97,77 @@ export const getAllUsers = async (role?: string, page: number = 1, limit: number
   const params: any = { page, limit };
   if (role) params.role = role;
 
-  const response = await api.get("/users/employees", { params });
+  console.log('[getAllUsers] Fetching employees with params:', params);
 
-  // Transform response to match expected format
-  if (response.data.success && response.data.data) {
-    // Check if users array exists in response
-    const users = response.data.data.users || [];
+  try {
+    const response = await api.get("/users/employees", { params });
+    console.log('[getAllUsers] API Response:', JSON.stringify(response.data, null, 2));
 
-    const transformedUsers = users.map((user: any) => ({
-      ...user,
-      id: user.user_id,
-      userName: user.user_name,
-      userEmail: user.user_email,
-      role: user.user_role,
-      isVerified: user.user_is_verified,
-      isActive: user.user_is_active !== undefined ? user.user_is_active : true, // Default to true if not present
-      createdAt: user.user_created_at,
-      updatedAt: user.user_updated_at,
-    }));
+    // Transform response to match expected format
+    if (response.data.success && response.data.data) {
+      // Check if users array exists in response
+      const users = response.data.data.users || [];
+      console.log('[getAllUsers] Raw users count:', users.length);
 
+      const transformedUsers = users.map((user: any) => ({
+        ...user,
+        id: user.user_id,
+        userName: user.user_name,
+        userEmail: user.user_email,
+        role: user.user_role,
+        isVerified: user.user_is_verified,
+        isActive: user.user_is_active !== undefined ? user.user_is_active : true, // Default to true if not present
+        createdAt: user.user_created_at,
+        updatedAt: user.user_updated_at,
+      }));
+
+      console.log('[getAllUsers] Transformed users count:', transformedUsers.length);
+      console.log('[getAllUsers] First user sample:', transformedUsers[0]);
+
+      return {
+        ...response.data,
+        data: {
+          ...response.data.data,
+          users: transformedUsers
+        }
+      };
+    }
+
+    console.warn('[getAllUsers] Response success is false or data is missing');
+
+    // Return empty users array if success is false or data doesn't exist
     return {
-      ...response.data,
+      success: response.data.success || false,
+      message: response.data.message || 'Unknown error occurred',
       data: {
-        ...response.data.data,
-        users: transformedUsers
+        users: [],
+        pagination: {
+          total: 0,
+          page: page,
+          limit: limit,
+          totalPages: 0
+        }
+      }
+    };
+  } catch (error: any) {
+    console.error('[getAllUsers] Error fetching employees:', error);
+    console.error('[getAllUsers] Error details:', error.response?.data || error.message);
+
+    // Return empty array on error
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || 'Failed to fetch employees',
+      data: {
+        users: [],
+        pagination: {
+          total: 0,
+          page: page,
+          limit: limit,
+          totalPages: 0
+        }
       }
     };
   }
-
-  // Return empty users array if success is false or data doesn't exist
-  return {
-    success: response.data.success || false,
-    message: response.data.message || 'Unknown error occurred',
-    data: {
-      users: [],
-      pagination: {
-        total: 0,
-        page: page,
-        limit: limit,
-        totalPages: 0
-      }
-    }
-  };
 };
 
 // Get employee statistics
@@ -244,9 +274,21 @@ export const getPinHistory = async (page: number = 1, limit: number = 10, status
   return response.data;
 };
 
-// Revoke PIN
 export const revokePin = async (pinId: number): Promise<RevokePinResponse> => {
   const response = await api.patch(`/users/pins/${pinId}/revoke`);
+  return response.data;
+};
+
+export interface ChangeUserRoleResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    user: User;
+  };
+}
+
+export const changeUserRole = async (userId: number, roleId: number): Promise<ChangeUserRoleResponse> => {
+  const response = await api.patch(`/users/${userId}/role`, { roleId });
   return response.data;
 };
 

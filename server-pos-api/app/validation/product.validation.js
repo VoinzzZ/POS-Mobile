@@ -134,7 +134,7 @@ const updateProductValidation = Joi.object({
 
   product_description: Joi.string()
     .max(1000)
-    .allow('')
+    .allow('', null)
     .optional()
     .messages({
       'string.max': 'Deskripsi produk maksimal 1000 karakter'
@@ -142,7 +142,7 @@ const updateProductValidation = Joi.object({
 
   product_sku: Joi.string()
     .max(50)
-    .allow('')
+    .allow('', null)
     .optional()
     .messages({
       'string.max': 'SKU produk maksimal 50 karakter'
@@ -151,6 +151,7 @@ const updateProductValidation = Joi.object({
   brand_id: Joi.number()
     .integer()
     .positive()
+    .allow(null)
     .optional()
     .messages({
       'number.base': 'Brand ID harus berupa angka',
@@ -161,6 +162,7 @@ const updateProductValidation = Joi.object({
   category_id: Joi.number()
     .integer()
     .positive()
+    .allow(null)
     .optional()
     .messages({
       'number.base': 'Category ID harus berupa angka',
@@ -180,6 +182,7 @@ const updateProductValidation = Joi.object({
   product_cost: Joi.number()
     .precision(2)
     .min(0)
+    .allow(null)
     .optional()
     .messages({
       'number.base': 'Harga beli produk harus berupa angka',
@@ -199,6 +202,7 @@ const updateProductValidation = Joi.object({
   product_min_stock: Joi.number()
     .integer()
     .min(0)
+    .allow(null)
     .optional()
     .messages({
       'number.base': 'Stok minimum produk harus berupa angka',

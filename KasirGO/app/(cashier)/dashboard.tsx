@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { useAuth } from "../../src/context/AuthContext";
 import { ShoppingCart, DollarSign, TrendingUp, Settings } from "lucide-react-native";
-import CashierBottomNav from "../../src/components/navigation/CashierBottomNav";
+import CashierSidebar from "../../src/components/navigation/CashierSidebar";
+import DrawerStatusIndicator from "../../src/components/cashier/DrawerStatusIndicator";
+import CashDrawerModal from "../../src/components/cashier/CashDrawerModal";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../src/context/ThemeContext";
 
@@ -10,6 +12,9 @@ export default function CashierDashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const { colors } = useTheme();
+  const [drawerModalVisible, setDrawerModalVisible] = useState(false);
+  const [drawerModalMode, setDrawerModalMode] = useState<"open" | "close">("open");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const stats = [
     {
@@ -35,61 +40,78 @@ export default function CashierDashboard() {
     },
   ];
 
+  const handleOpenDrawerModal = () => {
+    setDrawerModalMode("open");
+    setDrawerModalVisible(true);
+  };
+
+  const handleDrawerModalSuccess = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <View>
-          <Text style={[styles.greeting, { color: colors.textSecondary }]}>Halo,</Text>
-          <Text style={[styles.userName, { color: colors.text }]}>{user?.userName || "Kasir"}</Text>
+      <View style={styles.landscapeMaster}>
+        <CashierSidebar />
+        <View style={styles.landscapeContent}>
+          {/* Header */}
+          <View style={[styles.header, { backgroundColor: colors.surface }]}>
+            <View>
+              <Text style={[styles.greeting, { color: colors.textSecondary }]}>Halo,</Text>
+              <Text style={[styles.userName, { color: colors.text }]}>{user?.user_name || "Kasir"}</Text>
+            </View>
+          </View>
+
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            {/* Cash Drawer Status */}
+            <DrawerStatusIndicator key={refreshKey} onOpenDrawer={handleOpenDrawerModal} />
+
+            {/* Stats */}
+            <View style={styles.statsContainer}>
+              {stats.map((stat, index) => {
+                const Icon = stat.icon;
+                return (
+                  <View key={index} style={[styles.statCard, { borderLeftColor: stat.color, backgroundColor: colors.card }]}>
+                    <View style={[styles.iconContainer, { backgroundColor: stat.bgColor }]}>
+                      <Icon size={24} color={stat.color} />
+                    </View>
+                    <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
+                    <Text style={[styles.statTitle, { color: colors.textSecondary }]}>{stat.title}</Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Quick Action - Start Transaction */}
+            <TouchableOpacity
+              style={[styles.startButton, { backgroundColor: colors.primary }]}
+              onPress={() => router.push("/(cashier)/workspace")}
+            >
+              <ShoppingCart size={24} color="#ffffff" />
+              <Text style={styles.startButtonText}>Mulai Transaksi Baru</Text>
+            </TouchableOpacity>
+
+            {/* Recent Transactions */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Transaksi Terkini</Text>
+              <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Belum ada transaksi</Text>
+                <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Mulai berjualan untuk melihat transaksi</Text>
+              </View>
+            </View>
+
+            <View style={{ height: 20 }} />
+          </ScrollView>
         </View>
-        <TouchableOpacity 
-          onPress={() => router.push("/(cashier)/settings")} 
-          style={styles.settingsBtn}
-        >
-          <Settings size={24} color={colors.textSecondary} />
-        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Stats */}
-        <View style={styles.statsContainer}>
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <View key={index} style={[styles.statCard, { borderLeftColor: stat.color, backgroundColor: colors.card }]}>
-                <View style={[styles.iconContainer, { backgroundColor: stat.bgColor }]}>
-                  <Icon size={24} color={stat.color} />
-                </View>
-                <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
-                <Text style={[styles.statTitle, { color: colors.textSecondary }]}>{stat.title}</Text>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Quick Action - Start Transaction */}
-        <TouchableOpacity 
-          style={[styles.startButton, { backgroundColor: colors.primary }]}
-          onPress={() => router.push("/(cashier)/workspace")}
-        >
-          <ShoppingCart size={24} color="#ffffff" />
-          <Text style={styles.startButtonText}>Mulai Transaksi Baru</Text>
-        </TouchableOpacity>
-
-        {/* Recent Transactions */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Transaksi Terkini</Text>
-          <View style={[styles.emptyCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Belum ada transaksi</Text>
-            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Mulai berjualan untuk melihat transaksi</Text>
-          </View>
-        </View>
-
-        <View style={{ height: 20 }} />
-      </ScrollView>
-
-      <CashierBottomNav />
+      {/* Cash Drawer Modal */}
+      <CashDrawerModal
+        visible={drawerModalVisible}
+        mode={drawerModalMode}
+        onClose={() => setDrawerModalVisible(false)}
+        onSuccess={handleDrawerModalSuccess}
+      />
     </View>
   );
 }
@@ -185,5 +207,13 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 12,
     marginTop: 4,
+  },
+  landscapeMaster: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  landscapeContent: {
+    flex: 1,
+    flexDirection: 'column',
   },
 });

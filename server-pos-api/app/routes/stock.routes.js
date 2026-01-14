@@ -30,7 +30,7 @@ router.get('/valuation',
 
 router.get('/low-stock',
     verifyToken,
-    requireRole(['ADMIN', 'OWNER']),
+    requireRole(['ADMIN', 'OWNER', 'CASHIER']),
     StockController.getLowStockProducts
 );
 

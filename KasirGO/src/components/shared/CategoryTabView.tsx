@@ -31,11 +31,13 @@ export default function CategoryTabView({
   const { colors } = useTheme();
   const layout = useWindowDimensions();
   const { isLandscape: isLand, isTablet: isTab } = useOrientation();
-  
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
-  const [routes, setRoutes] = useState<any[]>([]);
+  const [routes, setRoutes] = useState<any[]>([
+    { key: 'all', title: 'Semua', categoryId: null }
+  ]);
 
   useEffect(() => {
     loadCategories();
@@ -47,20 +49,22 @@ export default function CategoryTabView({
       const response = await getAllCategories();
       if (response.success && response.data) {
         setCategories(response.data);
-        
-        // Create routes with "Semua" as first tab
+
         const categoryRoutes = [
           { key: 'all', title: 'Semua', categoryId: null },
           ...response.data.map(cat => ({
-            key: `cat_${cat.id}`,
-            title: cat.name,
-            categoryId: cat.id
+            key: `cat_${cat.category_id}`,
+            title: cat.category_name,
+            categoryId: cat.category_id
           }))
         ];
         setRoutes(categoryRoutes);
+      } else {
+        setRoutes([{ key: 'all', title: 'Semua', categoryId: null }]);
       }
     } catch (error) {
       console.error("Error loading categories:", error);
+      setRoutes([{ key: 'all', title: 'Semua', categoryId: null }]);
     } finally {
       setLoading(false);
     }
@@ -77,7 +81,7 @@ export default function CategoryTabView({
           selectedCategoryId={categoryId}
           onBrandFilter={onBrandFilter}
         />
-        
+
         {/* Products */}
         <View style={{ flex: 1 }}>
           <ProductsByCategory
@@ -97,9 +101,9 @@ export default function CategoryTabView({
       {...props}
       indicatorStyle={{ backgroundColor: colors.primary }}
       style={{ backgroundColor: colors.surface }}
-      labelStyle={{ 
-        fontSize: 14, 
-        fontWeight: '600', 
+      labelStyle={{
+        fontSize: 14,
+        fontWeight: '600',
         textTransform: 'none',
         marginHorizontal: 4
       }}

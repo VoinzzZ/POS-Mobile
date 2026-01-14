@@ -78,11 +78,10 @@ model m_user {
   m_role                  m_role?                @relation(fields: [role_id], references: [role_id])
   m_tenant                m_tenant?              @relation(fields: [tenant_id], references: [tenant_id])
   s_email_verification    s_email_verification[]
-  s_password_reset        s_password_reset[]
   s_registration_pin      s_registration_pin[]
   s_registration_tenant   s_registration_tenant?
   s_registration_user     s_registration_user?
-  s_user_session          s_user_session[]
+  t_transaction           t_transaction[]
 
   @@index([role_id])
   @@index([tenant_id])
@@ -112,19 +111,19 @@ model m_role {
 }
 
 model m_brand {
-  brand_id          Int          @id @default(autoincrement())
-  brand_name        String       @unique
-  brand_description String?      @db.Text
+  brand_id          Int         @id @default(autoincrement())
+  brand_name        String      @unique
+  brand_description String?     @db.Text
   brand_logo_url    String?
   tenant_id         Int
-  is_active         Boolean      @default(true)
+  is_active         Boolean     @default(true)
   created_by        Int?
   updated_by        Int?
   deleted_by        Int?
-  created_at        DateTime     @default(now())
-  updated_at        DateTime     @updatedAt
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
   deleted_at        DateTime?
-  m_tenant          m_tenant     @relation(fields: [tenant_id], references: [tenant_id])
+  m_tenant          m_tenant    @relation(fields: [tenant_id], references: [tenant_id])
   m_product         m_product[]
 
   @@index([tenant_id])
@@ -177,8 +176,8 @@ model m_product {
   m_category            m_category?             @relation(fields: [category_id], references: [category_id])
   m_tenant              m_tenant                @relation(fields: [tenant_id], references: [tenant_id])
   t_stock_movement      t_stock_movement[]
-  t_purchase_order_item t_purchase_order_item[]
   t_stock_opname        t_stock_opname[]
+  t_transaction_item    t_transaction_item[]
 
   @@index([brand_id])
   @@index([category_id])
@@ -208,20 +207,7 @@ model s_email_verification {
   @@map("s_email_verification")
 }
 
-model s_password_reset {
-  id         Int      @id @default(autoincrement())
-  user_id    Int
-  code       String   @db.VarChar(10)
-  expires_at DateTime
-  used       Boolean  @default(false)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  m_user     m_user   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@index([user_id])
-  @@index([code])
-  @@map("s_password_reset")
-}
 
 model s_registration_pin {
   id                  Int                   @id @default(autoincrement())
@@ -287,49 +273,7 @@ model s_registration_user {
   @@map("s_registration_user")
 }
 
-model s_user_session {
-  id            Int      @id @default(autoincrement())
-  user_id       Int
-  token         String   @unique @db.VarChar(500)
-  refresh_token String?  @unique @db.VarChar(500)
-  expires_at    DateTime
-  device_id     String?  @db.VarChar(255)
-  device_name   String?
-  device_os     String?
-  app_version   String?
-  session_ip    String?
-  user_agent    String?
-  is_active     Boolean  @default(true)
-  last_activity DateTime @default(now())
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-  m_user        m_user   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@index([user_id])
-  @@index([token])
-  @@map("s_user_session")
-}
-
-model s_audit_log {
-  id          Int      @id @default(autoincrement())
-  user_id     Int?
-  tenant_id   Int?
-  action      String   @db.VarChar(50)
-  entity_type String   @db.VarChar(50)
-  entity_id   Int?
-  old_values  Json?
-  new_values  Json?
-  ip_address  String?
-  user_agent  String?
-  device_info Json?
-  created_at  DateTime @default(now())
-
-  @@index([user_id])
-  @@index([tenant_id])
-  @@index([entity_type, entity_id])
-  @@index([action])
-  @@map("s_audit_log")
-}
 
 enum tenant_status {
   PENDING
@@ -364,12 +308,7 @@ enum reference_type {
   OPNAME
 }
 
-enum po_status {
-  DRAFT
-  PENDING
-  RECEIVED
-  CANCELLED
-}
+
 
 model t_stock_movement {
   movement_id    Int            @id @default(autoincrement())
@@ -394,56 +333,21 @@ model t_stock_movement {
   @@map("t_stock_movement")
 }
 
-model t_purchase_order {
-  po_id                 Int                     @id @default(autoincrement())
-  po_number             String                  @unique
-  supplier_name         String
-  po_date               DateTime
-  po_status             po_status               @default(PENDING)
-  total_amount          Decimal                 @db.Decimal(12, 2)
-  notes                 String?                 @db.Text
-  tenant_id             Int
-  created_by            Int?
-  updated_by            Int?
-  created_at            DateTime                @default(now())
-  updated_at            DateTime                @updatedAt
-  received_at           DateTime?
-  t_purchase_order_item t_purchase_order_item[]
 
-  @@index([tenant_id])
-  @@index([po_status])
-  @@index([po_date])
-  @@map("t_purchase_order")
-}
-
-model t_purchase_order_item {
-  po_item_id    Int              @id @default(autoincrement())
-  po_id         Int
-  product_id    Int
-  quantity      Int
-  cost_per_unit Decimal          @db.Decimal(10, 2)
-  subtotal      Decimal          @db.Decimal(12, 2)
-  t_purchase_order t_purchase_order @relation(fields: [po_id], references: [po_id], onDelete: Cascade)
-  m_product     m_product        @relation(fields: [product_id], references: [product_id])
-
-  @@index([po_id])
-  @@index([product_id])
-  @@map("t_purchase_order_item")
-}
 
 model t_stock_opname {
-  opname_id  Int       @id @default(autoincrement())
-  product_id Int
-  system_qty Int
-  actual_qty Int
-  difference Int
-  notes      String?   @db.Text
-  tenant_id  Int
-  created_by Int?
-  created_at DateTime  @default(now())
-  processed  Boolean   @default(false)
+  opname_id    Int       @id @default(autoincrement())
+  product_id   Int
+  system_qty   Int
+  actual_qty   Int
+  difference   Int
+  notes        String?   @db.Text
+  tenant_id    Int
+  created_by   Int?
+  created_at   DateTime  @default(now())
+  processed    Boolean   @default(false)
   processed_at DateTime?
-  m_product  m_product @relation(fields: [product_id], references: [product_id])
+  m_product    m_product @relation(fields: [product_id], references: [product_id])
 
   @@index([product_id])
   @@index([tenant_id])
@@ -451,3 +355,62 @@ model t_stock_opname {
   @@index([processed])
   @@map("t_stock_opname")
 }
+
+enum transaction_status {
+  DRAFT
+  LOCKED
+  COMPLETED
+  CANCELLED
+}
+
+enum payment_method {
+  CASH
+  QRIS
+  DEBIT
+}
+
+model t_transaction {
+  transaction_id             Int                  @id @default(autoincrement())
+  tenant_id                  Int
+  transaction_cashier_id     Int
+  transaction_total          Decimal              @db.Decimal(12, 2)
+  transaction_payment_amount Decimal?             @db.Decimal(12, 2)
+  transaction_change_amount  Decimal?             @db.Decimal(12, 2)
+  transaction_payment_method payment_method?
+  transaction_status         transaction_status   @default(DRAFT)
+  transaction_completed_at   DateTime?
+  transaction_created_at     DateTime             @default(now())
+  transaction_updated_at     DateTime?
+  transaction_updated_by     Int?
+  deleted_at                 DateTime?
+  deleted_by                 Int?
+  m_user                     m_user               @relation(fields: [transaction_cashier_id], references: [user_id])
+  t_transaction_item         t_transaction_item[]
+
+  @@index([tenant_id])
+  @@index([transaction_cashier_id])
+  @@index([transaction_status])
+  @@index([transaction_created_at])
+  @@map("t_transaction")
+}
+
+model t_transaction_item {
+  transaction_item_id         Int           @id @default(autoincrement())
+  transaction_id              Int
+  transaction_item_product_id Int
+  transaction_item_quantity   Int
+  transaction_item_price      Decimal       @db.Decimal(10, 2)
+  transaction_item_subtotal   Decimal       @db.Decimal(12, 2)
+  t_transaction               t_transaction @relation(fields: [transaction_id], references: [transaction_id], onDelete: Cascade)
+  m_product                   m_product     @relation(fields: [transaction_item_product_id], references: [product_id])
+
+  @@index([transaction_id])
+  @@index([transaction_item_product_id])
+  @@map("t_transaction_item")
+}
+
+
+
+
+
+

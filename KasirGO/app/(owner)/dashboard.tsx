@@ -1,8 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { useAuth } from "../../src/context/AuthContext";
-import { DollarSign, TrendingUp, Users, Briefcase, Settings } from "lucide-react-native";
+import { TrendingUp, Settings } from "lucide-react-native";
 import OwnerBottomNav from "../../src/components/navigation/OwnerBottomNav";
+import FinancialSummaryCard from "../../src/components/owner/FinancialSummaryCard";
+import EmployeePerformanceList from "../../src/components/owner/EmployeePerformanceList";
 import RevenueChart from "../../src/components/shared/RevenueChart";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -11,37 +13,6 @@ export default function OwnerDashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const { colors } = useTheme();
-
-  const stats = [
-    {
-      title: "Total Pendapatan",
-      value: "Rp 24,500,000",
-      icon: DollarSign,
-      color: "#10b981",
-      bgColor: "#064e3b",
-    },
-    {
-      title: "Margin Laba",
-      value: "32.5%",
-      icon: TrendingUp,
-      color: "#3b82f6",
-      bgColor: "#1e3a8a",
-    },
-    {
-      title: "Total Transaksi",
-      value: "3,247",
-      icon: Briefcase,
-      color: "#f59e0b",
-      bgColor: "#78350f",
-    },
-    {
-      title: "Karyawan",
-      value: "12",
-      icon: Users,
-      color: "#ec4899",
-      bgColor: "#831843",
-    },
-  ];
 
   const quickActions = [
     {
@@ -68,23 +39,8 @@ export default function OwnerDashboard() {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <View key={index} style={[styles.statCard, { backgroundColor: colors.card }]}>
-                <View style={[styles.iconContainer, { backgroundColor: stat.bgColor }]}>
-                  <Icon size={24} color={stat.color} />
-                </View>
-                <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
-                <Text style={[styles.statTitle, { color: colors.textSecondary }]}>{stat.title}</Text>
-              </View>
-            );
-          })}
-        </View>
+        <FinancialSummaryCard />
 
-        {/* Revenue Chart */}
         <View style={styles.chartSection}>
           <RevenueChart />
         </View>
@@ -99,7 +55,10 @@ export default function OwnerDashboard() {
           </View>
         </View>
 
-        
+        {/* Employee Performance */}
+        <EmployeePerformanceList />
+
+
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Aksi Cepat</Text>
@@ -156,33 +115,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    padding: 16,
-    gap: 12,
-  },
-  statCard: {
-    width: "48%",
-    padding: 16,
-    borderRadius: 12,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  statTitle: {
-    fontSize: 12,
   },
   chartSection: {
     paddingHorizontal: 20,

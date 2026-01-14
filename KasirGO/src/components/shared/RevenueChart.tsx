@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from "react-native";
 import { Calendar, TrendingUp } from "lucide-react-native";
-import Svg, { Line, Circle, Text as SvgText, Rect } from "react-native-svg";
+import Svg, { Line, Circle, Text as SvgText } from "react-native-svg";
 import { useTheme } from "../../context/ThemeContext";
+import { getRevenueReport } from "../../api/financial";
 
 interface RevenueChartProps {
   containerStyle?: any;
@@ -13,105 +14,233 @@ type ViewMode = "weekly" | "yearly";
 const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
   const { colors } = useTheme();
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
+  const [loading, setLoading] = useState(true);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
 
-  // Dummy data untuk weekly view (7 hari terakhir)
-  const weeklyData = [
-    { label: "Mon", value: 2400000 },
-    { label: "Tue", value: 1800000 },
-    { label: "Wed", value: 3200000 },
-    { label: "Thu", value: 2900000 },
-    { label: "Fri", value: 3800000 },
-    { label: "Sat", value: 4200000 },
-    { label: "Sun", value: 3500000 },
-  ];
+  useEffect(() => {
+    fetchRevenueData();
+  }, [viewMode]);
 
-  // Dummy data untuk yearly view (12 bulan)
-  const yearlyData = [
-    { label: "Jan", value: 45000000 },
-    { label: "Feb", value: 52000000 },
-    { label: "Mar", value: 48000000 },
-    { label: "Apr", value: 61000000 },
-    { label: "May", value: 55000000 },
-    { label: "Jun", value: 67000000 },
-    { label: "Jul", value: 72000000 },
-    { label: "Aug", value: 68000000 },
-    { label: "Sep", value: 74000000 },
-    { label: "Oct", value: 79000000 },
-    { label: "Nov", value: 82000000 },
-    { label: "Dec", value: 780000 },
-  ];
+  const fetchRevenueData = async () => {
+    try {
+      setLoading(true);
+      const groupBy = viewMode === "weekly" ? "day" : "month";
+      const response = await getRevenueReport({ group_by: groupBy });
 
-  const currentData = viewMode === "weekly" ? weeklyData : yearlyData;
-  const maxValue = Math.max(...currentData.map((d) => d.value));
-  const minValue = Math.min(...currentData.map((d) => d.value));
+      console.log('Revenue report response:', response);
+      console.log('Revenue data:', response.data);
+
+      if (response.success && response.data && response.data.length > 0) {
+        const processedData = viewMode === "weekly"
+          ? processWeeklyData(response.data)
+          : processMonthlyData(response.data);
+        console.log('Using processed data:', processedData);
+        setRevenueData(processedData);
+      } else {
+        console.log('No real data, using fallback');
+        const fallbackData = viewMode === "weekly"
+          ? generateWeeklyFallback()
+          : generateMonthlyFallback();
+        setRevenueData(fallbackData);
+      }
+    } catch (error) {
+      console.error("Error fetching revenue data:", error);
+      const fallbackData = viewMode === "weekly"
+        ? generateWeeklyFallback()
+        : generateMonthlyFallback();
+      setRevenueData(fallbackData);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const processWeeklyData = (apiData: any[]) => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+    const weekData = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + mondayOffset + i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      const dayData = apiData.find(item => item.period === dateStr);
+      weekData.push(dayData || {
+        period: dateStr,
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+        transactions: 0,
+        profitMargin: 0,
+      });
+    }
+    return weekData;
+  };
+
+  const processMonthlyData = (apiData: any[]) => {
+    const currentYear = new Date().getFullYear();
+    const monthData = [];
+
+    for (let i = 1; i <= 12; i++) {
+      const monthStr = `${currentYear}-${String(i).padStart(2, '0')}`;
+      const monthItem = apiData.find(item => item.period === monthStr);
+      monthData.push(monthItem || {
+        period: monthStr,
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+        transactions: 0,
+        profitMargin: 0,
+      });
+    }
+    return monthData;
+  };
+
+  const generateWeeklyFallback = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+    const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    return days.map((day, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() + mondayOffset + index);
+      return {
+        period: date.toISOString().split('T')[0],
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+        transactions: 0,
+        profitMargin: 0,
+      };
+    });
+  };
+
+  const generateMonthlyFallback = () => {
+    const currentYear = new Date().getFullYear();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    return months.map((month, index) => ({
+      period: `${currentYear}-${String(index + 1).padStart(2, '0')}`,
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+      transactions: 0,
+      profitMargin: 0,
+    }));
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.card }, containerStyle]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            Memuat data chart...
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  const chartData = revenueData.map((item) => {
+    let label = "";
+    if (viewMode === "weekly") {
+      const dateStr = item.period;
+      const date = new Date(dateStr);
+      const dayOfWeek = date.getDay();
+      const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+      label = days[dayOfWeek];
+    } else {
+      const monthNum = parseInt(item.period.split("-")[1]);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+      label = months[monthNum - 1] || item.period;
+    }
+
+    return {
+      label,
+      value: item.revenue || 0,
+    };
+  });
+
+  const maxValue = Math.max(...chartData.map((d) => d.value), 1); // Minimum 1 to avoid division by zero
+  const minValue = Math.min(...chartData.map((d) => d.value), 0);
 
   const chartWidth = Dimensions.get("window").width - 80;
   const chartHeight = 200;
   const paddingTop = 20;
   const paddingBottom = 30;
-  const paddingLeft = 10;
+  const paddingLeft = 50;
   const paddingRight = 10;
 
   const graphHeight = chartHeight - paddingTop - paddingBottom;
   const graphWidth = chartWidth - paddingLeft - paddingRight;
 
   const getY = (value: number) => {
+    if (maxValue === minValue || maxValue === 0) {
+      return paddingTop + graphHeight / 2;
+    }
     const normalized = (value - minValue) / (maxValue - minValue);
     return paddingTop + graphHeight * (1 - normalized);
   };
 
   const getX = (index: number) => {
-    const spacing = graphWidth / (currentData.length - 1);
+    const spacing = graphWidth / Math.max(chartData.length - 1, 1);
     return paddingLeft + index * spacing;
   };
 
-  const formatValue = (value: number) => {
-    if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(1)}M`;
+  const formatCurrencyCompact = (amount: number): string => {
+    if (amount >= 1000000000) {
+      return `Rp ${(amount / 1000000000).toFixed(1)}M`;
+    } else if (amount >= 1000000) {
+      return `Rp ${(amount / 1000000).toFixed(1)}jt`;
+    } else if (amount >= 1000) {
+      return `Rp ${(amount / 1000).toFixed(0)}rb`;
     }
-    if (value >= 1000) {
-      return `${(value / 1000).toFixed(0)}K`;
-    }
-    return value.toString();
+    return `Rp ${amount.toLocaleString('id-ID')}`;
   };
 
-  const totalRevenue = currentData.reduce((sum, item) => sum + item.value, 0);
-  const averageRevenue = totalRevenue / currentData.length;
+  const totalRevenue = chartData.reduce((sum, item) => sum + item.value, 0);
+  const averageRevenue = chartData.length > 0 ? totalRevenue / chartData.length : 0;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }, containerStyle]}>
+    <View style={[styles.container, { backgroundColor: colors.card }, containerStyle]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <TrendingUp size={20} color={colors.primary} />
           <Text style={[styles.title, { color: colors.text }]}>Ikhtisar Pendapatan</Text>
         </View>
-        <View style={[styles.toggleContainer, { backgroundColor: colors.card }]}>
+        <View style={[styles.toggleContainer, { backgroundColor: colors.background }]}>
           <TouchableOpacity
             style={[
-              styles.toggleButton, 
-              viewMode === "weekly" && { backgroundColor: colors.primary }
+              styles.toggleButton,
+              viewMode === "weekly" && { backgroundColor: colors.primary },
             ]}
             onPress={() => setViewMode("weekly")}
           >
-            <Text style={[
-              styles.toggleText,
-              { color: viewMode === "weekly" ? "#ffffff" : colors.textSecondary }
-            ]}>
+            <Text
+              style={[
+                styles.toggleText,
+                { color: viewMode === "weekly" ? "#ffffff" : colors.textSecondary },
+              ]}
+            >
               Minggu
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
-              styles.toggleButton, 
-              viewMode === "yearly" && { backgroundColor: colors.primary }
+              styles.toggleButton,
+              viewMode === "yearly" && { backgroundColor: colors.primary },
             ]}
             onPress={() => setViewMode("yearly")}
           >
-            <Text style={[
-              styles.toggleText,
-              { color: viewMode === "yearly" ? "#ffffff" : colors.textSecondary }
-            ]}>
+            <Text
+              style={[
+                styles.toggleText,
+                { color: viewMode === "yearly" ? "#ffffff" : colors.textSecondary },
+              ]}
+            >
               Tahun
             </Text>
           </TouchableOpacity>
@@ -119,21 +248,56 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
       </View>
 
       {/* Summary Stats */}
-      <View style={[styles.summaryContainer, { backgroundColor: colors.card, borderColor: colors.card, borderWidth: 1 }]}>
+      <View
+        style={[
+          styles.summaryContainer,
+          { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1 },
+        ]}
+      >
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total</Text>
-          <Text style={[styles.summaryValue, { color: colors.text }]}>Rp {formatValue(totalRevenue)}</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>
+            {formatCurrencyCompact(totalRevenue)}
+          </Text>
         </View>
         <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Rata-rata</Text>
-          <Text style={[styles.summaryValue, { color: colors.text }]}>Rp {formatValue(averageRevenue)}</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>
+            {formatCurrencyCompact(averageRevenue)}
+          </Text>
         </View>
       </View>
 
       {/* Chart */}
       <View style={styles.chartContainer}>
         <Svg width={chartWidth} height={chartHeight}>
+          {/* Y-axis Labels */}
+          {[1, 0.75, 0.5, 0.25, 0].map((ratio, index) => {
+            const y = paddingTop + graphHeight * (1 - ratio);
+            const value = minValue + (maxValue - minValue) * ratio;
+            let label = '';
+            if (value >= 1000000) {
+              label = `${(value / 1000000).toFixed(1)}jt`;
+            } else if (value >= 1000) {
+              label = `${(value / 1000).toFixed(0)}rb`;
+            } else {
+              label = `${Math.round(value)}`;
+            }
+            return (
+              <SvgText
+                key={`y-${index}`}
+                x={5}
+                y={y + 4}
+                fill={colors.textSecondary}
+                fontSize="10"
+                fontWeight="500"
+              >
+                {label}
+              </SvgText>
+            );
+          })}
+
           {/* Grid Lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
             const y = paddingTop + graphHeight * (1 - ratio);
@@ -152,12 +316,12 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
           })}
 
           {/* Line Graph */}
-          {currentData.map((point, index) => {
-            if (index === currentData.length - 1) return null;
+          {chartData.map((point, index) => {
+            if (index === chartData.length - 1) return null;
             const x1 = getX(index);
             const y1 = getY(point.value);
             const x2 = getX(index + 1);
-            const y2 = getY(currentData[index + 1].value);
+            const y2 = getY(chartData[index + 1].value);
 
             return (
               <Line
@@ -173,20 +337,27 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
           })}
 
           {/* Data Points */}
-          {currentData.map((point, index) => {
+          {chartData.map((point, index) => {
             const x = getX(index);
             const y = getY(point.value);
 
             return (
               <React.Fragment key={`point-${index}`}>
-                <Circle cx={x} cy={y} r="6" fill={colors.background} stroke={colors.primary} strokeWidth="3" />
+                <Circle
+                  cx={x}
+                  cy={y}
+                  r="6"
+                  fill={colors.background}
+                  stroke={colors.primary}
+                  strokeWidth="3"
+                />
                 <Circle cx={x} cy={y} r="3" fill={colors.primary} />
               </React.Fragment>
             );
           })}
 
           {/* Labels */}
-          {currentData.map((point, index) => {
+          {chartData.map((point, index) => {
             const x = getX(index);
             const y = chartHeight - 10;
 
@@ -224,6 +395,22 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
     padding: 16,
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+    gap: 8,
+  },
+  loadingText: {
+    fontSize: 12,
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 14,
   },
   header: {
     flexDirection: "row",

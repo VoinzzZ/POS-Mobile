@@ -84,12 +84,22 @@ export const transactionService = {
   // Create new transaction (draft)
   createTransaction: async (payload: TransactionPayload): Promise<ApiResponse<Transaction>> => {
     const response = await axiosInstance.post('/transactions', payload);
+
+    // Transform the server data to match our interface
+    if (response.data.success && response.data.data) {
+      const transformedData = {
+        ...response.data,
+        data: transformTransaction(response.data.data)
+      };
+      return transformedData;
+    }
+
     return response.data;
   },
 
   // Complete payment for transaction
   completePayment: async (
-    transactionId: number, 
+    transactionId: number,
     payment_amount: number,
     payment_method: 'CASH' | 'QRIS' | 'DEBIT' = 'CASH'
   ): Promise<ApiResponse<Transaction>> => {
@@ -97,6 +107,16 @@ export const transactionService = {
       payment_amount,
       payment_method
     });
+
+    // Transform the server data to match our interface
+    if (response.data.success && response.data.data) {
+      const transformedData = {
+        ...response.data,
+        data: transformTransaction(response.data.data)
+      };
+      return transformedData;
+    }
+
     return response.data;
   },
 

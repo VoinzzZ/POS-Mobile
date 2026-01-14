@@ -1,44 +1,38 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
-  Dimensions,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { ShoppingCart, Plus, Minus, X } from "lucide-react-native";
+import { ShoppingCart } from "lucide-react-native";
 import { useRouter } from 'expo-router';
-import CashierBottomNav from "../../src/components/navigation/CashierBottomNav";
+import CashierSidebar from "../../src/components/navigation/CashierSidebar";
 import CategoryTabView from "../../src/components/shared/CategoryTabView";
+import CartItem from "../../src/components/cashier/CartItem";
+import CartSummary from "../../src/components/cashier/CartSummary";
+import PaymentModal from "../../src/components/cashier/PaymentModal";
 import { useTheme } from "../../src/context/ThemeContext";
 import { Product } from "../../src/api/product";
 import { transactionService } from "../../src/api/transaction";
-import { useOrientation } from "../../src/hooks/useOrientation";
 
 export default function WorkspaceScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const bottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ['15%', '50%', '90%'], []);
 
   const [selectedBrandId, setSelectedBrandId] = useState<number | null>(null);
   const [selectedBrandName, setSelectedBrandName] = useState<string>("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  
-  // Cart state
+
   interface CartItem extends Product {
     quantity: number;
   }
   const [cart, setCart] = useState<CartItem[]>([]);
-
-  const handleSheetChanges = useCallback((index: number) => {
-    console.log('Bottom sheet changed to index:', index);
-  }, []);
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
   const handleBrandFilter = (brandId: number | null, brandName: string) => {
     setSelectedBrandId(brandId);
@@ -49,14 +43,12 @@ export default function WorkspaceScreen() {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
-        // Update quantity
         return prevCart.map(item =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       } else {
-        // Add new item
         return [...prevCart, { ...product, quantity }];
       }
     });
@@ -80,7 +72,6 @@ export default function WorkspaceScreen() {
 
   const clearCart = () => {
     setCart([]);
-    bottomSheetRef.current?.close();
   };
 
   const getTotalItems = () => {
@@ -91,260 +82,143 @@ export default function WorkspaceScreen() {
     return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (cart.length === 0) return;
+    setPaymentModalVisible(true);
+  };
 
+  const handlePaymentComplete = async (paymentData: {
+    payment_amount: number;
+    payment_method: "CASH" | "QRIS" | "DEBIT";
+  }) => {
     setCheckoutLoading(true);
     try {
-      // Prepare transaction payload
       const transactionPayload = {
         items: cart.map(item => ({
-          productId: item.id,
+          product_id: item.id,
           quantity: item.quantity
         }))
       };
 
-      console.log('🚀 Transaction Payload:', JSON.stringify(transactionPayload, null, 2));
+      const createResponse = await transactionService.createTransaction(transactionPayload);
+      if (createResponse.success && createResponse.data) {
+        const completeResponse = await transactionService.completePayment(
+          createResponse.data.id,
+          paymentData.payment_amount,
+          paymentData.payment_method
+        );
 
-      // Create transaction
-      const response = await transactionService.createTransaction(transactionPayload);
-      if (response.success && response.data) {
-        // Navigate to payment screen
-        router.push(`/(cashier)/transaction/${response.data.id}`);
-        // Clear cart after successful transaction creation
-        setCart([]);
-        bottomSheetRef.current?.close();
+        if (completeResponse.success && completeResponse.data) {
+          setCart([]);
+          setPaymentModalVisible(false);
+          router.push(`/(cashier)/receipt/${completeResponse.data.id}`);
+        }
       }
     } catch (error: any) {
-      console.error('Error creating transaction:', error);
-      const message = error.response?.data?.message || 'Failed to create transaction';
-      Alert.alert('Error', message);
+      console.error('Error processing payment:', error);
+      const message = error.response?.data?.message || 'Gagal memproses pembayaran';
+      throw new Error(message);
     } finally {
       setCheckoutLoading(false);
     }
   };
 
-  const renderCartItem = (item: CartItem) => {
-    const subtotal = item.price * item.quantity;
-    
-    return (
-      <View key={item.id} style={[styles.cartItem, { borderBottomColor: colors.border }]}>
-        <View style={styles.cartItemHeader}>
-          <View style={styles.cartItemInfo}>
-            <Text style={[styles.cartItemName, { color: colors.text }]} numberOfLines={1}>
-              {item.name}
-            </Text>
-            <Text style={[styles.cartItemPrice, { color: colors.textSecondary }]}>
-              Rp {item.price.toLocaleString("id-ID")} × {item.quantity}
-            </Text>
-          </View>
-          {item.quantity > 1 && (
-            <Text style={[styles.cartItemSubtotal, { color: colors.primary }]}>
-              Rp {subtotal.toLocaleString("id-ID")}
-            </Text>
-          )}
-        </View>
-        <View style={styles.cartItemActions}>
-          <View style={styles.quantityControls}>
-            <TouchableOpacity
-              style={[styles.quantityButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-              onPress={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-              activeOpacity={0.7}
-            >
-              <Minus size={20} color={colors.text} strokeWidth={2.5} />
-            </TouchableOpacity>
-            <View style={[styles.quantityDisplay, { backgroundColor: colors.card }]}>
-              <Text style={[styles.quantityText, { color: colors.text }]}>
-                {item.quantity}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.quantityButton, { backgroundColor: colors.primary }]}
-              onPress={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-              activeOpacity={0.7}
-            >
-              <Plus size={20} color="#fff" strokeWidth={2.5} />
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            style={[styles.removeButton, { backgroundColor: "#fee2e2" }]}
-            onPress={() => removeFromCart(item.id)}
-            activeOpacity={0.7}
-          >
-            <X size={20} color="#ef4444" strokeWidth={2.5} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
-
-  const { isLandscape: isLand, isTablet: isTab } = useOrientation();
-
   return (
-    <GestureHandlerRootView style={[styles.container, isLand && isTab ? styles.landscapeContainer : {}, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, isLand && isTab ? styles.landscapeHeader : {}, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.title, isLand && isTab ? styles.landscapeTitle : {}, { color: colors.text }]}>Workspace</Text>
-        <Text style={[styles.subtitle, isLand && isTab ? styles.landscapeSubtitle : {}, { color: colors.textSecondary }]}>
-          Geser tab kiri/kanan untuk pindah kategori
-        </Text>
-      </View>
+    <GestureHandlerRootView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.landscapeMaster}>
+        <CashierSidebar />
+        <View style={styles.landscapeContent}>
+          <View style={[styles.header, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.title, { color: colors.text }]}>Workspace</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Pilih produk dan kelola keranjang belanja
+            </Text>
+          </View>
 
-      {/* Category TabView with Brand Filter and Products */}
-      <View style={{ flex: 1 }}>
-        <CategoryTabView
-          selectedBrandId={selectedBrandId}
-          selectedBrandName={selectedBrandName}
-          onBrandFilter={handleBrandFilter}
-          onAddToCart={addToCart}
-        />
-      </View>
-
-      {/* Bottom Sheet Cart - Only show on portrait or phone landscape */}
-      {!isLand || !isTab ? (
-        <>
-          {cart.length > 0 && (
-            <BottomSheet
-              ref={bottomSheetRef}
-              index={1}
-              snapPoints={snapPoints}
-              onChange={handleSheetChanges}
-              backgroundStyle={{ backgroundColor: colors.card }}
-              handleIndicatorStyle={{ backgroundColor: colors.border }}
-              enablePanDownToClose={false}
-            >
-              {/* Cart Summary Header */}
-              <View style={[styles.cartSummary, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                <View style={styles.cartSummaryLeft}>
-                  <View style={[styles.cartIconBadge, { backgroundColor: colors.primary }]}>
-                    <ShoppingCart size={20} color="#fff" />
-                    <View style={styles.cartBadge}>
-                      <Text style={styles.cartBadgeText}>{getTotalItems()}</Text>
-                    </View>
-                  </View>
-                  <View>
-                    <Text style={[styles.cartSummaryTitle, { color: colors.text }]}>
-                      {getTotalItems()} Item{getTotalItems() > 1 ? 's' : ''}
-                    </Text>
-                    <Text style={[styles.cartSummaryPrice, { color: colors.primary }]}>
-                      Rp {getTotalPrice().toLocaleString("id-ID")}
-                    </Text>
-                  </View>
-                </View>
-                <TouchableOpacity onPress={clearCart}>
-                  <Text style={[styles.clearCartText, { color: "#ef4444" }]}>
-                    Kosongkan
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Cart Items */}
-              <BottomSheetScrollView
-                style={styles.cartItemsScroll}
-                showsVerticalScrollIndicator={false}
-              >
-                <View style={styles.cartItemsContainer}>
-                  {cart.map(renderCartItem)}
-                </View>
-                <View style={{ height: 80 }} />
-              </BottomSheetScrollView>
-            </BottomSheet>
-          )}
-
-          {/* Floating Checkout Button */}
-          {cart.length > 0 && (
-            <TouchableOpacity
-              style={[
-                styles.checkoutFAB,
-                { backgroundColor: colors.primary },
-                checkoutLoading && styles.disabledButton
-              ]}
-              onPress={handleCheckout}
-              disabled={checkoutLoading}
-            >
-              {checkoutLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <ShoppingCart size={24} color="#fff" />
-                  <Text style={styles.checkoutFABText}>Checkout</Text>
-                  <View style={styles.checkoutBadge}>
-                    <Text style={styles.checkoutBadgeText}>{getTotalItems()}</Text>
-                  </View>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-        </>
-      ) : (
-        // For landscape tablet, show cart as a side panel
-        <View style={styles.landscapeCartContainer}>
-          {cart.length > 0 ? (
-            <>
-              {/* Cart Summary Header */}
-              <View style={[styles.landscapeCartSummary, { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                <View style={styles.cartSummaryLeft}>
-                  <View style={[styles.cartIconBadge, { backgroundColor: colors.primary }]}>
-                    <ShoppingCart size={20} color="#fff" />
-                    <View style={styles.cartBadge}>
-                      <Text style={styles.cartBadgeText}>{getTotalItems()}</Text>
-                    </View>
-                  </View>
-                  <View>
-                    <Text style={[styles.cartSummaryTitle, { color: colors.text }]}>
-                      {getTotalItems()} Item{getTotalItems() > 1 ? 's' : ''}
-                    </Text>
-                    <Text style={[styles.cartSummaryPrice, { color: colors.primary }]}>
-                      Rp {getTotalPrice().toLocaleString("id-ID")}
-                    </Text>
-                  </View>
-                </View>
-                <TouchableOpacity onPress={clearCart}>
-                  <Text style={[styles.clearCartText, { color: "#ef4444" }]}>
-                    Kosongkan
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Cart Items */}
-              <View style={styles.landscapeCartItemsScroll}>
-                <View style={styles.cartItemsContainer}>
-                  {cart.map(renderCartItem)}
-                </View>
-              </View>
-
-              {/* Checkout Button for landscape tablet */}
-              <TouchableOpacity
-                style={[
-                  styles.landscapeCheckoutButton,
-                  { backgroundColor: colors.primary },
-                  checkoutLoading && styles.disabledButton
-                ]}
-                onPress={handleCheckout}
-                disabled={checkoutLoading}
-              >
-                {checkoutLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <ShoppingCart size={24} color="#fff" />
-                    <Text style={styles.checkoutFABText}>Checkout</Text>
-                    <View style={styles.checkoutBadge}>
-                      <Text style={styles.checkoutBadgeText}>{getTotalItems()}</Text>
-                    </View>
-                  </>
-                )}
-              </TouchableOpacity>
-            </>
-          ) : (
-            <View style={styles.emptyLandscapeCart}>
-              <Text style={{ color: colors.textSecondary }}>Keranjang kosong</Text>
+          <View style={styles.landscapeLayout}>
+            <View style={styles.catalogSection}>
+              <CategoryTabView
+                selectedBrandId={selectedBrandId}
+                selectedBrandName={selectedBrandName}
+                onBrandFilter={handleBrandFilter}
+                onAddToCart={addToCart}
+              />
             </View>
-          )}
-        </View>
-      )}
 
-      <CashierBottomNav />
+            <View style={[styles.cartSection, { backgroundColor: colors.surface, borderLeftColor: colors.border }]}>
+              {cart.length > 0 ? (
+                <>
+                  <CartSummary
+                    totalItems={getTotalItems()}
+                    totalPrice={getTotalPrice()}
+                    onClearCart={clearCart}
+                  />
+
+                  <ScrollView
+                    style={styles.cartItemsScroll}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <View style={styles.cartItemsContainer}>
+                      {cart.map((item) => (
+                        <CartItem
+                          key={item.id}
+                          item={{
+                            id: item.id,
+                            name: item.name,
+                            price: item.price,
+                            quantity: item.quantity
+                          }}
+                          onQuantityChange={updateCartItemQuantity}
+                          onRemove={removeFromCart}
+                        />
+                      ))}
+                    </View>
+                    <View style={{ height: 20 }} />
+                  </ScrollView>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.checkoutButton,
+                      { backgroundColor: colors.primary },
+                      checkoutLoading && styles.disabledButton
+                    ]}
+                    onPress={handleCheckout}
+                    disabled={checkoutLoading}
+                  >
+                    {checkoutLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <ShoppingCart size={20} color="#fff" />
+                        <Text style={styles.checkoutButtonText}>
+                          Checkout ({getTotalItems()})
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <View style={styles.emptyCart}>
+                  <ShoppingCart size={64} color={colors.textSecondary} opacity={0.3} />
+                  <Text style={[styles.emptyCartText, { color: colors.textSecondary }]}>
+                    Keranjang Kosong
+                  </Text>
+                  <Text style={[styles.emptyCartSubtext, { color: colors.textSecondary }]}>
+                    Pilih produk untuk memulai transaksi
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <PaymentModal
+        visible={paymentModalVisible}
+        cart={cart}
+        onClose={() => setPaymentModalVisible(false)}
+        onPaymentComplete={handlePaymentComplete}
+      />
     </GestureHandlerRootView>
   );
 }
@@ -585,7 +459,61 @@ const styles = StyleSheet.create({
   },
   emptyLandscapeCart: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 32,
+  },
+  landscapeMaster: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  landscapeContent: {
+    flex: 1,
+    flexDirection: "column",
+  },
+  landscapeLayout: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  catalogSection: {
+    flex: 3,
+    minWidth: "60%",
+  },
+  cartSection: {
+    flex: 2,
+    minWidth: "40%",
+    borderLeftWidth: 1,
+  },
+  checkoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    margin: 16,
+    marginTop: 8,
+  },
+  checkoutButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  emptyCart: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 32,
+    gap: 12,
+  },
+  emptyCartText: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 12,
+  },
+  emptyCartSubtext: {
+    fontSize: 14,
+    textAlign: "center",
   },
 });

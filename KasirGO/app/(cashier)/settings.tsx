@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from "react-native";
 import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight, Moon, Sun } from "lucide-react-native";
-import CashierBottomNav from "../../src/components/navigation/CashierBottomNav";
+import CashierSidebar from "../../src/components/navigation/CashierSidebar";
+import { useOrientation } from "../../src/hooks/useOrientation";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter } from "expo-router";
@@ -30,30 +31,32 @@ export default function SettingsScreen() {
       icon: User,
       title: "Profil",
       subtitle: "Kelola informasi profil Anda",
-      onPress: () => {},
+      onPress: () => { },
     },
     {
       icon: Bell,
       title: "Notifikasi",
       subtitle: "Atur preferensi notifikasi",
-      onPress: () => {},
+      onPress: () => { },
     },
     {
       icon: Lock,
       title: "Keamanan",
       subtitle: "Password dan pengaturan keamanan",
-      onPress: () => {},
+      onPress: () => { },
     },
     {
       icon: HelpCircle,
       title: "Bantuan & Dukungan",
       subtitle: "Dapatkan bantuan dan hubungi support",
-      onPress: () => {},
+      onPress: () => { },
     },
   ];
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+  const { isLandscape: isLand, isTablet: isTab } = useOrientation();
+
+  const renderContent = () => (
+    <>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <Text style={[styles.title, { color: colors.text }]}>Pengaturan</Text>
       </View>
@@ -85,10 +88,10 @@ export default function SettingsScreen() {
         {/* User Info Card */}
         <View style={[styles.userCard, { backgroundColor: colors.card }]}>
           <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={styles.avatarText}>{user?.userName?.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.avatarText}>{user?.user_name?.charAt(0).toUpperCase()}</Text>
           </View>
           <View style={styles.userInfo}>
-            <Text style={[styles.userName, { color: colors.text }]}>{user?.userName}</Text>
+            <Text style={[styles.userName, { color: colors.text }]}>{user?.user_name}</Text>
             <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
             <View style={styles.roleBadge}>
               <Text style={styles.roleText}>{user?.role}</Text>
@@ -129,8 +132,17 @@ export default function SettingsScreen() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+    </>
+  );
 
-      <CashierBottomNav />
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.landscapeMaster}>
+        <CashierSidebar />
+        <View style={styles.landscapeContent}>
+          {renderContent()}
+        </View>
+      </View>
     </View>
   );
 }
@@ -267,5 +279,14 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     fontWeight: "600",
+    marginLeft: 8,
+  },
+  landscapeMaster: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  landscapeContent: {
+    flex: 1,
+    flexDirection: "column",
   },
 });

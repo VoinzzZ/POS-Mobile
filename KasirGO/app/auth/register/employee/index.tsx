@@ -5,16 +5,17 @@ import { useTheme } from '@/src/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import ThemeToggle from '@/src/components/shared/ThemeToggle';
 import PinRegistrationContent from '@/src/components/auth/employee/PinRegistrationContent';
+import { useOrientation } from '@/src/hooks/useOrientation';
 
 export default function EmployeeRegistrationScreen() {
   const router = useRouter();
   const { colors, theme } = useTheme();
+  const { isLandscape: isLand } = useOrientation();
 
   const handleBackToRegisterType = () => {
     router.push('/auth/registerSelectType');
   };
 
-  // Set transparent StatusBar for auth screen
   useEffect(() => {
     StatusBar.setBarStyle("light-content");
     StatusBar.setBackgroundColor("transparent");
@@ -32,16 +33,29 @@ export default function EmployeeRegistrationScreen() {
         resizeMode="cover"
         style={styles.background}
       >
-        {/* Back Button - Top Left Corner */}
         <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: colors.card }]}
+          style={[
+            styles.backButton,
+            {
+              backgroundColor: colors.card,
+              top: isLand ? 30 : 75,
+              left: isLand ? 30 : 20,
+              width: isLand ? 50 : 40,
+              height: isLand ? 50 : 40,
+              borderRadius: isLand ? 25 : 20,
+            }
+          ]}
           onPress={handleBackToRegisterType}
         >
-          <Ionicons name="arrow-back" size={20} color={colors.text} />
+          <Ionicons name="arrow-back" size={isLand ? 24 : 20} color={colors.text} />
         </TouchableOpacity>
 
-        {/* Theme Toggle - Top Right Corner */}
-        <ThemeToggle />
+        <ThemeToggle
+          style={{
+            top: isLand ? 30 : 60,
+            right: isLand ? 30 : 20,
+          }}
+        />
 
         <PinRegistrationContent onBackToRegisterType={handleBackToRegisterType} />
       </ImageBackground>

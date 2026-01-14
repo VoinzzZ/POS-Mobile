@@ -36,11 +36,7 @@ const requireRole = (allowedRoles = []) => {
       let isUserApproved = fullUser.is_sa;
 
       if (!isUserApproved) {
-        if (fullUser.m_role?.role_code === 'OWNER') {
-          isUserApproved = !!fullUser.approved_at;
-        } else {
-          isUserApproved = !!fullUser.approved_at_owner;
-        }
+        isUserApproved = !!fullUser.approved_at;
       }
 
       if (!isUserApproved) {

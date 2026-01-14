@@ -11,8 +11,9 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { User, ArrowRight } from 'lucide-react-native';
+import { User, ArrowRight, Info } from 'lucide-react-native';
 import { registerEmployeeWithPinApi } from '@/src/api/auth';
+import { useOrientation } from '@/src/hooks/useOrientation';
 
 interface EmployeeData {
   user_email: string;
@@ -28,6 +29,7 @@ interface EmployeeDataContentProps {
 }
 
 export default function EmployeeDataContent({ colors, params, router }: EmployeeDataContentProps) {
+  const { isLandscape: isLand } = useOrientation();
   const [employeeData, setEmployeeData] = useState<EmployeeData>({
     user_email: '',
     user_name: '',
@@ -68,7 +70,6 @@ export default function EmployeeDataContent({ colors, params, router }: Employee
 
   const handleInputChange = (field: keyof EmployeeData, value: string) => {
     setEmployeeData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -81,8 +82,6 @@ export default function EmployeeDataContent({ colors, params, router }: Employee
 
     setLoading(true);
     try {
-      // Make API call to register employee with PIN and user data
-      // This is where PIN validation actually happens - if PIN is invalid, API will return error
       const response = await registerEmployeeWithPinApi({
         pin_registration: params.pin_registration,
         user_email: employeeData.user_email,
@@ -92,11 +91,10 @@ export default function EmployeeDataContent({ colors, params, router }: Employee
       });
 
       if (response.success) {
-        // Prepare data for next step - include registration ID from API response
         const combinedData = {
           pin_registration: params.pin_registration,
           ...employeeData,
-          registration_id: response.data?.user_id, // Use the user_id from response as registration_id
+          registration_id: response.data?.registration_id,
         };
 
         router.push({
@@ -114,171 +112,242 @@ export default function EmployeeDataContent({ colors, params, router }: Employee
     }
   };
 
+  const renderForm = () => (
+    <>
+      <View style={styles.inputGroup}>
+        <Text style={[styles.label, { color: colors.text, fontSize: isLand ? 17 : 16 }]}>
+          Email
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              borderColor: errors.user_email ? colors.error : colors.border,
+              color: colors.text,
+              fontSize: isLand ? 17 : 16,
+            }
+          ]}
+          value={employeeData.user_email}
+          onChangeText={(value) => handleInputChange('user_email', value)}
+          placeholder="contoh@email.com"
+          placeholderTextColor={colors.textSecondary}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+        />
+        {errors.user_email && (
+          <Text style={[styles.errorText, { color: colors.error, fontSize: isLand ? 15 : 14 }]}>
+            {errors.user_email}
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={[styles.label, { color: colors.text, fontSize: isLand ? 17 : 16 }]}>
+          Nama pengguna
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              borderColor: errors.user_name ? colors.error : colors.border,
+              color: colors.text,
+              fontSize: isLand ? 17 : 16,
+            }
+          ]}
+          value={employeeData.user_name}
+          onChangeText={(value) => handleInputChange('user_name', value)}
+          placeholder="Masukan nama pengguna"
+          placeholderTextColor={colors.textSecondary}
+          autoCapitalize="none"
+          autoComplete="username"
+        />
+        {errors.user_name && (
+          <Text style={[styles.errorText, { color: colors.error, fontSize: isLand ? 15 : 14 }]}>
+            {errors.user_name}
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={[styles.label, { color: colors.text, fontSize: isLand ? 17 : 16 }]}>
+          Nama Lengkap
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              borderColor: errors.user_full_name ? colors.error : colors.border,
+              color: colors.text,
+              fontSize: isLand ? 17 : 16,
+            }
+          ]}
+          value={employeeData.user_full_name}
+          onChangeText={(value) => handleInputChange('user_full_name', value)}
+          placeholder="Masukan nama lengkap"
+          placeholderTextColor={colors.textSecondary}
+          autoComplete="name"
+        />
+        {errors.user_full_name && (
+          <Text style={[styles.errorText, { color: colors.error, fontSize: isLand ? 15 : 14 }]}>
+            {errors.user_full_name}
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={[styles.label, { color: colors.text, fontSize: isLand ? 17 : 16 }]}>
+          Nomor Telepon
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.card,
+              borderColor: errors.user_phone ? colors.error : colors.border,
+              color: colors.text,
+              fontSize: isLand ? 17 : 16,
+            }
+          ]}
+          value={employeeData.user_phone}
+          onChangeText={(value) => handleInputChange('user_phone', value)}
+          placeholder="Contoh: 08123456789"
+          placeholderTextColor={colors.textSecondary}
+          keyboardType="phone-pad"
+          autoComplete="tel"
+        />
+        {errors.user_phone && (
+          <Text style={[styles.errorText, { color: colors.error, fontSize: isLand ? 15 : 14 }]}>
+            {errors.user_phone}
+          </Text>
+        )}
+      </View>
+
+      <TouchableOpacity
+        style={[
+          styles.nextButton,
+          loading && styles.buttonDisabled,
+          { backgroundColor: loading ? colors.disabled : colors.primary, paddingVertical: isLand ? 16 : 16 }
+        ]}
+        onPress={handleNext}
+        disabled={loading}
+      >
+        <Text style={[styles.nextButtonText, { color: colors.background, fontSize: isLand ? 17 : 16 }]}>
+          {loading ? 'Memproses...' : 'Lanjutkan'}
+        </Text>
+        <ArrowRight size={isLand ? 22 : 20} color="white" style={styles.buttonIcon} />
+      </TouchableOpacity>
+    </>
+  );
+
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}
-      >
+      {isLand ? (
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
-                <User size={24} color={colors.secondary} />
+          <View style={styles.landscapeRow}>
+            <View style={styles.leftColumn}>
+              <View style={styles.header}>
+                <View style={styles.headerContent}>
+                  <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
+                    <User size={28} color={colors.secondary} />
+                  </View>
+                  <Text style={[styles.title, { color: colors.text, fontSize: 26 }]}>
+                    Data Diri Karyawan
+                  </Text>
+                  <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: 16 }]}>
+                    Lengkapi data diri Anda
+                  </Text>
+                </View>
               </View>
-              <Text style={[styles.title, { color: colors.text }]}>
-                Data Diri Karyawan
-              </Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                Lengkapi data diri Anda
-              </Text>
+
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressDot, { backgroundColor: colors.primary, width: 10, height: 10 }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.primary, width: 28 }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.primary, width: 10, height: 10 }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.border, width: 28 }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.border, width: 10, height: 10 }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.border, width: 28 }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.border, width: 10, height: 10 }]} />
+              </View>
+
+              <View style={[styles.infoCard, { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
+                <View style={styles.infoCardHeader}>
+                  <Info size={22} color={colors.primary} />
+                  <Text style={[styles.infoCardTitle, { color: colors.primary, fontSize: 18 }]}>
+                    Informasi Data Diri
+                  </Text>
+                </View>
+                <View style={styles.infoCardList}>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                      Pastikan data yang diisi sesuai identitas
+                    </Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                      Email akan digunakan untuk verifikasi akun
+                    </Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                      Nomor telepon bersifat opsional
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.rightColumn}>
+              {renderForm()}
             </View>
           </View>
-
-          {/* Progress Indicator */}
-          <View style={styles.progressContainer}>
-            <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
-          </View>
-          {/* Email */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Email
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: errors.user_email ? colors.error : colors.border,
-                  color: colors.text
-                }
-              ]}
-              value={employeeData.user_email}
-              onChangeText={(value) => handleInputChange('user_email', value)}
-              placeholder="contoh@email.com"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
-            {errors.user_email && (
-              <Text style={[styles.errorText, { color: colors.error }]}>
-                {errors.user_email}
-              </Text>
-            )}
-          </View>
-
-          {/* Username */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Nama pengguna
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: errors.user_name ? colors.error : colors.border,
-                  color: colors.text
-                }
-              ]}
-              value={employeeData.user_name}
-              onChangeText={(value) => handleInputChange('user_name', value)}
-              placeholder="Masukan nama pemngguna"
-              placeholderTextColor={colors.textSecondary}
-              autoCapitalize="none"
-              autoComplete="username"
-            />
-            {errors.user_name && (
-              <Text style={[styles.errorText, { color: colors.error }]}>
-                {errors.user_name}
-              </Text>
-            )}
-          </View>
-
-          {/* Nama Lengkap */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Nama Lengkap
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: errors.user_full_name ? colors.error : colors.border,
-                  color: colors.text
-                }
-              ]}
-              value={employeeData.user_full_name}
-              onChangeText={(value) => handleInputChange('user_full_name', value)}
-              placeholder="Masukan nama lengkap"
-              placeholderTextColor={colors.textSecondary}
-              autoComplete="name"
-            />
-            {errors.user_full_name && (
-              <Text style={[styles.errorText, { color: colors.error }]}>
-                {errors.user_full_name}
-              </Text>
-            )}
-          </View>
-
-          {/* Nomor Telepon */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>
-              Nomor Telepon
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: errors.user_phone ? colors.error : colors.border,
-                  color: colors.text
-                }
-              ]}
-              value={employeeData.user_phone}
-              onChangeText={(value) => handleInputChange('user_phone', value)}
-              placeholder="Contoh: 08123456789"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="phone-pad"
-              autoComplete="tel"
-            />
-            {errors.user_phone && (
-              <Text style={[styles.errorText, { color: colors.error }]}>
-                {errors.user_phone}
-              </Text>
-            )}
-          </View>
-
-          {/* Button - Inside ScrollView */}
-          <TouchableOpacity
-            style={[
-              styles.nextButton,
-              loading && styles.buttonDisabled,
-              { backgroundColor: loading ? colors.disabled : colors.primary }
-            ]}
-            onPress={handleNext}
-            disabled={loading}
-          >
-            <Text style={[styles.nextButtonText, { color: colors.background }]}>
-              {loading ? 'Memproses...' : 'Lanjutkan'}
-            </Text>
-            <ArrowRight size={20} color="white" style={styles.buttonIcon} />
-          </TouchableOpacity>
-
         </ScrollView>
-      </KeyboardAvoidingView>
+      ) : (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoid}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.header}>
+              <View style={styles.headerContent}>
+                <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
+                  <User size={24} color={colors.secondary} />
+                </View>
+                <Text style={[styles.title, { color: colors.text }]}>
+                  Data Diri Karyawan
+                </Text>
+                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                  Lengkapi data diri Anda
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.progressContainer}>
+              <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
+              <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
+              <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
+              <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
+              <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
+              <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
+              <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
+            </View>
+
+            {renderForm()}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      )}
     </View>
   );
 }
@@ -339,6 +408,56 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     flexGrow: 1,
     justifyContent: 'center',
+  },
+  landscapeRow: {
+    flexDirection: 'row',
+    gap: 50,
+    paddingHorizontal: 60,
+    paddingTop: 200,
+    paddingBottom: 40,
+    flex: 1,
+  },
+  leftColumn: {
+    flex: 1,
+  },
+  rightColumn: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  infoCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+  },
+  infoCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  infoCardTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter_600SemiBold',
+    marginLeft: 8,
+  },
+  infoCardList: {
+    gap: 6,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bulletPoint: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 12,
+  },
+  infoItemText: {
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 20,
+    flex: 1,
   },
   inputGroup: {
     marginBottom: 20,

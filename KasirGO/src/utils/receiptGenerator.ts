@@ -13,7 +13,7 @@ interface ReceiptData {
 
 export const generateReceiptHTML = (data: ReceiptData): string => {
   const { transaction, companyName = "KasirGO POS", companyAddress = "", companyPhone = "" } = data;
-  
+
   const formatCurrency = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`;
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -32,7 +32,7 @@ export const generateReceiptHTML = (data: ReceiptData): string => {
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Receipt #${transaction.transaction_id}</title>
+      <title>Receipt #{transaction.id}</title>
       <style>
         * {
           margin: 0;
@@ -149,25 +149,25 @@ export const generateReceiptHTML = (data: ReceiptData): string => {
       <div class="transaction-info">
         <div>
           <span>Transaction ID:</span>
-          <span>#${transaction.transaction_id}</span>
+          <span>#${transaction.id}</span>
         </div>
         <div>
           <span>Date:</span>
-          <span>${formatDate(transaction.transaction_completed_at || transaction.transaction_created_at)}</span>
+          <span>${formatDate(transaction.completedAt || transaction.createdAt)}</span>
         </div>
         <div>
           <span>Cashier:</span>
-          <span>${transaction.cashier?.user_name || 'N/A'}</span>
+          <span>${transaction.cashier?.userName || 'N/A'}</span>
         </div>
       </div>
       
       <div class="items">
         ${transaction.items.map(item => `
           <div class="item">
-            <div class="item-name">${item.product.product_name}</div>
+            <div class="item-name">${item.product.name}</div>
             <div class="item-details">
-              <span>${formatCurrency(item.transaction_item_price)} x ${item.transaction_item_quantity}</span>
-              <span>${formatCurrency(item.transaction_item_subtotal)}</span>
+              <span>${formatCurrency(item.price)} x ${item.quantity}</span>
+              <span>${formatCurrency(item.subtotal)}</span>
             </div>
           </div>
         `).join('')}
@@ -176,23 +176,23 @@ export const generateReceiptHTML = (data: ReceiptData): string => {
       <div class="totals">
         <div class="total-row">
           <span>Subtotal:</span>
-          <span>${formatCurrency(transaction.transaction_total)}</span>
+          <span>${formatCurrency(transaction.total)}</span>
         </div>
         <div class="total-row grand-total">
           <span>TOTAL:</span>
-          <span>${formatCurrency(transaction.transaction_total)}</span>
+          <span>${formatCurrency(transaction.total)}</span>
         </div>
       </div>
       
-      ${transaction.transaction_payment_amount ? `
+      ${transaction.paymentAmount ? `
         <div class="payment-info">
           <div class="total-row">
             <span>Payment:</span>
-            <span>${formatCurrency(transaction.transaction_payment_amount)}</span>
+            <span>${formatCurrency(transaction.paymentAmount)}</span>
           </div>
           <div class="total-row">
             <span>Change:</span>
-            <span>${formatCurrency(transaction.transaction_change_amount || 0)}</span>
+            <span>${formatCurrency(transaction.changeAmount || 0)}</span>
           </div>
         </div>
       ` : ''}
@@ -210,7 +210,7 @@ export const generateReceiptHTML = (data: ReceiptData): string => {
 export const generateReceiptPDF = async (receiptData: ReceiptData): Promise<{ success: boolean; filePath?: string; error?: string }> => {
   try {
     const html = generateReceiptHTML(receiptData);
-    
+
     // Generate PDF using Expo Print
     const { uri } = await Print.printToFileAsync({
       html,
@@ -224,7 +224,7 @@ export const generateReceiptPDF = async (receiptData: ReceiptData): Promise<{ su
         bottom: 20,
       },
     });
-    
+
     if (uri) {
       return {
         success: true,
@@ -249,7 +249,7 @@ export const shareReceipt = async (filePath: string): Promise<boolean> => {
   try {
     // Check if sharing is available
     const isAvailable = await Sharing.isAvailableAsync();
-    
+
     if (isAvailable) {
       await Sharing.shareAsync(filePath, {
         mimeType: 'application/pdf',
@@ -277,13 +277,13 @@ export const saveReceiptToDownloads = async (filePath: string, fileName: string)
         from: filePath,
         to: downloadUri
       });
-      
+
       Alert.alert(
-        'Success', 
+        'Success',
         `Receipt saved as ${fileName}.pdf in app documents folder`,
         [{ text: 'OK' }]
       );
-      
+
       return true;
     } else {
       // For iOS, the file is already in Documents directory
@@ -292,13 +292,13 @@ export const saveReceiptToDownloads = async (filePath: string, fileName: string)
         from: filePath,
         to: documentUri
       });
-      
+
       Alert.alert(
         'Success',
         `Receipt saved as ${fileName}.pdf in Documents folder`,
         [{ text: 'OK' }]
       );
-      
+
       return true;
     }
   } catch (error: any) {

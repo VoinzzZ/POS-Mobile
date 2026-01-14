@@ -40,10 +40,27 @@ class UserController {
         role
       });
 
+      const usersFormatted = result.employees.map(emp => ({
+        user_id: emp.userId,
+        user_name: emp.userName,
+        user_full_name: emp.fullName,
+        user_email: emp.email,
+        user_phone: emp.phone,
+        user_role: emp.roleName,
+        user_is_verified: emp.isActive,
+        user_is_active: emp.isActive,
+        user_created_at: emp.createdAt,
+        user_updated_at: emp.createdAt,
+        user_last_login: emp.lastLogin
+      }));
+
       res.status(200).json({
         success: true,
         message: 'Employees retrieved successfully',
-        data: result
+        data: {
+          users: usersFormatted,
+          pagination: result.pagination
+        }
       });
     } catch (error) {
       res.status(500).json({

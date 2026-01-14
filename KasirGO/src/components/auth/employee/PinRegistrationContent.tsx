@@ -12,8 +12,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
-import { Key, ArrowLeft, ArrowRight, Info, CheckCircle } from 'lucide-react-native';
+import { Key, ArrowRight, Info, CheckCircle } from 'lucide-react-native';
 import { registerEmployeeWithPinApi, validateEmployeePinApi } from '@/src/api/auth';
+import { useOrientation } from '@/src/hooks/useOrientation';
 
 interface EmployeeData {
   pin_registration: string;
@@ -21,7 +22,7 @@ interface EmployeeData {
   user_name: string;
   user_full_name: string;
   user_phone: string;
-  registration_id?: string; // Added for tracking registration
+  registration_id?: string;
   preferred_role?: string;
 }
 
@@ -46,6 +47,7 @@ export default function PinRegistrationContent({ onBackToRegisterType }: PinRegi
 
   const router = useRouter();
   const { colors } = useTheme();
+  const { isLandscape: isLand } = useOrientation();
 
   const handleInputChange = (field: keyof EmployeeData, value: string) => {
     setEmployeeData(prev => ({ ...prev, [field]: value }));
@@ -178,302 +180,738 @@ export default function PinRegistrationContent({ onBackToRegisterType }: PinRegi
 
   return (
     <View style={styles.overlay}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoid}
-      >
-        {/* Fixed Header - Tidak ikut scroll */}
-        <View style={styles.fixedHeader}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
-                <Key size={24} color={colors.secondary} />
-              </View>
-              <Text style={[styles.title, { color: colors.text }]}>
-                Daftar sebagai Karyawan
-              </Text>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                Masukkan PIN dari pemilik toko
-              </Text>
-            </View>
-          </View>
-
-          {/* Progress Indicator */}
-          <View style={styles.progressContainer}>
-            <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
-          </View>
-
-          {/* PIN Info Card - Fixed */}
-          <View style={[styles.infoCard, { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
-            <View style={styles.infoCardHeader}>
-              <Info size={20} color={colors.primary} />
-              <Text style={[styles.infoCardTitle, { color: colors.primary }]}>
-                Informasi PIN
-              </Text>
-            </View>
-            <View style={styles.infoCardList}>
-              <View style={styles.infoItem}>
-                <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
-                <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-                  PIN diberikan oleh pemilik toko
-                </Text>
-              </View>
-              <View style={styles.infoItem}>
-                <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
-                <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-                  PIN berlaku selama 24 jam
-                </Text>
-              </View>
-              <View style={styles.infoItem}>
-                <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
-                <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-                  Satu PIN hanya bisa digunakan sekali
-                </Text>
-              </View>
-              <View style={styles.infoItem}>
-                <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
-                <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-                  Hubungi pemilik toko jika PIN tidak valid
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Scrollable Form */}
-        <View style={styles.container}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* PIN Section - Shown when PIN not yet validated */}
-            {!pinValidated && (
-              <>
-                <View style={styles.sectionContainer}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    PIN Registrasi
-                  </Text>
-
-                  <View style={styles.pinInputContainer}>
-                    <TextInput
-                      style={[
-                        styles.pinInput,
-                        {
-                          backgroundColor: colors.card,
-                          borderColor: errors.pin_registration ? colors.error : colors.border,
-                          color: colors.text
-                        }
-                      ]}
-                      value={employeeData.pin_registration}
-                      onChangeText={(value) => handleInputChange('pin_registration', value)}
-                      placeholder="PIN Registrasi"
-                      placeholderTextColor={colors.textSecondary}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                      secureTextEntry={false}
-                      textAlign="center"
-                      editable={!pinValidationLoading}
-                    />
+      {!isLand && (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoid}
+        >
+          {/* Fixed Header - Only show in portrait mode */}
+          {!isLand && (
+            <View style={styles.fixedHeader}>
+              {/* Header */}
+              <View style={styles.header}>
+                <View style={styles.headerContent}>
+                  <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
+                    <Key size={24} color={colors.secondary} />
                   </View>
+                  <Text style={[styles.title, { color: colors.text }]}>
+                    Daftar sebagai Karyawan
+                  </Text>
+                  <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                    Masukkan PIN dari pemilik toko
+                  </Text>
+                </View>
+              </View>
 
-                  {errors.pin_registration && (
-                    <Text style={[styles.errorText, { color: colors.error }]}>
-                      {errors.pin_registration}
+              {/* Progress Indicator */}
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.border }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.border }]} />
+              </View>
+
+              {/* PIN Info Card - Fixed */}
+              <View style={[styles.infoCard, { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
+                <View style={styles.infoCardHeader}>
+                  <Info size={20} color={colors.primary} />
+                  <Text style={[styles.infoCardTitle, { color: colors.primary }]}>
+                    Informasi PIN
+                  </Text>
+                </View>
+                <View style={styles.infoCardList}>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                      PIN diberikan oleh pemilik toko
                     </Text>
-                  )}
+                  </View>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                      PIN berlaku selama 24 jam
+                    </Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                      Satu PIN hanya bisa digunakan sekali
+                    </Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                      Hubungi pemilik toko jika PIN tidak valid
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Content: 2-Column layout for tablet landscape */}
+          {isLand ? (
+            <View style={styles.landscapeRow}>
+              {/* Left Column: Information */}
+              <View style={styles.leftColumn}>
+                <View style={styles.header}>
+                  <View style={styles.headerContent}>
+                    <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
+                      <Key size={28} color={colors.secondary} />
+                    </View>
+                    <Text style={[styles.title, { color: colors.text, fontSize: 26 }]}>
+                      Daftar sebagai Karyawan
+                    </Text>
+                    <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: 16 }]}>
+                      Masukkan PIN dari pemilik toko
+                    </Text>
+                  </View>
                 </View>
 
-                {/* Validate PIN Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.nextButton,
-                    pinValidationLoading && styles.buttonDisabled,
-                    { backgroundColor: pinValidationLoading ? colors.disabled : colors.primary }
-                  ]}
-                  onPress={handleValidatePin}
-                  disabled={pinValidationLoading}
-                >
-                  <Text style={[styles.nextButtonText, { color: colors.background }]}>
-                    {pinValidationLoading ? 'Memvalidasi...' : 'Validasi PIN'}
-                  </Text>
-                  <ArrowRight size={20} color="white" style={styles.buttonIcon} />
-                </TouchableOpacity>
-              </>
-            )}
+                <View style={styles.progressContainer}>
+                  <View style={[styles.progressDot, { backgroundColor: colors.primary, width: 10, height: 10 }]} />
+                  <View style={[styles.progressLine, { backgroundColor: colors.border, width: 28 }]} />
+                  <View style={[styles.progressDot, { backgroundColor: colors.border, width: 10, height: 10 }]} />
+                  <View style={[styles.progressLine, { backgroundColor: colors.border, width: 28 }]} />
+                  <View style={[styles.progressDot, { backgroundColor: colors.border, width: 10, height: 10 }]} />
+                  <View style={[styles.progressLine, { backgroundColor: colors.border, width: 28 }]} />
+                  <View style={[styles.progressDot, { backgroundColor: colors.border, width: 10, height: 10 }]} />
+                </View>
 
-            {/* User Data Section - Shown after PIN is validated */}
-            {pinValidated && (
-              <>
-                {/* PIN Validation Success Card */}
-                <View style={[styles.successCard, { backgroundColor: colors.success + '10', borderColor: colors.success, marginBottom: 20 }]}>
-                  <View style={styles.successCardHeader}>
-                    <CheckCircle size={20} color={colors.success} />
-                    <Text style={[styles.successCardTitle, { color: colors.success }]}>
-                      PIN Valid
+                <View style={[styles.infoCard, { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
+                  <View style={styles.infoCardHeader}>
+                    <Info size={22} color={colors.primary} />
+                    <Text style={[styles.infoCardTitle, { color: colors.primary, fontSize: 18 }]}>
+                      Informasi PIN
                     </Text>
                   </View>
                   <View style={styles.infoCardList}>
                     <View style={styles.infoItem}>
-                      <View style={[styles.bulletPoint, { backgroundColor: colors.success }]} />
-                      <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-                        Toko: {pinInfo.tenant_name || 'N/A'}
+                      <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                      <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                        PIN diberikan oleh pemilik toko
                       </Text>
                     </View>
                     <View style={styles.infoItem}>
-                      <View style={[styles.bulletPoint, { backgroundColor: colors.success }]} />
-                      <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-                        Peran: {pinInfo.role_name || 'N/A'}
+                      <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                      <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                        PIN berlaku selama 24 jam
+                      </Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                      <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                        Satu PIN hanya bisa digunakan sekali
+                      </Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                      <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                        Hubungi pemilik toko jika PIN tidak valid
                       </Text>
                     </View>
                   </View>
                 </View>
+              </View>
 
-                <View style={styles.sectionContainer}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    Data Diri Karyawan
-                  </Text>
-                </View>
+              {/* Right Column: Form */}
+              <View style={styles.rightColumn}>
+                {!pinValidated && (
+                  <>
+                    <View style={styles.sectionContainer}>
+                      <Text style={[styles.sectionTitle, { color: colors.text, fontSize: 20 }]}>
+                        PIN Registrasi
+                      </Text>
 
-                {/* Email */}
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>
-                    Email
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: colors.card,
-                        borderColor: errors.user_email ? colors.error : colors.border,
-                        color: colors.text
-                      }
-                    ]}
-                    value={employeeData.user_email}
-                    onChangeText={(value) => handleInputChange('user_email', value)}
-                    placeholder="contoh@email.com"
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoComplete="email"
-                  />
-                  {errors.user_email && (
-                    <Text style={[styles.errorText, { color: colors.error }]}>
-                      {errors.user_email}
-                    </Text>
-                  )}
-                </View>
+                      <View style={styles.pinInputContainer}>
+                        <TextInput
+                          style={[
+                            styles.pinInput,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: errors.pin_registration ? colors.error : colors.border,
+                              color: colors.text,
+                              fontSize: 22,
+                              paddingVertical: 18,
+                            }
+                          ]}
+                          value={employeeData.pin_registration}
+                          onChangeText={(value) => handleInputChange('pin_registration', value)}
+                          placeholder="PIN Registrasi"
+                          placeholderTextColor={colors.textSecondary}
+                          keyboardType="number-pad"
+                          maxLength={6}
+                          secureTextEntry={false}
+                          textAlign="center"
+                          editable={!pinValidationLoading}
+                        />
+                      </View>
 
-                {/* Username */}
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>
-                    Nama pengguna
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: colors.card,
-                        borderColor: errors.user_name ? colors.error : colors.border,
-                        color: colors.text
-                      }
-                    ]}
-                    value={employeeData.user_name}
-                    onChangeText={(value) => handleInputChange('user_name', value)}
-                    placeholder="Masukan nama pengguna"
-                    placeholderTextColor={colors.textSecondary}
-                    autoCapitalize="none"
-                    autoComplete="username"
-                  />
-                  {errors.user_name && (
-                    <Text style={[styles.errorText, { color: colors.error }]}>
-                      {errors.user_name}
-                    </Text>
-                  )}
-                </View>
+                      {errors.pin_registration && (
+                        <Text style={[styles.errorText, { color: colors.error, fontSize: 15 }]}>
+                          {errors.pin_registration}
+                        </Text>
+                      )}
+                    </View>
 
-                {/* Nama Lengkap */}
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>
-                    Nama Lengkap
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: colors.card,
-                        borderColor: errors.user_full_name ? colors.error : colors.border,
-                        color: colors.text
-                      }
-                    ]}
-                    value={employeeData.user_full_name}
-                    onChangeText={(value) => handleInputChange('user_full_name', value)}
-                    placeholder="Masukan nama lengkap"
-                    placeholderTextColor={colors.textSecondary}
-                    autoComplete="name"
-                  />
-                  {errors.user_full_name && (
-                    <Text style={[styles.errorText, { color: colors.error }]}>
-                      {errors.user_full_name}
-                    </Text>
-                  )}
-                </View>
-
-                {/* Nomor Telepon */}
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>
-                    Nomor Telepon
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: colors.card,
-                        borderColor: errors.user_phone ? colors.error : colors.border,
-                        color: colors.text
-                      }
-                    ]}
-                    value={employeeData.user_phone}
-                    onChangeText={(value) => handleInputChange('user_phone', value)}
-                    placeholder="Contoh: 08123456789"
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="phone-pad"
-                    autoComplete="tel"
-                  />
-                  {errors.user_phone && (
-                    <Text style={[styles.errorText, { color: colors.error }]}>
-                      {errors.user_phone}
-                    </Text>
-                  )}
-                </View>
-
-                {/* Complete Registration Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.nextButton,
-                    loading && styles.buttonDisabled,
-                    { backgroundColor: loading ? colors.disabled : colors.primary }
-                  ]}
-                  onPress={handleCompleteRegistration}
-                  disabled={loading}
+                    <TouchableOpacity
+                      style={[
+                        styles.nextButton,
+                        pinValidationLoading && styles.buttonDisabled,
+                        {
+                          backgroundColor: pinValidationLoading ? colors.disabled : colors.primary,
+                          paddingVertical: 16,
+                        }
+                      ]}
+                      onPress={handleValidatePin}
+                      disabled={pinValidationLoading}
+                    >
+                      <Text style={[styles.nextButtonText, { color: colors.background, fontSize: 17 }]}>
+                        {pinValidationLoading ? 'Memvalidasi...' : 'Validasi PIN'}
+                      </Text>
+                      <ArrowRight size={22} color="white" style={styles.buttonIcon} />
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </View>
+          ) : (
+            <>
+              {/* Scrollable Form - Portrait */}
+              <View style={styles.container}>
+                <ScrollView
+                  contentContainerStyle={styles.scrollContent}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
                 >
-                  <Text style={[styles.nextButtonText, { color: colors.background }]}>
-                    {loading ? 'Memproses...' : 'Lanjutkan ke Verifikasi'}
-                  </Text>
-                  <ArrowRight size={20} color="white" style={styles.buttonIcon} />
-                </TouchableOpacity>
-              </>
-            )}
+                  {/* PIN Section - Shown when PIN not yet validated */}
+                  {!pinValidated && (
+                    <>
+                      <View style={styles.sectionContainer}>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                          PIN Registrasi
+                        </Text>
 
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+                        <View style={styles.pinInputContainer}>
+                          <TextInput
+                            style={[
+                              styles.pinInput,
+                              {
+                                backgroundColor: colors.card,
+                                borderColor: errors.pin_registration ? colors.error : colors.border,
+                                color: colors.text
+                              }
+                            ]}
+                            value={employeeData.pin_registration}
+                            onChangeText={(value) => handleInputChange('pin_registration', value)}
+                            placeholder="PIN Registrasi"
+                            placeholderTextColor={colors.textSecondary}
+                            keyboardType="number-pad"
+                            maxLength={6}
+                            secureTextEntry={false}
+                            textAlign="center"
+                            editable={!pinValidationLoading}
+                          />
+                        </View>
+
+                        {errors.pin_registration && (
+                          <Text style={[styles.errorText, { color: colors.error }]}>
+                            {errors.pin_registration}
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Validate PIN Button */}
+                      <TouchableOpacity
+                        style={[
+                          styles.nextButton,
+                          pinValidationLoading && styles.buttonDisabled,
+                          { backgroundColor: pinValidationLoading ? colors.disabled : colors.primary }
+                        ]}
+                        onPress={handleValidatePin}
+                        disabled={pinValidationLoading}
+                      >
+                        <Text style={[styles.nextButtonText, { color: colors.background }]}>
+                          {pinValidationLoading ? 'Memvalidasi...' : 'Validasi PIN'}
+                        </Text>
+                        <ArrowRight size={20} color="white" style={styles.buttonIcon} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+
+                  {/* User Data Section - Shown after PIN is validated */}
+                  {pinValidated && (
+                    <>
+                      {/* PIN Validation Success Card */}
+                      <View style={[styles.successCard, { backgroundColor: colors.success + '10', borderColor: colors.success, marginBottom: 20 }]}>
+                        <View style={styles.successCardHeader}>
+                          <CheckCircle size={20} color={colors.success} />
+                          <Text style={[styles.successCardTitle, { color: colors.success }]}>
+                            PIN Valid
+                          </Text>
+                        </View>
+                        <View style={styles.infoCardList}>
+                          <View style={styles.infoItem}>
+                            <View style={[styles.bulletPoint, { backgroundColor: colors.success }]} />
+                            <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                              Toko: {pinInfo.tenant_name || 'N/A'}
+                            </Text>
+                          </View>
+                          <View style={styles.infoItem}>
+                            <View style={[styles.bulletPoint, { backgroundColor: colors.success }]} />
+                            <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                              Peran: {pinInfo.role_name || 'N/A'}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      <View style={styles.sectionContainer}>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                          Data Diri Karyawan
+                        </Text>
+                      </View>
+
+                      {/* Email */}
+                      <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: colors.text }]}>
+                          Email
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: errors.user_email ? colors.error : colors.border,
+                              color: colors.text
+                            }
+                          ]}
+                          value={employeeData.user_email}
+                          onChangeText={(value) => handleInputChange('user_email', value)}
+                          placeholder="contoh@email.com"
+                          placeholderTextColor={colors.textSecondary}
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          autoComplete="email"
+                        />
+                        {errors.user_email && (
+                          <Text style={[styles.errorText, { color: colors.error }]}>
+                            {errors.user_email}
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Username */}
+                      <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: colors.text }]}>
+                          Nama pengguna
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: errors.user_name ? colors.error : colors.border,
+                              color: colors.text
+                            }
+                          ]}
+                          value={employeeData.user_name}
+                          onChangeText={(value) => handleInputChange('user_name', value)}
+                          placeholder="Masukan nama pengguna"
+                          placeholderTextColor={colors.textSecondary}
+                          autoCapitalize="none"
+                          autoComplete="username"
+                        />
+                        {errors.user_name && (
+                          <Text style={[styles.errorText, { color: colors.error }]}>
+                            {errors.user_name}
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Nama Lengkap */}
+                      <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: colors.text }]}>
+                          Nama Lengkap
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: errors.user_full_name ? colors.error : colors.border,
+                              color: colors.text
+                            }
+                          ]}
+                          value={employeeData.user_full_name}
+                          onChangeText={(value) => handleInputChange('user_full_name', value)}
+                          placeholder="Masukan nama lengkap"
+                          placeholderTextColor={colors.textSecondary}
+                          autoComplete="name"
+                        />
+                        {errors.user_full_name && (
+                          <Text style={[styles.errorText, { color: colors.error }]}>
+                            {errors.user_full_name}
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Nomor Telepon */}
+                      <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: colors.text }]}>
+                          Nomor Telepon
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: errors.user_phone ? colors.error : colors.border,
+                              color: colors.text
+                            }
+                          ]}
+                          value={employeeData.user_phone}
+                          onChangeText={(value) => handleInputChange('user_phone', value)}
+                          placeholder="Contoh: 08123456789"
+                          placeholderTextColor={colors.textSecondary}
+                          keyboardType="phone-pad"
+                          autoComplete="tel"
+                        />
+                        {errors.user_phone && (
+                          <Text style={[styles.errorText, { color: colors.error }]}>
+                            {errors.user_phone}
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Complete Registration Button */}
+                      <TouchableOpacity
+                        style={[
+                          styles.nextButton,
+                          loading && styles.buttonDisabled,
+                          { backgroundColor: loading ? colors.disabled : colors.primary }
+                        ]}
+                        onPress={handleCompleteRegistration}
+                        disabled={loading}
+                      >
+                        <Text style={[styles.nextButtonText, { color: colors.background }]}>
+                          {loading ? 'Memproses...' : 'Lanjutkan ke Verifikasi'}
+                        </Text>
+                        <ArrowRight size={20} color="white" style={styles.buttonIcon} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+
+                </ScrollView>
+              </View>
+            </>
+          )}
+        </KeyboardAvoidingView>
+      )}
+
+      {/* Landscape mode content */}
+      {isLand && (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.landscapeRow}>
+            {/* Left Column: Information */}
+            <View style={styles.leftColumn}>
+              <View style={styles.header}>
+                <View style={styles.headerContent}>
+                  <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
+                    <Key size={28} color={colors.secondary} />
+                  </View>
+                  <Text style={[styles.title, { color: colors.text, fontSize: 26 }]}>
+                    Daftar sebagai Karyawan
+                  </Text>
+                  <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: 16 }]}>
+                    Masukkan PIN dari pemilik toko
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressDot, { backgroundColor: colors.primary, width: 10, height: 10 }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.border, width: 28 }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.border, width: 10, height: 10 }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.border, width: 28 }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.border, width: 10, height: 10 }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.border, width: 28 }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.border, width: 10, height: 10 }]} />
+              </View>
+
+              <View style={[styles.infoCard, { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
+                <View style={styles.infoCardHeader}>
+                  <Info size={22} color={colors.primary} />
+                  <Text style={[styles.infoCardTitle, { color: colors.primary, fontSize: 18 }]}>
+                    Informasi PIN
+                  </Text>
+                </View>
+                <View style={styles.infoCardList}>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                      PIN diberikan oleh pemilik toko
+                    </Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                      PIN berlaku selama 24 jam
+                    </Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                      Satu PIN hanya bisa digunakan sekali
+                    </Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                      Hubungi pemilik toko jika PIN tidak valid
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Right Column: Form */}
+            <View style={styles.rightColumn}>
+              {!pinValidated && (
+                <>
+                  <View style={styles.sectionContainer}>
+                    <Text style={[styles.sectionTitle, { color: colors.text, fontSize: 20 }]}>
+                      PIN Registrasi
+                    </Text>
+
+                    <View style={styles.pinInputContainer}>
+                      <TextInput
+                        style={[
+                          styles.pinInput,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: errors.pin_registration ? colors.error : colors.border,
+                            color: colors.text,
+                            fontSize: 22,
+                            paddingVertical: 18,
+                          }
+                        ]}
+                        value={employeeData.pin_registration}
+                        onChangeText={(value) => handleInputChange('pin_registration', value)}
+                        placeholder="PIN Registrasi"
+                        placeholderTextColor={colors.textSecondary}
+                        keyboardType="number-pad"
+                        maxLength={6}
+                        secureTextEntry={false}
+                        textAlign="center"
+                        editable={!pinValidationLoading}
+                      />
+                    </View>
+
+                    {errors.pin_registration && (
+                      <Text style={[styles.errorText, { color: colors.error, fontSize: 15 }]}>
+                        {errors.pin_registration}
+                      </Text>
+                    )}
+                  </View>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.nextButton,
+                      pinValidationLoading && styles.buttonDisabled,
+                      {
+                        backgroundColor: pinValidationLoading ? colors.disabled : colors.primary,
+                        paddingVertical: 16,
+                      }
+                    ]}
+                    onPress={handleValidatePin}
+                    disabled={pinValidationLoading}
+                  >
+                    <Text style={[styles.nextButtonText, { color: colors.background, fontSize: 17 }]}>
+                      {pinValidationLoading ? 'Memvalidasi...' : 'Validasi PIN'}
+                    </Text>
+                    <ArrowRight size={22} color="white" style={styles.buttonIcon} />
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {pinValidated && (
+                <>
+                  {/* PIN Validation Success Card */}
+                  <View style={[styles.successCard, { backgroundColor: colors.success + '10', borderColor: colors.success, marginBottom: 20 }]}>
+                    <View style={styles.successCardHeader}>
+                      <CheckCircle size={22} color={colors.success} />
+                      <Text style={[styles.successCardTitle, { color: colors.success, fontSize: 18 }]}>
+                        PIN Valid
+                      </Text>
+                    </View>
+                    <View style={styles.infoCardList}>
+                      <View style={styles.infoItem}>
+                        <View style={[styles.bulletPoint, { backgroundColor: colors.success, width: 7, height: 7 }]} />
+                        <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                          Toko: {pinInfo.tenant_name || 'N/A'}
+                        </Text>
+                      </View>
+                      <View style={styles.infoItem}>
+                        <View style={[styles.bulletPoint, { backgroundColor: colors.success, width: 7, height: 7 }]} />
+                        <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                          Peran: {pinInfo.role_name || 'N/A'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.sectionContainer}>
+                    <Text style={[styles.sectionTitle, { color: colors.text, fontSize: 20 }]}>
+                      Data Diri Karyawan
+                    </Text>
+                  </View>
+
+                  {/* Email */}
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text, fontSize: 17 }]}>
+                      Email
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: errors.user_email ? colors.error : colors.border,
+                          color: colors.text,
+                          fontSize: 17,
+                        }
+                      ]}
+                      value={employeeData.user_email}
+                      onChangeText={(value) => handleInputChange('user_email', value)}
+                      placeholder="contoh@email.com"
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoComplete="email"
+                    />
+                    {errors.user_email && (
+                      <Text style={[styles.errorText, { color: colors.error, fontSize: 15 }]}>
+                        {errors.user_email}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Username */}
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text, fontSize: 17 }]}>
+                      Nama pengguna
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: errors.user_name ? colors.error : colors.border,
+                          color: colors.text,
+                          fontSize: 17,
+                        }
+                      ]}
+                      value={employeeData.user_name}
+                      onChangeText={(value) => handleInputChange('user_name', value)}
+                      placeholder="Masukan nama pengguna"
+                      placeholderTextColor={colors.textSecondary}
+                      autoCapitalize="none"
+                      autoComplete="username"
+                    />
+                    {errors.user_name && (
+                      <Text style={[styles.errorText, { color: colors.error, fontSize: 15 }]}>
+                        {errors.user_name}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Nama Lengkap */}
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text, fontSize: 17 }]}>
+                      Nama Lengkap
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: errors.user_full_name ? colors.error : colors.border,
+                          color: colors.text,
+                          fontSize: 17,
+                        }
+                      ]}
+                      value={employeeData.user_full_name}
+                      onChangeText={(value) => handleInputChange('user_full_name', value)}
+                      placeholder="Masukan nama lengkap"
+                      placeholderTextColor={colors.textSecondary}
+                      autoComplete="name"
+                    />
+                    {errors.user_full_name && (
+                      <Text style={[styles.errorText, { color: colors.error, fontSize: 15 }]}>
+                        {errors.user_full_name}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Nomor Telepon */}
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: colors.text, fontSize: 17 }]}>
+                      Nomor Telepon
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: errors.user_phone ? colors.error : colors.border,
+                          color: colors.text,
+                          fontSize: 17,
+                        }
+                      ]}
+                      value={employeeData.user_phone}
+                      onChangeText={(value) => handleInputChange('user_phone', value)}
+                      placeholder="Contoh: 08123456789"
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="phone-pad"
+                      autoComplete="tel"
+                    />
+                    {errors.user_phone && (
+                      <Text style={[styles.errorText, { color: colors.error, fontSize: 15 }]}>
+                        {errors.user_phone}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Complete Registration Button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.nextButton,
+                      loading && styles.buttonDisabled,
+                      { backgroundColor: loading ? colors.disabled : colors.primary, paddingVertical: 16 }
+                    ]}
+                    onPress={handleCompleteRegistration}
+                    disabled={loading}
+                  >
+                    <Text style={[styles.nextButtonText, { color: colors.background, fontSize: 17 }]}>
+                      {loading ? 'Memproses...' : 'Lanjutkan ke Verifikasi'}
+                    </Text>
+                    <ArrowRight size={22} color="white" style={styles.buttonIcon} />
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+      )}
+
+
     </View>
   );
 }
@@ -481,13 +919,12 @@ export default function PinRegistrationContent({ onBackToRegisterType }: PinRegi
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    paddingTop: 80,
   },
   keyboardAvoid: {
     flex: 1,
   },
   fixedHeader: {
-    paddingTop: 80,
+    paddingTop: 65,
     paddingHorizontal: 24,
   },
   container: {
@@ -497,6 +934,21 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 20,
+  },
+  landscapeRow: {
+    flexDirection: 'row',
+    gap: 100,
+    paddingHorizontal: 60,
+    paddingTop: 200,
+    paddingBottom: 40,
+    flex: 1,
+  },
+  leftColumn: {
+    flex: 1,
+  },
+  rightColumn: {
+    flex: 1,
+    justifyContent: 'center',
   },
   header: {
     marginBottom: 16,

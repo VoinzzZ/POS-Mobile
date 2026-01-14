@@ -22,8 +22,6 @@ export default function AdminLayout() {
   if (userRole !== "ADMIN" && userRole !== "OWNER") {
     if (userRole === "CASHIER") {
       return <Redirect href="/(cashier)/dashboard" />;
-    } else if (userRole === "INVENTORY") {
-      return <Redirect href="/(inventory)/dashboard" />;
     }
     return <Redirect href="/auth/login" />;
   }

@@ -28,18 +28,19 @@ export default function CashierLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="dashboard" />
       <Stack.Screen name="workspace" />
+      <Stack.Screen name="product" />
       <Stack.Screen name="history" />
-      <Stack.Screen name="stock" />
       <Stack.Screen name="settings" />
-      <Stack.Screen 
-        name="edit-transaction/[id]" 
-        options={{ 
+      <Stack.Screen name="receipt/[id]" />
+      <Stack.Screen
+        name="edit-transaction/[id]"
+        options={{
           presentation: 'modal',
           gestureEnabled: true,
           gestureDirection: 'horizontal',
           animationTypeForReplace: 'push',
           headerShown: false
-        }} 
+        }}
       />
     </Stack>
   );

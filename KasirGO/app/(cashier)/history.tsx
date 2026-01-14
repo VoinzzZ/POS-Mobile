@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { History, Settings, Receipt, ChevronRight, Trash2 } from "lucide-react-native";
-import CashierBottomNav from "../../src/components/navigation/CashierBottomNav";
+import CashierSidebar from "../../src/components/navigation/CashierSidebar";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter, useFocusEffect } from "expo-router";
 import { transactionService, Transaction } from "../../src/api/transaction";
@@ -40,7 +40,7 @@ export default function HistoryScreen() {
       const today = new Date();
       const startDate = new Date(today.setHours(0, 0, 0, 0)).toISOString();
       const endDate = new Date(today.setHours(23, 59, 59, 999)).toISOString();
-      
+
       const response = await transactionService.getAllTransactions({
         startDate,
         endDate,
@@ -51,8 +51,8 @@ export default function HistoryScreen() {
       console.log('📦 Transaction Response:', JSON.stringify(response, null, 2));
       if (response.success) {
         // Check if data is array directly or nested in data.data
-        const transactionsData = Array.isArray(response.data) 
-          ? response.data 
+        const transactionsData = Array.isArray(response.data)
+          ? response.data
           : (response.data?.data || []);
         console.log('✅ Transactions loaded:', transactionsData.length);
         setTransactions(transactionsData);
@@ -221,7 +221,7 @@ export default function HistoryScreen() {
           <Receipt size={16} color={colors.primary} />
           <Text style={[styles.actionButtonText, { color: colors.primary }]}>Cetak Struk</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: '#ef444415' }]}
           onPress={() => handleDeleteTransaction(transaction.id)}
@@ -235,61 +235,58 @@ export default function HistoryScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Riwayat Transaksi</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/(cashier)/settings')}
-          style={styles.settingsBtn}
-        >
-          <Settings size={24} color={colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <View style={[styles.centered, { flex: 1 }]}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Memuat riwayat...
-          </Text>
-        </View>
-      ) : transactions.length === 0 ? (
-        <ScrollView
-          style={styles.scrollView}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          <View style={styles.emptyState}>
-            <History size={48} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.text }]}>
-              Belum ada transaksi
-            </Text>
-            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-              Riwayat transaksi akan muncul di sini
-            </Text>
+      <View style={styles.landscapeMaster}>
+        <CashierSidebar />
+        <View style={styles.landscapeContent}>
+          <View style={[styles.header, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.title, { color: colors.text }]}>Riwayat Transaksi</Text>
           </View>
-        </ScrollView>
-      ) : (
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          {transactions.map(renderTransactionItem)}
-        </ScrollView>
-      )}
 
-      <CashierBottomNav />
-      
-      {/* Transaction Edit Modal */}
-      <TransactionEditModal
-        visible={editModalVisible}
-        transactionId={selectedTransactionId}
-        onClose={handleEditModalClose}
-        onSaved={handleEditModalSaved}
-      />
+          {loading ? (
+            <View style={[styles.centered, { flex: 1 }]}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                Memuat riwayat...
+              </Text>
+            </View>
+          ) : transactions.length === 0 ? (
+            <ScrollView
+              style={styles.scrollView}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+            >
+              <View style={styles.emptyState}>
+                <History size={48} color={colors.textSecondary} />
+                <Text style={[styles.emptyText, { color: colors.text }]}>
+                  Belum ada transaksi
+                </Text>
+                <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+                  Riwayat transaksi akan muncul di sini
+                </Text>
+              </View>
+            </ScrollView>
+          ) : (
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+            >
+              {transactions.map(renderTransactionItem)}
+            </ScrollView>
+          )}
+
+          {/* Transaction Edit Modal */}
+          <TransactionEditModal
+            visible={editModalVisible}
+            transactionId={selectedTransactionId}
+            onClose={handleEditModalClose}
+            onSaved={handleEditModalSaved}
+          />
+        </View>
+      </View>
     </View>
   );
 }
@@ -426,5 +423,13 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  landscapeMaster: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  landscapeContent: {
+    flex: 1,
+    flexDirection: 'column',
   },
 });

@@ -31,7 +31,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
   return (
     <View style={[styles.overlay, isLand ? styles.landscapeOverlay : {}]}>
       {isLand ? (
-        <View style={[styles.gridMainContainer, { backgroundColor: colors.background }]}>
+        <View style={styles.gridMainContainer}>
           {/* Owner Option - Left side */}
           <View
             style={[
@@ -42,7 +42,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
           >
             <View style={styles.optionHeader}>
               <View style={[styles.iconContainer, styles.landscapeIconContainer, { backgroundColor: colors.primary + '20' }]}>
-                <Ionicons name="business" size={40} color={colors.primary} />
+                <Ionicons name="business" size={48} color={colors.primary} />
               </View>
               <View style={styles.optionHeaderText}>
                 <Text style={[styles.optionTitle, styles.landscapeOptionTitle, { color: colors.text }]}>
@@ -76,7 +76,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
               <Text style={[styles.registerButtonText, styles.landscapeRegisterButtonText, { color: colors.background }]}>
                 Daftar sebagai Pemilik Toko
               </Text>
-              <Ionicons name="arrow-forward" size={20} color={colors.background} />
+              <Ionicons name="arrow-forward" size={22} color={colors.background} />
             </TouchableOpacity>
           </View>
 
@@ -90,7 +90,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
           >
             <View style={styles.optionHeader}>
               <View style={[styles.iconContainer, styles.landscapeIconContainer, { backgroundColor: colors.secondary + '20' }]}>
-                <Ionicons name="people" size={40} color={colors.secondary} />
+                <Ionicons name="people" size={48} color={colors.secondary} />
               </View>
               <View style={styles.optionHeaderText}>
                 <Text style={[styles.optionTitle, styles.landscapeOptionTitle, { color: colors.text }]}>
@@ -124,7 +124,7 @@ export default function RegisterTypeContent({ onBackToLogin }: RegisterTypeConte
               <Text style={[styles.registerButtonText, styles.landscapeRegisterButtonText, { color: colors.background }]}>
                 Daftar sebagai Karyawan
               </Text>
-              <Ionicons name="arrow-forward" size={20} color={colors.background} />
+              <Ionicons name="arrow-forward" size={22} color={colors.background} />
             </TouchableOpacity>
           </View>
         </View>
@@ -276,6 +276,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   gridMainContainer: {
+    flex: 1,
     flexDirection: 'row',
     paddingHorizontal: 80,
     paddingVertical: 20,
@@ -310,10 +311,10 @@ const styles = StyleSheet.create({
     marginRight: 20,
   },
   landscapeIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    marginRight: 16,
+    width: 72,
+    height: 72,
+    borderRadius: 18,
+    marginRight: 18,
   },
   optionHeaderText: {
     flex: 1,
@@ -324,7 +325,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   landscapeOptionTitle: {
-    fontSize: 22,
+    fontSize: 26,
   },
   optionSubtitle: {
     fontSize: 16,
@@ -332,8 +333,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   landscapeOptionSubtitle: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 17,
+    lineHeight: 23,
   },
   featuresList: {
     gap: 8,
@@ -346,8 +347,8 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   landscapeFeatureItem: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 15,
+    lineHeight: 22,
   },
   registerButton: {
     borderRadius: 16,
@@ -363,9 +364,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   landscapeRegisterButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginTop: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 26,
+    marginTop: 16,
   },
   registerButtonText: {
     fontSize: 18,
@@ -373,6 +374,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   landscapeRegisterButtonText: {
-    fontSize: 16,
+    fontSize: 18,
   },
 });

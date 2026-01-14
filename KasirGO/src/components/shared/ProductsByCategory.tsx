@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
   Image,
+  FlatList,
 } from "react-native";
 import { Package, ShoppingCart } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
@@ -50,24 +50,24 @@ export default function ProductsByCategory({
     try {
       // Get all products first, then filter client-side for more flexibility
       const response = await getAllProducts();
-      
+
       if (response.success && response.data) {
         let filteredProducts = response.data;
-        
+
         // Filter by category if specified
         if (categoryId !== null) {
-          filteredProducts = filteredProducts.filter(product => 
-            product.brand?.categoryId === categoryId
+          filteredProducts = filteredProducts.filter(product =>
+            product.product_category_id === categoryId
           );
         }
-        
+
         // Filter by brand if specified
         if (brandId !== null) {
-          filteredProducts = filteredProducts.filter(product => 
-            product.brandId === brandId
+          filteredProducts = filteredProducts.filter(product =>
+            product.product_brand_id === brandId
           );
         }
-        
+
         setProducts(filteredProducts);
       } else {
         setProducts([]);
@@ -93,50 +93,82 @@ export default function ProductsByCategory({
   };
 
   const renderProductCard = (product: Product) => (
-    <TouchableOpacity
-      key={product.id}
-      style={[styles.productCard, { backgroundColor: colors.card }]}
-      onPress={() => handleAddToCart(product)}
-      activeOpacity={0.7}
-    >
-      {product.imageUrl ? (
-        <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
-      ) : (
-        <View style={[styles.productImagePlaceholder, { backgroundColor: colors.primary + "20" }]}>
-          <Package size={24} color={colors.primary} />
+    <View style={styles.productCard}>
+      <TouchableOpacity
+        style={[styles.productCardInner, { backgroundColor: colors.card }]}
+        onPress={() => handleAddToCart(product)}
+        activeOpacity={0.7}
+      >
+        {product.imageUrl ? (
+          <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
+        ) : (
+          <View style={[styles.productImagePlaceholder, { backgroundColor: colors.primary + "20" }]}>
+            <Package size={24} color={colors.primary} />
+          </View>
+        )}
+        <View style={styles.productInfo}>
+          <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>
+            {product.name}
+          </Text>
+          <Text style={[styles.productPrice, { color: colors.primary }]}>
+            Rp {product.price.toLocaleString("id-ID")}
+          </Text>
+          <View style={styles.productMeta}>
+            {product.m_category && (
+              <View style={[styles.badge, { backgroundColor: "#3b82f6" + "20" }]}>
+                <Text style={[styles.badgeText, { color: "#3b82f6" }]}>
+                  {product.m_category.category_name}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text style={[styles.productStock, {
+            color: product.stock < 10 ? "#ef4444" : colors.textSecondary
+          }]}>
+            Stok: {product.stock}
+          </Text>
         </View>
-      )}
-      <View style={styles.productInfo}>
-        <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>
-          {product.name}
-        </Text>
-        <Text style={[styles.productPrice, { color: colors.primary }]}>
-          Rp {product.price.toLocaleString("id-ID")}
-        </Text>
-        <View style={styles.productMeta}>
-          {product.brand?.category && (
-            <View style={[styles.badge, { backgroundColor: "#3b82f6" + "20" }]}>
-              <Text style={[styles.badgeText, { color: "#3b82f6" }]}>
-                {product.brand.category.name}
-              </Text>
-            </View>
-          )}
-          {product.brand && (
-            <View style={[styles.badge, { backgroundColor: "#f59e0b" + "20" }]}>
-              <Text style={[styles.badgeText, { color: "#f59e0b" }]}>
-                {product.brand.name}
-              </Text>
-            </View>
-          )}
-        </View>
-        <Text style={[styles.productStock, { 
-          color: product.stock < 10 ? "#ef4444" : colors.textSecondary 
-        }]}>
-          Stok: {product.stock}
-        </Text>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
+
+  const renderProducts = () => {
+    if (products.length === 0) {
+      return (
+        <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
+          <Package size={48} color={colors.textSecondary} />
+          <Text style={[styles.emptyText, { color: colors.text }]}>
+            Tidak ada produk
+          </Text>
+          <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+            {brandId !== null && brandName
+              ? `Belum ada produk untuk brand "${brandName}" dalam kategori "${categoryName}"`
+              : `Belum ada produk dalam kategori "${categoryName}"`
+            }
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={products}
+        renderItem={({ item }) => renderProductCard(item)}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={3}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+        contentContainerStyle={styles.flatListContent}
+        ListFooterComponent={<View style={{ height: 20 }} />}
+      />
+    );
+  };
 
   if (loading) {
     return (
@@ -167,38 +199,7 @@ export default function ProductsByCategory({
       </View>
 
       {/* Products Grid */}
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        {products.length === 0 ? (
-          <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
-            <Package size={48} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.text }]}>
-              Tidak ada produk
-            </Text>
-            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-              {brandId !== null && brandName 
-                ? `Belum ada produk untuk brand "${brandName}" dalam kategori "${categoryName}"`
-                : `Belum ada produk dalam kategori "${categoryName}"`
-              }
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.productsContainer}>
-            {products.map(renderProductCard)}
-          </View>
-        )}
-
-        <View style={{ height: 20 }} />
-      </ScrollView>
+      {renderProducts()}
     </View>
   );
 }
@@ -222,38 +223,50 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  productsContainer: {
-    paddingHorizontal: 20,
-    gap: 12,
+  flatListContent: {
+    paddingHorizontal: 14,
   },
-  productCard: {
+  productsGrid: {
+    paddingHorizontal: 14,
+  },
+  productRow: {
     flexDirection: "row",
-    padding: 12,
-    borderRadius: 12,
-    alignItems: "flex-start",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    justifyContent: "space-around",
     marginBottom: 12,
   },
+  productCard: {
+    width: "33.33%",
+    paddingHorizontal: 6,
+    marginBottom: 12,
+  },
+  productCardInner: {
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  productImageContainer: {
+    width: "100%",
+    height: 100, // Fixed height for image container
+    alignItems: "center",
+    justifyContent: "center",
+  },
   productImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 12,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   productImagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 12,
+    width: "100%",
+    height: 100,
     alignItems: "center",
     justifyContent: "center",
   },
   productInfo: {
-    flex: 1,
+    padding: 10,
   },
   productName: {
     fontSize: 14,

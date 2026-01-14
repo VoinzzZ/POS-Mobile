@@ -6,9 +6,11 @@ import {
   StyleSheet,
   SafeAreaView,
   Image,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Clock, Users, Mail, LogIn } from 'lucide-react-native';
+import { useOrientation } from '@/src/hooks/useOrientation';
 
 interface CompletionContentProps {
   colors: any;
@@ -21,6 +23,7 @@ export default function CompletionContent({
   params,
   router
 }: CompletionContentProps) {
+  const { isLandscape: isLand } = useOrientation();
 
   const handleGoToLogin = () => {
     router.replace('/auth/login');
@@ -28,106 +31,197 @@ export default function CompletionContent({
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.overlay}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Image
-              source={require("../../../../assets/images/KasirGOTrnsprt.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={[styles.title, { color: colors.text }]}>
-              Pendaftaran Berhasil!
+      {isLand ? (
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.landscapeRow}>
+            <View style={styles.leftColumn}>
+              <View style={styles.header}>
+                <View style={styles.headerContent}>
+                  <Image
+                    source={require("../../../../assets/images/KasirGOTrnsprt.png")}
+                    style={[styles.logo, { width: 250, height: 125 }]}
+                    resizeMode="contain"
+                  />
+                  <Text style={[styles.title, { color: colors.text, fontSize: 30 }]}>
+                    Pendaftaran Berhasil!
+                  </Text>
+                  <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: 18 }]}>
+                    Akun karyawan Anda telah berhasil dibuat
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.cardHeader}>
+                  <Users size={24} color={colors.primary} />
+                  <Text style={[styles.cardTitle, { color: colors.primary, fontSize: 20 }]}>
+                    Informasi Karyawan
+                  </Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary, fontSize: 16 }]}>Nama Lengkap:</Text>
+                  <Text style={[styles.infoValue, { color: colors.text, fontSize: 16 }]}>{params.user_full_name || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary, fontSize: 16 }]}>Email:</Text>
+                  <Text style={[styles.infoValue, { color: colors.text, fontSize: 16 }]}>{params.user_email || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary, fontSize: 16 }]}>Username:</Text>
+                  <Text style={[styles.infoValue, { color: colors.text, fontSize: 16 }]}>{params.user_name || 'N/A'}</Text>
+                </View>
+              </View>
+
+              <View style={[styles.approvalCard, { backgroundColor: colors.warning + '10', borderColor: colors.warning }]}>
+                <View style={styles.approvalHeader}>
+                  <Clock size={28} color={colors.warning} />
+                  <Text style={[styles.approvalTitle, { color: colors.warning, fontSize: 20 }]}>
+                    Menunggu Persetujuan
+                  </Text>
+                </View>
+                <Text style={[styles.approvalText, { color: colors.textSecondary, fontSize: 16 }]}>
+                  Akun Anda perlu disetujui oleh pemilik toko sebelum dapat digunakan. Proses ini biasanya cepat.
+                </Text>
+                <View style={styles.approvalSteps}>
+                  <Text style={[styles.stepText, { color: colors.textSecondary, fontSize: 16 }]}>
+                    • Pemilik toko akan meninjau data Anda
+                  </Text>
+                  <Text style={[styles.stepText, { color: colors.textSecondary, fontSize: 16 }]}>
+                    • Anda akan menerima email konfirmasi
+                  </Text>
+                  <Text style={[styles.stepText, { color: colors.textSecondary, fontSize: 16 }]}>
+                    • Setelah disetujui, Anda bisa login
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.rightColumn}>
+              <TouchableOpacity
+                style={[styles.loginButton, { backgroundColor: colors.primary }]}
+                onPress={handleGoToLogin}
+              >
+                <LogIn size={24} color={colors.background} />
+                <Text style={[styles.loginButtonText, { color: colors.background, fontSize: 18 }]}>
+                  Kembali ke Login
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.helpContainer}>
+                <Text style={[styles.helpText, { color: colors.textSecondary, fontSize: 16 }]}>
+                  Butuh bantuan?{' '}
+                  <Text
+                    style={[styles.helpLink, { color: colors.primary, fontSize: 16 }]}
+                    onPress={() => {
+                      const email = 'support@kasirgo.com';
+                      const subject = 'Bantuan Pendaftaran Akun Karyawan';
+                      const body = `Halo Tim Support KasirGO,\n\nSaya membutuhkan bantuan untuk pendaftaran akun dengan detail berikut:\nNama Lengkap: ${params.user_full_name || 'N/A'}\nEmail: ${params.user_email || 'N/A'}\nUsername: ${params.user_name || 'N/A'}\n\nTerima kasih.`;
+
+                      if (typeof window !== 'undefined' && window.open) {
+                        window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                      }
+                    }}
+                  >
+                    Hubungi tim support kami
+                  </Text>
+                </Text>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      ) : (
+        <View style={styles.overlay}>
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Image
+                source={require("../../../../assets/images/KasirGOTrnsprt.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <Text style={[styles.title, { color: colors.text }]}>
+                Pendaftaran Berhasil!
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                Akun karyawan Anda telah berhasil dibuat
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.cardHeader}>
+              <Users size={20} color={colors.primary} />
+              <Text style={[styles.cardTitle, { color: colors.primary }]}>
+                Informasi Karyawan
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Nama Lengkap:</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{params.user_full_name || 'N/A'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Email:</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{params.user_email || 'N/A'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Username:</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{params.user_name || 'N/A'}</Text>
+            </View>
+          </View>
+
+          <View style={[styles.approvalCard, { backgroundColor: colors.warning + '10', borderColor: colors.warning }]}>
+            <View style={styles.approvalHeader}>
+              <Clock size={24} color={colors.warning} />
+              <Text style={[styles.approvalTitle, { color: colors.warning }]}>
+                Menunggu Persetujuan
+              </Text>
+            </View>
+            <Text style={[styles.approvalText, { color: colors.textSecondary }]}>
+              Akun Anda perlu disetujui oleh pemilik toko sebelum dapat digunakan. Proses ini biasanya cepat.
             </Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Akun karyawan Anda telah berhasil dibuat
+            <View style={styles.approvalSteps}>
+              <Text style={[styles.stepText, { color: colors.textSecondary }]}>
+                • Pemilik toko akan meninjau data Anda
+              </Text>
+              <Text style={[styles.stepText, { color: colors.textSecondary }]}>
+                • Anda akan menerima email konfirmasi
+              </Text>
+              <Text style={[styles.stepText, { color: colors.textSecondary }]}>
+                • Setelah disetujui, Anda bisa login
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.loginButton, { backgroundColor: colors.primary }]}
+            onPress={handleGoToLogin}
+          >
+            <LogIn size={20} color={colors.background} />
+            <Text style={[styles.loginButtonText, { color: colors.background }]}>
+              Kembali ke Login
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.helpContainer}>
+            <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+              Butuh bantuan?{' '}
+              <Text
+                style={[styles.helpLink, { color: colors.primary }]}
+                onPress={() => {
+                  const email = 'support@kasirgo.com';
+                  const subject = 'Bantuan Pendaftaran Akun Karyawan';
+                  const body = `Halo Tim Support KasirGO,\n\nSaya membutuhkan bantuan untuk pendaftaran akun dengan detail berikut:\nNama Lengkap: ${params.user_full_name || 'N/A'}\nEmail: ${params.user_email || 'N/A'}\nUsername: ${params.user_name || 'N/A'}\n\nTerima kasih.`;
+
+                  if (typeof window !== 'undefined' && window.open) {
+                    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                  }
+                }}
+              >
+                Hubungi tim support kami
+              </Text>
             </Text>
           </View>
         </View>
-
-
-        {/* Employee Info Card */}
-        <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.cardHeader}>
-            <Users size={20} color={colors.primary} />
-            <Text style={[styles.cardTitle, { color: colors.primary }]}>
-              Informasi Karyawan
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Nama Lengkap:</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{params.user_full_name || 'N/A'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Email:</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{params.user_email || 'N/A'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Username:</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{params.user_name || 'N/A'}</Text>
-          </View>
-        </View>
-
-        {/* Waiting Approval Card */}
-        <View style={[styles.approvalCard, { backgroundColor: colors.warning + '10', borderColor: colors.warning }]}>
-          <View style={styles.approvalHeader}>
-            <Clock size={24} color={colors.warning} />
-            <Text style={[styles.approvalTitle, { color: colors.warning }]}>
-              Menunggu Persetujuan
-            </Text>
-          </View>
-          <Text style={[styles.approvalText, { color: colors.textSecondary }]}>
-            Akun Anda perlu disetujui oleh pemilik toko sebelum dapat digunakan. Proses ini biasanya cepat.
-          </Text>
-          <View style={styles.approvalSteps}>
-            <Text style={[styles.stepText, { color: colors.textSecondary }]}>
-              • Pemilik toko akan meninjau data Anda
-            </Text>
-            <Text style={[styles.stepText, { color: colors.textSecondary }]}>
-              • Anda akan menerima email konfirmasi
-            </Text>
-            <Text style={[styles.stepText, { color: colors.textSecondary }]}>
-              • Setelah disetujui, Anda bisa login
-            </Text>
-          </View>
-        </View>
-
-
-        {/* Go to Login Button */}
-        <TouchableOpacity
-          style={[styles.loginButton, { backgroundColor: colors.primary }]}
-          onPress={handleGoToLogin}
-        >
-          <LogIn size={20} color={colors.background} />
-          <Text style={[styles.loginButtonText, { color: colors.background }]}>
-            Kembali ke Login
-          </Text>
-        </TouchableOpacity>
-
-        {/* Help Text */}
-        <View style={styles.helpContainer}>
-          <Text style={[styles.helpText, { color: colors.textSecondary }]}>
-            Butuh bantuan?{' '}
-            <Text
-              style={[styles.helpLink, { color: colors.primary }]}
-              onPress={() => {
-                // You can customize this email address
-                const email = 'support@kasirgo.com';
-                const subject = 'Bantuan Pendaftaran Akun Karyawan';
-                const body = `Halo Tim Support KasirGO,\n\nSaya membutuhkan bantuan untuk pendaftaran akun dengan detail berikut:\nNama Lengkap: ${params.user_full_name || 'N/A'}\nEmail: ${params.user_email || 'N/A'}\nUsername: ${params.user_name || 'N/A'}\n\nTerima kasih.`;
-
-                // Open email client
-                if (typeof window !== 'undefined' && window.open) {
-                  window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-                }
-              }}
-            >
-              Hubungi tim support kami
-            </Text>
-          </Text>
-        </View>
-      </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -135,6 +229,27 @@ export default function CompletionContent({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  landscapeRow: {
+    flexDirection: 'row',
+    gap: 50,
+    paddingHorizontal: 60,
+    paddingTop: 200,
+    paddingBottom: 40,
+    flex: 1,
+  },
+  leftColumn: {
+    flex: 1,
+  },
+  rightColumn: {
+    flex: 1,
+    justifyContent: 'center',
   },
   overlay: {
     flex: 1,

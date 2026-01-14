@@ -13,6 +13,7 @@ import StoreInfoForm from "../../src/components/admin/StoreInfoForm";
 import ReceiptPreview from "../../src/components/admin/ReceiptPreview";
 import ApproveEmployeeModal from "../../src/components/owner/ApproveEmployeeModal";
 import RejectEmployeeModal from "../../src/components/owner/RejectEmployeeModal";
+import UserDetailModal from "../../src/components/owner/UserDetailModal";
 import { getPendingEmployeesApi } from "../../src/api/auth";
 
 type TabType = "store" | "cashiers" | "receipt";
@@ -40,6 +41,8 @@ export default function OwnerStore() {
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showUserDetailModal, setShowUserDetailModal] = useState(false);
 
   const pagerRef = useRef<PagerView>(null);
 
@@ -158,14 +161,26 @@ export default function OwnerStore() {
 
   const fetchUsers = async () => {
     try {
+      console.log('[fetchUsers] Starting to fetch users...');
       // Fetch all users regardless of role
       const response = await getAllUsers();
+      console.log('[fetchUsers] Response received:', response.success, 'Users count:', response.data?.users?.length || 0);
+
       if (response.success) {
-        setUsers(response.data.users);
-        setAllUsers(response.data.users);
+        const fetchedUsers = response.data.users;
+        console.log('[fetchUsers] Setting users:', fetchedUsers.length);
+        console.log('[fetchUsers] Sample user data:', fetchedUsers[0]);
+        setUsers(fetchedUsers);
+        setAllUsers(fetchedUsers);
+      } else {
+        console.warn('[fetchUsers] Response not successful:', response.message);
+        setUsers([]);
+        setAllUsers([]);
       }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("[fetchUsers] Error fetching users:", error);
+      setUsers([]);
+      setAllUsers([]);
     }
   };
 
@@ -472,7 +487,13 @@ export default function OwnerStore() {
                         </View>
                       </View>
                     </View>
-                    <TouchableOpacity style={styles.moreBtn}>
+                    <TouchableOpacity
+                      style={styles.moreBtn}
+                      onPress={() => {
+                        setSelectedUser(userItem);
+                        setShowUserDetailModal(true);
+                      }}
+                    >
                       <Text style={[styles.moreBtnText, { color: colors.textSecondary }]}>•••</Text>
                     </TouchableOpacity>
                   </Animated.View>
@@ -519,8 +540,11 @@ export default function OwnerStore() {
           setShowApproveModal(false);
           setSelectedEmployee(null);
         }}
-        onSuccess={() => {
-          fetchPendingEmployees();
+        onSuccess={async () => {
+          console.log('[ApproveEmployeeModal] Employee approved, refreshing data...');
+          await fetchPendingEmployees();
+          await fetchUsers();
+          console.log('[ApproveEmployeeModal] Data refresh completed');
         }}
       />
 
@@ -532,8 +556,24 @@ export default function OwnerStore() {
           setShowRejectModal(false);
           setSelectedEmployee(null);
         }}
-        onSuccess={() => {
-          fetchPendingEmployees();
+        onSuccess={async () => {
+          console.log('[RejectEmployeeModal] Employee rejected, refreshing data...');
+          await fetchPendingEmployees();
+          await fetchUsers();
+          console.log('[RejectEmployeeModal] Data refresh completed');
+        }}
+      />
+
+
+      <UserDetailModal
+        visible={showUserDetailModal}
+        user={selectedUser}
+        onClose={() => {
+          setShowUserDetailModal(false);
+          setSelectedUser(null);
+        }}
+        onUserUpdated={async () => {
+          await fetchUsers();
         }}
       />
     </Animated.View>

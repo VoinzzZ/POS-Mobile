@@ -207,14 +207,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
         product_name: name.trim(),
         product_price: Number(price),
         product_qty: Number(stock),
-        product_cost: cost ? Number(cost) : null,
-        product_sku: sku.trim() || null,
-        product_description: description.trim() || null,
-        product_min_stock: minStock ? Number(minStock) : null,
+        product_cost: cost ? Number(cost) : undefined,
+        product_sku: sku.trim() || undefined,
+        product_description: description.trim() || undefined,
+        product_min_stock: minStock ? Number(minStock) : undefined,
         is_track_stock: isTrackStock,
         is_sellable: isSellable,
-        product_brand_id: brandId || null,
-        product_category_id: categoryId || null,
+        brand_id: brandId || undefined,
+        category_id: categoryId || undefined,
       };
 
       if (imageUri) {

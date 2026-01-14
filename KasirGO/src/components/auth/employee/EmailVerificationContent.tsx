@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Mail, ArrowRight, Info } from 'lucide-react-native';
 import { confirmEmailOtpApi } from '@/src/api/auth';
+import { useOrientation } from '@/src/hooks/useOrientation';
 
 interface EmployeeEmailVerificationContentProps {
   colors: any;
@@ -19,6 +20,7 @@ interface EmployeeEmailVerificationContentProps {
 }
 
 export default function EmployeeEmailVerificationContent({ colors, params, router }: EmployeeEmailVerificationContentProps) {
+  const { isLandscape: isLand } = useOrientation();
   const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(600);
   const [canResend, setCanResend] = useState(false);
@@ -168,70 +170,10 @@ export default function EmployeeEmailVerificationContent({ colors, params, route
     }
   };
 
-  return (
-    <ScrollView
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
-            <Mail size={24} color={colors.secondary} />
-          </View>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Verifikasi Email
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Masukkan kode OTP yang telah dikirim ke email Anda
-          </Text>
-        </View>
-      </View>
-
-      {/* Progress Indicator */}
-      <View style={styles.progressContainer}>
-        <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-        <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
-        <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-        <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
-        <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-        <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
-        <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
-      </View>
-
-      {/* Email Info Card */}
-      <View style={[styles.infoCard, { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
-        <View style={styles.infoCardHeader}>
-          <Info size={20} color={colors.primary} />
-          <Text style={[styles.infoCardTitle, { color: colors.primary }]}>
-            Informasi Verifikasi
-          </Text>
-        </View>
-        <View style={styles.infoCardList}>
-          <View style={styles.infoItem}>
-            <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
-            <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-              Kode OTP dikirim ke email: {params.user_email || 'N/A'}
-            </Text>
-          </View>
-          <View style={styles.infoItem}>
-            <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
-            <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-              Kode berlaku selama 10 menit
-            </Text>
-          </View>
-          <View style={styles.infoItem}>
-            <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
-            <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
-              Periksa folder spam jika tidak menerima email
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* OTP Input Section */}
+  const renderForm = () => (
+    <>
       <View style={styles.sectionContainer}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text, fontSize: isLand ? 20 : 18 }]}>
           Kode OTP
         </Text>
 
@@ -245,7 +187,9 @@ export default function EmployeeEmailVerificationContent({ colors, params, route
                 {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
-                  color: colors.text
+                  color: colors.text,
+                  fontSize: isLand ? 22 : 20,
+                  paddingVertical: isLand ? 18 : 16,
                 }
               ]}
               value={digit}
@@ -261,9 +205,8 @@ export default function EmployeeEmailVerificationContent({ colors, params, route
         </View>
       </View>
 
-      {/* Timer Section */}
       <View style={styles.timerContainer}>
-        <Text style={[styles.timerText, { color: colors.textSecondary }]}>
+        <Text style={[styles.timerText, { color: colors.textSecondary, fontSize: isLand ? 15 : 14 }]}>
           Kirim ulang kode dalam {formatTime(timeLeft)}
         </Text>
         <TouchableOpacity
@@ -272,7 +215,8 @@ export default function EmployeeEmailVerificationContent({ colors, params, route
             canResend && !resendLoading && styles.resendButtonActive,
             {
               backgroundColor: canResend && !resendLoading ? colors.primary : colors.disabled,
-              borderColor: canResend && !resendLoading ? colors.primary : colors.border
+              borderColor: canResend && !resendLoading ? colors.primary : colors.border,
+              paddingVertical: isLand ? 10 : 8,
             }
           ]}
           onPress={handleResendOtp}
@@ -280,37 +224,186 @@ export default function EmployeeEmailVerificationContent({ colors, params, route
         >
           <Text style={[
             styles.resendButtonText,
-            { color: canResend && !resendLoading ? colors.background : colors.textSecondary }
+            { color: canResend && !resendLoading ? colors.background : colors.textSecondary, fontSize: isLand ? 15 : 14 }
           ]}>
             {resendLoading ? 'Mengirim...' : 'Kirim Ulang'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Verify Button */}
       <TouchableOpacity
         style={[
           styles.verifyButton,
           loading && styles.buttonDisabled,
-          { backgroundColor: loading ? colors.disabled : colors.primary }
+          { backgroundColor: loading ? colors.disabled : colors.primary, paddingVertical: isLand ? 16 : 16 }
         ]}
         onPress={() => handleVerifyOtp()}
         disabled={loading}
       >
-        <Text style={[styles.verifyButtonText, { color: colors.background }]}>
+        <Text style={[styles.verifyButtonText, { color: colors.background, fontSize: isLand ? 17 : 16 }]}>
           {loading ? 'Memverifikasi...' : 'Verifikasi OTP'}
         </Text>
-        <ArrowRight size={20} color="white" style={styles.buttonIcon} />
+        <ArrowRight size={isLand ? 22 : 20} color="white" style={styles.buttonIcon} />
       </TouchableOpacity>
-    </ScrollView>
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
+      {isLand ? (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.landscapeRow}>
+            <View style={styles.leftColumn}>
+              <View style={styles.header}>
+                <View style={styles.headerContent}>
+                  <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
+                    <Mail size={28} color={colors.secondary} />
+                  </View>
+                  <Text style={[styles.title, { color: colors.text, fontSize: 26 }]}>
+                    Verifikasi Email
+                  </Text>
+                  <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: 16 }]}>
+                    Masukkan kode OTP yang telah dikirim ke email Anda
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressDot, { backgroundColor: colors.primary, width: 10, height: 10 }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.primary, width: 28 }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.primary, width: 10, height: 10 }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.primary, width: 28 }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.primary, width: 10, height: 10 }]} />
+                <View style={[styles.progressLine, { backgroundColor: colors.primary, width: 28 }]} />
+                <View style={[styles.progressDot, { backgroundColor: colors.primary, width: 10, height: 10 }]} />
+              </View>
+
+              <View style={[styles.infoCard, { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
+                <View style={styles.infoCardHeader}>
+                  <Info size={22} color={colors.primary} />
+                  <Text style={[styles.infoCardTitle, { color: colors.primary, fontSize: 18 }]}>
+                    Informasi Verifikasi
+                  </Text>
+                </View>
+                <View style={styles.infoCardList}>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                      Kode OTP dikirim ke email: {params.user_email || 'N/A'}
+                    </Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                      Kode berlaku selama 10 menit
+                    </Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.bulletPoint, { backgroundColor: colors.primary, width: 7, height: 7 }]} />
+                    <Text style={[styles.infoItemText, { color: colors.textSecondary, fontSize: 15 }]}>
+                      Periksa folder spam jika tidak menerima email
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.rightColumn}>
+              {renderForm()}
+            </View>
+          </View>
+        </ScrollView>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.secondary + '20' }]}>
+                <Mail size={24} color={colors.secondary} />
+              </View>
+              <Text style={[styles.title, { color: colors.text }]}>
+                Verifikasi Email
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                Masukkan kode OTP yang telah dikirim ke email Anda
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.progressContainer}>
+            <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
+            <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
+            <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
+            <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
+            <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
+            <View style={[styles.progressLine, { backgroundColor: colors.primary }]} />
+            <View style={[styles.progressDot, { backgroundColor: colors.primary }]} />
+          </View>
+
+          <View style={[styles.infoCard, { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
+            <View style={styles.infoCardHeader}>
+              <Info size={20} color={colors.primary} />
+              <Text style={[styles.infoCardTitle, { color: colors.primary }]}>
+                Informasi Verifikasi
+              </Text>
+            </View>
+            <View style={styles.infoCardList}>
+              <View style={styles.infoItem}>
+                <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
+                <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                  Kode OTP dikirim ke email: {params.user_email || 'N/A'}
+                </Text>
+              </View>
+              <View style={styles.infoItem}>
+                <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
+                <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                  Kode berlaku selama 10 menit
+                </Text>
+              </View>
+              <View style={styles.infoItem}>
+                <View style={[styles.bulletPoint, { backgroundColor: colors.primary }]} />
+                <Text style={[styles.infoItemText, { color: colors.textSecondary }]}>
+                  Periksa folder spam jika tidak menerima email
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {renderForm()}
+        </ScrollView>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   scrollContent: {
     paddingHorizontal: 24,
     paddingBottom: 40,
     flexGrow: 1,
+    justifyContent: 'center',
+  },
+  landscapeRow: {
+    flexDirection: 'row',
+    gap: 50,
+    paddingHorizontal: 60,
+    paddingTop: 200,
+    paddingBottom: 40,
+    flex: 1,
+  },
+  leftColumn: {
+    flex: 1,
+  },
+  rightColumn: {
+    flex: 1,
     justifyContent: 'center',
   },
   header: {
