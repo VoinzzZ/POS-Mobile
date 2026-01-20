@@ -81,7 +81,7 @@ interface AuthContextType {
 
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  updateProfile: (data: { name?: string; phone?: string }) => Promise<void>;
+  updateProfile: (data: { fullname?: string; name?: string; phone?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -270,7 +270,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // ========== LOGOUT ==========>
   const logout = async (): Promise<void> => {
+    console.log('🔓 Logging out...');
     await clearAuthFromStorage();
+    console.log('✅ Logout complete, auth cleared');
   };
 
   // ========== OWNER REGISTRATION FLOW ==========>
@@ -370,26 +372,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // ========== REFRESH PROFILE ==========>
+  // ========== REFRESH PROFILE =========>
   const refreshProfile = async (): Promise<void> => {
     try {
+      console.log('🔄 Refreshing profile...');
       const response = await getProfileApi();
+      console.log('🔄 Profile API response:', response);
+
       if (response.success && response.data) {
-        const profile = response.data as any;
+        // The API returns { user: User } in response.data
+        const profile = (response.data as any).user || response.data;
+        console.log('🔄 Profile data:', profile);
+
         const updatedUser: User = {
           ...user,
-          user_id: profile.id || user?.user_id,
-          user_name: profile.name || user?.user_name,
-          user_full_name: profile.name || user?.user_full_name,
-          user_email: profile.email || user?.user_email,
-          user_phone: profile.phone,
-          user_role: profile.role?.role_name || user?.user_role,
-          user_is_verified: profile.isVerified !== undefined ? profile.isVerified : user?.user_is_verified,
-          tenantId: profile.tenant?.tenant_id,
-          tenantName: profile.tenant?.tenant_name,
-          lastLogin: profile.lastLogin,
-          isSA: profile.isSA,
+          user_id: profile.user_id || profile.id || user?.user_id,
+          user_name: profile.user_name || profile.name || user?.user_name,
+          user_full_name: profile.user_full_name || profile.full_name || profile.name || user?.user_full_name,
+          user_email: profile.user_email || profile.email || user?.user_email,
+          user_phone: profile.user_phone || profile.phone || user?.user_phone,
+          user_role: profile.user_role || profile.role?.role_name || profile.role || user?.user_role,
+          user_is_verified: profile.user_is_verified !== undefined ? profile.user_is_verified : (profile.isVerified !== undefined ? profile.isVerified : user?.user_is_verified),
+          tenantId: profile.tenantId || profile.tenant?.tenant_id || user?.tenantId,
+          tenantName: profile.tenantName || profile.tenant?.tenant_name || user?.tenantName,
+          lastLogin: profile.lastLogin || profile.last_login || user?.lastLogin,
+          isSA: profile.isSA !== undefined ? profile.isSA : user?.isSA,
         };
+
+        console.log('✅ Updated user data:', updatedUser);
         await AsyncStorage.setItem("@user", JSON.stringify(updatedUser));
         setUser(updatedUser);
       }
@@ -406,7 +416,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   /**
    * Update user profile
    */
-  const updateProfile = async (data: { name?: string; phone?: string }): Promise<void> => {
+  const updateProfile = async (data: { fullname?: string; name?: string; phone?: string }): Promise<void> => {
     try {
       const response = await updateProfileApi(data);
       if (response.success && response.data) {

@@ -43,13 +43,11 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [stock, setStock] = useState("");
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [brandId, setBrandId] = useState<number | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [sku, setSku] = useState("");
   const [description, setDescription] = useState("");
-  const [cost, setCost] = useState("");
   const [minStock, setMinStock] = useState("");
   const [isTrackStock, setIsTrackStock] = useState(true);
   const [isSellable, setIsSellable] = useState(true);
@@ -63,8 +61,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   const [errors, setErrors] = useState<{
     name?: string;
     price?: string;
-    stock?: string;
-    category?: string;
   }>({});
 
   // Load categories and brands
@@ -111,12 +107,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       newErrors.price = "Harga tidak boleh kosong";
     } else if (isNaN(Number(price)) || Number(price) <= 0) {
       newErrors.price = "Harga harus berupa angka positif";
-    }
-
-    if (!stock.trim()) {
-      newErrors.stock = "Stok tidak boleh kosong";
-    } else if (isNaN(Number(stock)) || Number(stock) < 0) {
-      newErrors.stock = "Stok harus berupa angka positif atau 0";
     }
 
     setErrors(newErrors);
@@ -186,8 +176,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       const productData: any = {
         product_name: name.trim(),
         product_price: Number(price),
-        product_qty: Number(stock),
-        product_cost: cost ? Number(cost) : null,
+        product_qty: 0, // Default stock to 0
+        product_cost: null, // Cost will be set via Record Purchase
         product_sku: sku.trim() || null,
         product_description: description.trim() || null,
         product_min_stock: minStock ? Number(minStock) : null,
@@ -226,13 +216,11 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   const resetForm = () => {
     setName("");
     setPrice("");
-    setStock("");
     setCategoryId(null);
     setBrandId(null);
     setImageUri(null);
     setSku("");
     setDescription("");
-    setCost("");
     setMinStock("");
     setIsTrackStock(true);
     setIsSellable(true);
@@ -396,14 +384,15 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
             {/* Price */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: colors.text }]}>
-                Harga (Rp) *
+                Harga
               </Text>
               <View
                 style={[
-                  styles.input,
+                  styles.inputRow,
                   { borderColor: errors.price ? "#ef4444" : colors.border },
                 ]}
               >
+                <Text style={[styles.currencyPrefix, { color: colors.textSecondary }]}>Rp</Text>
                 <TextInput
                   style={{ color: colors.text, flex: 1 }}
                   placeholder="Contoh: 5000"
@@ -423,56 +412,11 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
               )}
             </View>
 
-            {/* Cost Price */}
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Harga Modal (Opsional)
+            {/* Info message about stock */}
+            <View style={[styles.fieldContainer, { backgroundColor: colors.primary + '10', padding: 12, borderRadius: 8 }]}>
+              <Text style={[styles.helperText, { color: colors.primary, fontStyle: 'normal', fontWeight: '500' }]}>
+                ℹ️ Stok awal produk adalah 0. Gunakan menu "Record Purchase" untuk menambah stok dan mencatat harga beli.
               </Text>
-              <View
-                style={[
-                  styles.input,
-                  { borderColor: colors.border },
-                ]}
-              >
-                <TextInput
-                  style={{ color: colors.text, flex: 1 }}
-                  placeholder="Contoh: 3000"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                  value={cost}
-                  onChangeText={setCost}
-                />
-              </View>
-            </View>
-
-            {/* Stock */}
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Stok *
-              </Text>
-              <View
-                style={[
-                  styles.input,
-                  { borderColor: errors.stock ? "#ef4444" : colors.border },
-                ]}
-              >
-                <TextInput
-                  style={{ color: colors.text, flex: 1 }}
-                  placeholder="Contoh: 100"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                  value={stock}
-                  onChangeText={(text) => {
-                    setStock(text);
-                    if (errors.stock) {
-                      setErrors({ ...errors, stock: undefined });
-                    }
-                  }}
-                />
-              </View>
-              {errors.stock && (
-                <Text style={styles.errorText}>{errors.stock}</Text>
-              )}
             </View>
 
             {/* Min Stock */}
@@ -573,9 +517,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   ))}
                 </ScrollView>
               </View>
-              {errors.category && (
-                <Text style={styles.errorText}>{errors.category}</Text>
-              )}
             </View>
 
             {/* Brand Dropdown */}
@@ -761,6 +702,19 @@ const styles = StyleSheet.create({
   textArea: {
     height: 100,
     paddingTop: 10,
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  currencyPrefix: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginRight: 8,
   },
   skuInputContainer: {
     flexDirection: "row",

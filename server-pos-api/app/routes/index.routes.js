@@ -14,6 +14,10 @@ const opnameRoutes = require('./opname.routes');
 const transactionRoutes = require('./transaction.routes');
 const financialReportRoutes = require('./financial-report.routes');
 const cashDrawerRoutes = require('./cash-drawer.routes');
+const topProductsRoutes = require('./top-products.routes');
+const cashTransactionRoutes = require('./cash-transaction.routes');
+const expenseCategoryRoutes = require('./expense-category.routes');
+const manualPurchaseRoutes = require('./manual-purchase.routes');
 
 const router = express.Router();
 
@@ -32,5 +36,9 @@ router.use('/opname', opnameRoutes);
 router.use('/transactions', transactionRoutes);
 router.use('/financial', financialReportRoutes);
 router.use('/cash-drawer', cashDrawerRoutes);
+router.use('/dashboard', topProductsRoutes);
+router.use('/cash-transactions', cashTransactionRoutes);
+router.use('/expense-categories', expenseCategoryRoutes);
+router.use('/manual-purchases', manualPurchaseRoutes);
 
 module.exports = router;

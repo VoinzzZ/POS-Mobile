@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput } from "react-native";
 import PagerView from "react-native-pager-view";
 import { useAuth } from "../../src/context/AuthContext";
-import { Store as StoreIcon, Users as UsersIcon, Receipt, Settings, Search, Key } from "lucide-react-native";
+import { Store as StoreIcon, Users as UsersIcon, ReceiptText, Settings, Search, Key } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
 import { useRouter } from "expo-router";
 import { getAllUsers, User } from "../../src/api/user";
@@ -17,7 +17,7 @@ export default function StoreManagement() {
   const { user } = useAuth();
   const router = useRouter();
   const { colors } = useTheme();
-  
+
   const [activeTab, setActiveTab] = useState<TabType>("store");
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [users, setUsers] = useState<User[]>([]);
@@ -26,7 +26,7 @@ export default function StoreManagement() {
   const [refreshing, setRefreshing] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const pagerRef = useRef<PagerView>(null);
   const triggerHaptic = () => {
     try {
@@ -37,12 +37,12 @@ export default function StoreManagement() {
   };
 
   const tabs: { key: TabType; title: string; icon: any }[] = [
-    { key: "store", title: "Store Info", icon: StoreIcon },
-    { key: "cashiers", title: "User", icon: UsersIcon },
-    { key: "receipt", title: "Receipt Preview", icon: Receipt },
+    { key: "store", title: "Info Toko", icon: StoreIcon },
+    { key: "cashiers", title: "Pengguna", icon: UsersIcon },
+    { key: "receipt", title: "Preview Struk", icon: ReceiptText },
   ];
-  
-  
+
+
   // Helper functions for tab switching
   const handleTabPress = (index: number) => {
     if (index !== activeTabIndex) {
@@ -52,7 +52,7 @@ export default function StoreManagement() {
       pagerRef.current?.setPage(index);
     }
   };
-  
+
   const handlePageSelected = (e: any) => {
     const index = e.nativeEvent.position;
     if (index !== activeTabIndex) {
@@ -118,11 +118,11 @@ export default function StoreManagement() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <View>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Manage Store</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Manage store information & user management</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Kelola Toko</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Kelola informasi toko & manajemen pengguna</Text>
         </View>
-        <TouchableOpacity 
-          onPress={() => router.push("/(admin)/settings")} 
+        <TouchableOpacity
+          onPress={() => router.push("/(admin)/settings")}
           style={styles.settingsBtn}
         >
           <Settings size={24} color={colors.textSecondary} />
@@ -134,9 +134,9 @@ export default function StoreManagement() {
         {tabs.map((tab, index) => {
           const Icon = tab.icon;
           const isActive = activeTabIndex === index;
-          
+
           return (
-            <TouchableOpacity 
+            <TouchableOpacity
               key={tab.key}
               style={[styles.tab, isActive && styles.activeTab]}
               onPress={() => handleTabPress(index)}
@@ -153,7 +153,7 @@ export default function StoreManagement() {
       </View>
 
       {/* Swipeable Tab Content */}
-      <PagerView 
+      <PagerView
         ref={pagerRef}
         style={styles.pagerView}
         initialPage={0}
@@ -168,11 +168,11 @@ export default function StoreManagement() {
             }}
           />
         </View>
-        
+
         {/* Page 2: Cashiers */}
         <View key="cashiers" style={styles.page}>
-          <ScrollView 
-            style={styles.scrollView} 
+          <ScrollView
+            style={styles.scrollView}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
@@ -180,12 +180,12 @@ export default function StoreManagement() {
           >
 
             {/* Generate PIN Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.generatePinButton}
               onPress={() => setShowPinModal(true)}
             >
               <Key size={20} color="#ffffff" />
-              <Text style={styles.generatePinButtonText}>Generate Registration PIN</Text>
+              <Text style={styles.generatePinButtonText}>Generate PIN Registrasi</Text>
             </TouchableOpacity>
 
             {/* Search Bar */}
@@ -193,7 +193,7 @@ export default function StoreManagement() {
               <Search size={20} color={colors.textSecondary} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search users..."
+                placeholder="Cari pengguna..."
                 placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -202,17 +202,17 @@ export default function StoreManagement() {
 
             {/* Users List */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Users ({users.length})</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Pengguna ({users.length})</Text>
               {loading ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading users...</Text>
+                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Memuat pengguna...</Text>
                 </View>
               ) : users.length === 0 ? (
                 <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
                   <UsersIcon size={48} color={colors.textSecondary} />
-                  <Text style={[styles.emptyText, { color: colors.text }]}>No users yet</Text>
-                  <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Generate PIN for new user registration</Text>
+                  <Text style={[styles.emptyText, { color: colors.text }]}>Belum ada pengguna</Text>
+                  <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Generate PIN untuk registrasi pengguna baru</Text>
                 </View>
               ) : (
                 users.map((userItem) => (
@@ -231,7 +231,7 @@ export default function StoreManagement() {
                         </View>
                         <View style={[styles.badge, { backgroundColor: getStatusColor(userItem.isVerified) + "20" }]}>
                           <Text style={[styles.badgeText, { color: getStatusColor(userItem.isVerified) }]}>
-                            {userItem.isVerified ? "Verified" : "Not Verified"}
+                            {userItem.isVerified ? "Terverifikasi" : "Belum Terverifikasi"}
                           </Text>
                         </View>
                       </View>
@@ -247,7 +247,7 @@ export default function StoreManagement() {
             <View style={{ height: 20 }} />
           </ScrollView>
         </View>
-        
+
         {/* Page 3: Receipt Preview */}
         <View key="receipt" style={styles.page}>
           <ReceiptPreview />
@@ -256,7 +256,7 @@ export default function StoreManagement() {
 
       {/* Bottom Navigation */}
       <AdminBottomNav />
-      
+
       {/* Generate PIN Modal */}
       <GeneratePinModal
         visible={showPinModal}

@@ -24,9 +24,9 @@ interface CategoryBrandSelectorProps {
   showNavigateOption?: boolean;
 }
 
-export default function CategoryBrandSelector({ 
+export default function CategoryBrandSelector({
   onFilterSelect,
-  showNavigateOption = true 
+  showNavigateOption = true
 }: CategoryBrandSelectorProps) {
   const { colors } = useTheme();
   const router = useRouter();
@@ -51,7 +51,7 @@ export default function CategoryBrandSelector({
       if (categoriesRes.success && categoriesRes.data) {
         setCategories(categoriesRes.data);
       }
-      
+
       if (brandsRes.success && brandsRes.data) {
         setBrands(brandsRes.data);
       }
@@ -63,17 +63,20 @@ export default function CategoryBrandSelector({
   };
 
   const handleItemPress = (type: "category" | "brand", item: Category | Brand) => {
+    const id = type === "category" ? (item as Category).category_id : (item as Brand).brand_id;
+    const name = type === "category" ? (item as Category).category_name : (item as Brand).brand_name;
+
     if (onFilterSelect) {
       // If custom handler provided, use that
-      onFilterSelect(type, item.id, item.name);
+      onFilterSelect(type, id, name);
     } else if (showNavigateOption) {
       // Otherwise, navigate to filter screen
       router.push({
         pathname: "/productsByFilter",
         params: {
           type,
-          id: item.id.toString(),
-          name: item.name,
+          id: id.toString(),
+          name: name,
         },
       });
     }
@@ -81,21 +84,21 @@ export default function CategoryBrandSelector({
 
   const renderCategoryTab = (category: Category) => (
     <TouchableOpacity
-      key={category.id}
+      key={category.category_id}
       style={[styles.categoryTab, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => handleItemPress("category", category)}
       activeOpacity={0.7}
     >
       <Folder size={16} color={colors.primary} />
       <Text style={[styles.categoryTabText, { color: colors.text }]} numberOfLines={1}>
-        {category.name}
+        {category.category_name}
       </Text>
     </TouchableOpacity>
   );
 
   const renderBrandItem = (brand: Brand) => (
     <TouchableOpacity
-      key={brand.id}
+      key={brand.brand_id}
       style={[styles.item, { backgroundColor: colors.card }]}
       onPress={() => handleItemPress("brand", brand)}
     >
@@ -103,7 +106,7 @@ export default function CategoryBrandSelector({
         <Tag size={20} color={colors.primary} />
       </View>
       <Text style={[styles.itemName, { color: colors.text }]}>
-        {brand.name}
+        {brand.brand_name}
       </Text>
     </TouchableOpacity>
   );

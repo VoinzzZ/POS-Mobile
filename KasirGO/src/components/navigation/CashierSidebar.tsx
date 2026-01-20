@@ -62,7 +62,6 @@ export default function CashierSidebar({ currentRoute }: CashierSidebarProps) {
 
     const handleLogout = async () => {
         await logout();
-        router.replace("/(auth)/login" as any);
     };
 
     return (
@@ -91,6 +90,9 @@ export default function CashierSidebar({ currentRoute }: CashierSidebarProps) {
                             onPress={() => router.push(tab.route as any)}
                             activeOpacity={0.7}
                         >
+                            {active && (
+                                <View style={[styles.indicator, { backgroundColor: colors.primary }]} />
+                            )}
                             <Icon
                                 size={24}
                                 color={active ? colors.primary : colors.textSecondary}
@@ -179,6 +181,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         borderRadius: 12,
         gap: 4,
+        position: "relative",
+    },
+    indicator: {
+        position: "absolute",
+        left: 0,
+        width: 3,
+        height: 40,
+        borderRadius: 2,
     },
     navLabel: {
         fontSize: 11,

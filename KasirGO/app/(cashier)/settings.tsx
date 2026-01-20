@@ -1,16 +1,24 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from "react-native";
-import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight, Moon, Sun } from "lucide-react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight } from "lucide-react-native";
 import CashierSidebar from "../../src/components/navigation/CashierSidebar";
-import { useOrientation } from "../../src/hooks/useOrientation";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter } from "expo-router";
+import ProfileCard from "../../src/components/settings/ProfileCard";
+import ThemeToggleCard from "../../src/components/settings/ThemeToggleCard";
+import EditProfilePanel from "../../src/components/settings/EditProfilePanel";
 
 export default function SettingsScreen() {
-  const { user, logout } = useAuth();
-  const { theme, toggleTheme, colors } = useTheme();
+  const { logout, user, refreshProfile } = useAuth();
+  const { colors } = useTheme();
   const router = useRouter();
+  const [editProfileVisible, setEditProfileVisible] = useState(false);
+
+  useEffect(() => {
+    console.log("🔍 Settings Screen - Current user data:", user);
+    refreshProfile();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert("Keluar", "Apakah Anda yakin ingin keluar?", [
@@ -31,7 +39,7 @@ export default function SettingsScreen() {
       icon: User,
       title: "Profil",
       subtitle: "Kelola informasi profil Anda",
-      onPress: () => { },
+      onPress: () => setEditProfileVisible(true),
     },
     {
       icon: Bell,
@@ -53,53 +61,16 @@ export default function SettingsScreen() {
     },
   ];
 
-  const { isLandscape: isLand, isTablet: isTab } = useOrientation();
-
   const renderContent = () => (
     <>
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
         <Text style={[styles.title, { color: colors.text }]}>Pengaturan</Text>
       </View>
 
-      <ScrollView style={styles.scrollView}>
-        {/* Theme Toggle */}
-        <View style={[styles.themeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.themeLeft}>
-            {theme === "dark" ? (
-              <Moon size={24} color={colors.primary} />
-            ) : (
-              <Sun size={24} color={colors.primary} />
-            )}
-            <View style={styles.themeInfo}>
-              <Text style={[styles.themeTitle, { color: colors.text }]}>Mode Tema</Text>
-              <Text style={[styles.themeSubtitle, { color: colors.textSecondary }]}>
-                {theme === "dark" ? "Mode Gelap" : "Mode Terang"}
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={theme === "dark"}
-            onValueChange={toggleTheme}
-            trackColor={{ false: "#cbd5e1", true: colors.primary }}
-            thumbColor={"#ffffff"}
-          />
-        </View>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ThemeToggleCard />
+        <ProfileCard />
 
-        {/* User Info Card */}
-        <View style={[styles.userCard, { backgroundColor: colors.card }]}>
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={styles.avatarText}>{user?.user_name?.charAt(0).toUpperCase()}</Text>
-          </View>
-          <View style={styles.userInfo}>
-            <Text style={[styles.userName, { color: colors.text }]}>{user?.user_name}</Text>
-            <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
-            <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>{user?.role}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Settings Options */}
         <View style={styles.section}>
           {settingsOptions.map((option, index) => {
             const Icon = option.icon;
@@ -124,8 +95,10 @@ export default function SettingsScreen() {
           })}
         </View>
 
-        {/* Logout Button */}
-        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.card, borderColor: colors.error }]} onPress={handleLogout}>
+        <TouchableOpacity
+          style={[styles.logoutButton, { backgroundColor: colors.card, borderColor: colors.error }]}
+          onPress={handleLogout}
+        >
           <LogOut size={20} color={colors.error} />
           <Text style={[styles.logoutText, { color: colors.error }]}>Keluar</Text>
         </TouchableOpacity>
@@ -139,10 +112,9 @@ export default function SettingsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.landscapeMaster}>
         <CashierSidebar />
-        <View style={styles.landscapeContent}>
-          {renderContent()}
-        </View>
+        <View style={styles.landscapeContent}>{renderContent()}</View>
       </View>
+      <EditProfilePanel visible={editProfileVisible} onClose={() => setEditProfileVisible(false)} />
     </View>
   );
 }
@@ -150,6 +122,14 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  landscapeMaster: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  landscapeContent: {
+    flex: 1,
+    flexDirection: "column",
   },
   header: {
     paddingHorizontal: 20,
@@ -162,76 +142,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  themeCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    margin: 20,
-    marginBottom: 12,
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  themeLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  themeInfo: {
-    gap: 4,
-  },
-  themeTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  themeSubtitle: {
-    fontSize: 12,
-  },
-  userCard: {
-    flexDirection: "row",
-    marginHorizontal: 20,
-    marginBottom: 20,
-    padding: 20,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#ffffff",
-  },
-  userInfo: {
-    marginLeft: 16,
-    flex: 1,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  userEmail: {
-    fontSize: 14,
-    marginTop: 4,
-  },
-  roleBadge: {
-    backgroundColor: "#064e3b",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: "flex-start",
-    marginTop: 8,
-  },
-  roleText: {
-    fontSize: 12,
-    color: "#10b981",
-    fontWeight: "600",
   },
   section: {
     marginHorizontal: 20,
@@ -279,14 +189,5 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     fontWeight: "600",
-    marginLeft: 8,
-  },
-  landscapeMaster: {
-    flex: 1,
-    flexDirection: "row",
-  },
-  landscapeContent: {
-    flex: 1,
-    flexDirection: "column",
   },
 });

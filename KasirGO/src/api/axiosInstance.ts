@@ -19,7 +19,6 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
-      // Skip token for auth and registration validation endpoints to avoid infinite loops
       if (config.url?.includes('/auth/login') ||
         config.url?.includes('/auth/register') ||
         config.url?.includes('/auth/set-password') ||
@@ -28,17 +27,19 @@ api.interceptors.request.use(
         return config;
       }
 
-      // Get a valid access token (will refresh if needed)
       const accessToken = await TokenService.getValidAccessToken();
 
       if (accessToken) {
         config.headers.Authorization = `Bearer ${accessToken}`;
-        console.log('✅ Valid token added to request:', config.url);
       } else {
         console.log('⚠️  No valid token available for request:', config.url);
+        // Reject the request instead of letting it go through without a token
+        // This prevents the 401 loop when tokens don't exist
+        return Promise.reject(new Error('No authentication token available. Please login.'));
       }
     } catch (error) {
       console.error("❌ Error getting valid token:", error);
+      return Promise.reject(error);
     }
     return config;
   },

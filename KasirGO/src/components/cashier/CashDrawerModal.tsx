@@ -49,7 +49,7 @@ export default function CashDrawerModal({
         : 0;
 
     const handleSubmit = async () => {
-        if (!amount || parseFloat(amount) <= 0) {
+        if (mode === "close" && (!amount || parseFloat(amount) <= 0)) {
             setError("Masukkan jumlah uang yang valid");
             return;
         }
@@ -59,7 +59,7 @@ export default function CashDrawerModal({
             setError("");
 
             if (mode === "open") {
-                await openCashDrawer(parseFloat(amount));
+                await openCashDrawer(0);
             } else if (mode === "close" && currentDrawer) {
                 await closeCashDrawer(currentDrawer.drawer_id, parseFloat(amount), notes || undefined);
             }
@@ -126,23 +126,40 @@ export default function CashDrawerModal({
                             </View>
                         )}
 
-                        {/* Amount Input */}
-                        <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: colors.text }]}>
-                                {mode === "open" ? "Modal Awal (Rp)" : "Uang Sebenarnya (Rp)"}
-                            </Text>
-                            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                                <DollarSign size={20} color={colors.textSecondary} />
-                                <TextInput
-                                    style={[styles.input, { color: colors.text }]}
-                                    placeholder="Contoh: 500000"
-                                    placeholderTextColor={colors.textSecondary}
-                                    keyboardType="numeric"
-                                    value={amount}
-                                    onChangeText={setAmount}
-                                />
+                        {/* Info Card for Open Mode */}
+                        {mode === "open" && (
+                            <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+                                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+                                    Saldo Awal
+                                </Text>
+                                <Text style={[styles.infoValue, { color: colors.text }]}>
+                                    {formatCurrency(0)}
+                                </Text>
+                                <Text style={[styles.breakdownText, { color: colors.textSecondary }]}>
+                                    Shift akan dibuka tanpa modal awal. Anda dapat langsung memulai transaksi.
+                                </Text>
                             </View>
-                        </View>
+                        )}
+
+                        {/* Amount Input (Close Mode Only) */}
+                        {mode === "close" && (
+                            <View style={styles.inputGroup}>
+                                <Text style={[styles.label, { color: colors.text }]}>
+                                    Uang Sebenarnya (Rp)
+                                </Text>
+                                <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                                    <DollarSign size={20} color={colors.textSecondary} />
+                                    <TextInput
+                                        style={[styles.input, { color: colors.text }]}
+                                        placeholder="Contoh: 500000"
+                                        placeholderTextColor={colors.textSecondary}
+                                        keyboardType="numeric"
+                                        value={amount}
+                                        onChangeText={setAmount}
+                                    />
+                                </View>
+                            </View>
+                        )}
 
                         {/* Difference Display (Close Mode) */}
                         {mode === "close" && amount && (

@@ -105,15 +105,18 @@ class AuthService {
 
       return {
         user: {
-          id: user.user_id,
-          name: user.user_full_name || user.user_name,
-          email: user.user_email,
+          user_id: user.user_id,
+          user_name: user.user_name,
+          user_full_name: user.user_full_name,
+          user_email: user.user_email,
+          user_phone: user.user_phone,
+          user_role: user.m_role?.role_name || 'SA',
+          user_is_verified: user.user_is_verified,
           role: user.m_role?.role_name || 'SA',
           roleId: user.role_id,
           tenantId: user.tenant_id,
           tenantName: user.m_tenant?.tenant_name,
           isSA: user.is_sa,
-          isVerified: user.user_is_verified,
           lastLogin: user.user_last_login
         },
         tokens: tokens,
@@ -232,15 +235,21 @@ class AuthService {
     }
 
     return {
-      id: user.user_id,
-      name: user.user_full_name || user.user_name,
-      email: user.user_email,
-      phone: user.user_phone,
-      role: user.m_role,
-      tenant: user.m_tenant,
-      isSA: user.is_sa,
-      isVerified: user.user_is_verified,
-      lastLogin: user.user_last_login
+      user: {
+        user_id: user.user_id,
+        user_name: user.user_name,
+        user_full_name: user.user_full_name,
+        user_email: user.user_email,
+        user_phone: user.user_phone,
+        user_role: user.m_role?.role_name || 'SA',
+        user_is_verified: user.user_is_verified,
+        role: user.m_role,
+        tenant: user.m_tenant,
+        tenantId: user.tenant_id,
+        tenantName: user.m_tenant?.tenant_name,
+        isSA: user.is_sa,
+        lastLogin: user.user_last_login
+      }
     };
   }
 
@@ -256,10 +265,11 @@ class AuthService {
       throw new Error("User tidak ditemukan");
     }
 
-    const { name, phone } = updateData;
+    const { fullname, name, phone } = updateData;
 
     const data = {
-      user_full_name: name || user.user_full_name,
+      user_full_name: fullname !== undefined ? fullname : user.user_full_name,
+      user_name: name !== undefined ? name : user.user_name,
       user_phone: phone !== undefined ? phone : user.user_phone,
       updated_at: new Date()
     };
@@ -274,14 +284,21 @@ class AuthService {
     });
 
     return {
-      id: updatedUser.user_id,
-      name: updatedUser.user_full_name || updatedUser.user_name,
-      email: updatedUser.user_email,
-      phone: updatedUser.user_phone,
-      role: updatedUser.m_role?.role_name || 'SA',
-      isSA: updatedUser.is_sa,
-      isVerified: updatedUser.user_is_verified,
-      lastLogin: updatedUser.user_last_login
+      user: {
+        user_id: updatedUser.user_id,
+        user_name: updatedUser.user_name,
+        user_full_name: updatedUser.user_full_name,
+        user_email: updatedUser.user_email,
+        user_phone: updatedUser.user_phone,
+        user_role: updatedUser.m_role?.role_name || 'SA',
+        user_is_verified: updatedUser.user_is_verified,
+        role: updatedUser.m_role,
+        tenant: updatedUser.m_tenant,
+        tenantId: updatedUser.tenant_id,
+        tenantName: updatedUser.m_tenant?.tenant_name,
+        isSA: updatedUser.is_sa,
+        lastLogin: updatedUser.user_last_login
+      }
     };
   }
 }

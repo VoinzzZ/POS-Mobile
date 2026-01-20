@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Wallet, AlertCircle, CheckCircle, XCircle } from "lucide-react-native";
-import { getCurrentCashDrawer, CashDrawer } from "../../api/cashDrawer";
+import { getCurrentCashDrawer, CashDrawer, openCashDrawer } from "../../api/cashDrawer";
 import { formatCurrency } from "../../utils/financial.helpers";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -14,6 +14,7 @@ export default function DrawerStatusIndicator({ onOpenDrawer }: DrawerStatusIndi
     const [drawer, setDrawer] = useState<CashDrawer | null>(null);
     const [loading, setLoading] = useState(true);
     const [hasDrawer, setHasDrawer] = useState(false);
+    const [opening, setOpening] = useState(false);
 
     useEffect(() => {
         checkDrawerStatus();
@@ -36,6 +37,19 @@ export default function DrawerStatusIndicator({ onOpenDrawer }: DrawerStatusIndi
         }
     };
 
+    const handleOpenShift = async () => {
+        try {
+            setOpening(true);
+            await openCashDrawer(0);
+            await checkDrawerStatus();
+        } catch (error: any) {
+            console.error('Error opening shift:', error);
+            alert(error.response?.data?.message || 'Gagal membuka shift');
+        } finally {
+            setOpening(false);
+        }
+    };
+
     if (loading) {
         return (
             <View style={[styles.container, { backgroundColor: colors.card }]}>
@@ -50,10 +64,18 @@ export default function DrawerStatusIndicator({ onOpenDrawer }: DrawerStatusIndi
                 <AlertCircle size={20} color="#F59E0B" />
                 <View style={styles.textContainer}>
                     <Text style={[styles.title, { color: "#92400E" }]}>Shift  Belum Dibuka</Text>
-                    <Text style={[styles.subtitle, { color: "#92400E" }]}>Buka shift untuk mulai transaksi cash</Text>
+                    <Text style={[styles.subtitle, { color: "#92400E" }]}>Buka shift untuk mulai transaksi</Text>
                 </View>
-                <TouchableOpacity style={[styles.actionButton, { backgroundColor: "#F59E0B" }]} onPress={onOpenDrawer}>
-                    <Text style={styles.actionButtonText}>Buka Shift</Text>
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: "#F59E0B" }]}
+                    onPress={handleOpenShift}
+                    disabled={opening}
+                >
+                    {opening ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                        <Text style={styles.actionButtonText}>Buka Shift</Text>
+                    )}
                 </TouchableOpacity>
             </View>
         );

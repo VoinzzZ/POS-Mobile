@@ -57,7 +57,7 @@ export default function BrandFilter({
           onCategoryChange(null, "Semua Produk", categoriesRes.data);
         }
       }
-      
+
       if (brandsRes.success && brandsRes.data) {
         setBrands(brandsRes.data);
         setFilteredBrands(brandsRes.data);
@@ -69,18 +69,12 @@ export default function BrandFilter({
     }
   };
 
-  // Filter brands when category changes
+  // Load all brands - no filtering by category
   useEffect(() => {
-    if (selectedCategoryId === null) {
-      // Show all brands
-      setFilteredBrands(brands);
-    } else {
-      // Filter brands by selected category
-      const filtered = brands.filter(brand => brand.categoryId === selectedCategoryId);
-      setFilteredBrands(filtered);
-    }
-  }, [selectedCategoryId, brands]);
-  
+    // Always show all brands regardless of selected category
+    setFilteredBrands(brands);
+  }, [brands]);
+
   // Reset brand selection when category changes (separate effect)  
   const resetBrandSelection = () => {
     setSelectedBrandId(null);
@@ -88,7 +82,7 @@ export default function BrandFilter({
       onBrandFilter(null, "Semua Brand");
     }
   };
-  
+
   useEffect(() => {
     resetBrandSelection();
   }, [selectedCategoryId]);
@@ -96,7 +90,7 @@ export default function BrandFilter({
   const handleCategoryPress = (category: Category | null) => {
     const categoryId = category?.id || null;
     const categoryName = category?.name || "Semua Produk";
-    
+
     if (onCategoryChange) {
       onCategoryChange(categoryId, categoryName, categories);
     }
@@ -105,9 +99,9 @@ export default function BrandFilter({
   const handleBrandPress = (brand: Brand | null) => {
     const brandId = brand?.id || null;
     const brandName = brand?.name || "Semua Brand";
-    
+
     setSelectedBrandId(brandId);
-    
+
     if (onBrandFilter) {
       onBrandFilter(brandId, brandName);
     }
@@ -116,13 +110,13 @@ export default function BrandFilter({
 
   const renderBrandChip = (brand: Brand | null, isAll: boolean = false) => {
     const isSelected = isAll ? selectedBrandId === null : selectedBrandId === brand?.id;
-    
+
     return (
       <TouchableOpacity
         key={isAll ? "all-brands" : brand!.id}
         style={[
-          styles.brandChip, 
-          { 
+          styles.brandChip,
+          {
             backgroundColor: isSelected ? colors.primary : colors.card,
             borderColor: isSelected ? colors.primary : colors.border,
           }
@@ -130,15 +124,15 @@ export default function BrandFilter({
         onPress={() => handleBrandPress(brand)}
         activeOpacity={0.7}
       >
-        <Tag 
-          size={12} 
-          color={isSelected ? "#ffffff" : colors.primary} 
+        <Tag
+          size={12}
+          color={isSelected ? "#ffffff" : colors.primary}
         />
-        <Text 
+        <Text
           style={[
-            styles.brandChipText, 
+            styles.brandChipText,
             { color: isSelected ? "#ffffff" : colors.text }
-          ]} 
+          ]}
           numberOfLines={1}
         >
           {isAll ? "Semua" : brand!.name}
@@ -160,25 +154,23 @@ export default function BrandFilter({
 
   return (
     <View style={styles.container}>
-      {/* Brand Filter Section - Only show if there are brands for selected category */}
-      {filteredBrands.length > 0 && (
-        <View style={styles.brandFilterSection}>
-          <Text style={[styles.brandFilterLabel, { color: colors.text }]}>
-            Filter Brand
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.brandScrollContainer}
-          >
-            {/* All Brands Chip */}
-            {renderBrandChip(null, true)}
-            
-            {/* Individual Brand Chips */}
-            {filteredBrands.map((brand) => renderBrandChip(brand))}
-          </ScrollView>
-        </View>
-      )}
+      {/* Brand Filter Section - Show all brands regardless of category */}
+      <View style={styles.brandFilterSection}>
+        <Text style={[styles.brandFilterLabel, { color: colors.text }]}>
+          Filter Brand
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.brandScrollContainer}
+        >
+          {/* All Brands Chip - Always visible */}
+          {renderBrandChip(null, true)}
+
+          {/* All Brand Chips - Not filtered by category */}
+          {filteredBrands.map((brand) => renderBrandChip(brand))}
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -221,6 +213,8 @@ const styles = StyleSheet.create({
   emptyBrandText: {
     fontSize: 12,
     fontStyle: "italic",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   loadingContainer: {
     padding: 30,

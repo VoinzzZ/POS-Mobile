@@ -85,6 +85,7 @@ const createProductValidation = Joi.object({
   product_cost: Joi.number()
     .precision(2)
     .min(0)
+    .allow(null)
     .optional()
     .messages({
       'number.base': 'Harga beli produk harus berupa angka',
@@ -104,6 +105,8 @@ const createProductValidation = Joi.object({
   product_min_stock: Joi.number()
     .integer()
     .min(0)
+    .allow(null)
+    .optional()
     .default(5)
     .messages({
       'number.base': 'Stok minimum produk harus berupa angka',
@@ -160,6 +163,28 @@ const updateProductValidation = Joi.object({
     }),
 
   category_id: Joi.number()
+    .integer()
+    .positive()
+    .allow(null)
+    .optional()
+    .messages({
+      'number.base': 'Category ID harus berupa angka',
+      'number.integer': 'Category ID harus berupa angka bulat',
+      'number.positive': 'Category ID harus berupa angka positif'
+    }),
+
+  product_brand_id: Joi.number()
+    .integer()
+    .positive()
+    .allow(null)
+    .optional()
+    .messages({
+      'number.base': 'Brand ID harus berupa angka',
+      'number.integer': 'Brand ID harus berupa angka bulat',
+      'number.positive': 'Brand ID harus berupa angka positif'
+    }),
+
+  product_category_id: Joi.number()
     .integer()
     .positive()
     .allow(null)

@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Image,
   Alert,
+  Image,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, Package, ShoppingCart, Edit, Trash2, Plus } from "lucide-react-native";
+import { ArrowLeft, Package, Plus, MoreVertical } from "lucide-react-native";
 import { useTheme } from "../src/context/ThemeContext";
 import { useAuth } from "../src/context/AuthContext";
 import {
@@ -20,8 +20,10 @@ import {
   getProductsByBrand,
   deleteProduct,
 } from "../src/api/product";
+import { formatPrice, getStockStatus, getStockStatusColor, calculateProfitMargin } from "../src/utils/product.helpers";
+import { STOCK_STATUS } from "../src/constants/product.constants";
 import EditProductModal from "../src/components/modals/EditProductModal";
-import AddProductModal from "../src/components/modals/AddProductModal";
+import SelectProductModal from "../src/components/modals/SelectProductModal";
 
 export default function ProductsByFilterScreen() {
   const params = useLocalSearchParams();
@@ -36,7 +38,7 @@ export default function ProductsByFilterScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showSelectModal, setShowSelectModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
@@ -79,24 +81,6 @@ export default function ProductsByFilterScreen() {
     setRefreshing(false);
   }, []);
 
-  const handleAddToCart = (product: Product) => {
-    // TODO: Implement add to cart functionality
-    Alert.alert(
-      "Tambah ke Keranjang",
-      `Menambahkan "${product.name}" ke keranjang?`,
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Tambah",
-          onPress: () => {
-            // TODO: Add to cart logic here
-            Alert.alert("Berhasil", `${product.name} ditambahkan ke keranjang!`);
-          }
-        },
-      ]
-    );
-  };
-
   const handleDeleteProduct = (productId: number, productName: string) => {
     Alert.alert(
       "Hapus Produk",
@@ -109,8 +93,9 @@ export default function ProductsByFilterScreen() {
           onPress: async () => {
             try {
               await deleteProduct(productId);
-              Alert.alert("Berhasil", "Produk berhasil dihapus");
               await loadProducts();
+              setShowEditModal(false);
+              setSelectedProduct(null);
             } catch (error: any) {
               Alert.alert("Error", error.message || "Gagal menghapus produk");
             }
@@ -120,79 +105,73 @@ export default function ProductsByFilterScreen() {
     );
   };
 
-  const renderProductCard = (product: Product) => (
-    <View
-      key={product.id}
-      style={[styles.productCard, { backgroundColor: colors.card }]}
-    >
-      {product.imageUrl ? (
-        <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
-      ) : (
-        <View style={[styles.productImagePlaceholder, { backgroundColor: colors.primary + "20" }]}>
-          <Package size={32} color={colors.primary} />
-        </View>
-      )}
-      <View style={styles.productInfo}>
-        <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>
-          {product.name}
-        </Text>
-        <Text style={[styles.productPrice, { color: colors.primary }]}>
-          Rp {product.price.toLocaleString("id-ID")}
-        </Text>
-        <View style={styles.productMeta}>
-          {product.m_brand?.m_category && (
-            <View style={[styles.badge, { backgroundColor: "#3b82f6" + "20" }]}>
-              <Text style={[styles.badgeText, { color: "#3b82f6" }]}>
-                {product.m_brand.m_category.category_name}
-              </Text>
-            </View>
-          )}
-          {product.m_brand && (
-            <View style={[styles.badge, { backgroundColor: "#f59e0b" + "20" }]}>
-              <Text style={[styles.badgeText, { color: "#f59e0b" }]}>
-                {product.m_brand.brand_name}
-              </Text>
+  const renderProductCard = (product: Product) => {
+    const profitMargin = calculateProfitMargin(product);
+    const stockStatus = getStockStatus(product);
+    const stockColor = getStockStatusColor(stockStatus);
+    const isLowStock = stockStatus === STOCK_STATUS.LOW_STOCK || stockStatus === STOCK_STATUS.OUT_OF_STOCK;
+
+    return (
+      <View
+        key={product.product_id}
+        style={[styles.card, { backgroundColor: colors.card }]}
+      >
+        <View style={styles.imageContainer}>
+          {product.product_image_url ? (
+            <Image
+              source={{ uri: product.product_image_url }}
+              style={styles.productImageSmall}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.productImagePlaceholderSmall, { backgroundColor: colors.primary + "20" }]}>
+              <Package size={24} color={colors.primary} />
             </View>
           )}
         </View>
-        <Text style={[styles.productStock, {
-          color: product.stock < 10 ? "#ef4444" : colors.textSecondary
-        }]}>
-          Stok: {product.stock}
-        </Text>
-      </View>
-      {user?.role === "ADMIN" ? (
-        <View style={styles.adminActions}>
+        <View style={styles.cardContent}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>
+            {product.product_name}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Text style={[styles.cardPrice, { color: colors.primary }]}>
+              {formatPrice(product.product_price)}
+            </Text>
+            {product.product_cost && product.product_cost > 0 && (
+              <View style={[styles.badge, { backgroundColor: profitMargin > 30 ? "#10b981" : profitMargin > 15 ? "#f59e0b" : "#6b7280" }]}>
+                <Text style={[styles.badgeText, { color: "#fff" }]}>
+                  +{profitMargin.toFixed(0)}%
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={[styles.cardStock, { color: isLowStock ? stockColor : colors.textSecondary }]}>
+              Stok: {product.product_qty}
+            </Text>
+            {isLowStock && (
+              <View style={[styles.badge, { backgroundColor: stockColor }]}>
+                <Text style={[styles.badgeText, { color: "#fff" }]}>
+                  {stockStatus === STOCK_STATUS.OUT_OF_STOCK ? "OUT" : "LOW"}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+        <View style={styles.cardActions}>
           <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: colors.primary + "20" }]}
+            style={styles.actionBtn}
             onPress={() => {
               setSelectedProduct(product);
               setShowEditModal(true);
             }}
           >
-            <Edit size={16} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: "#ef4444" + "20" }]}
-            onPress={() => handleDeleteProduct(product.id, product.name)}
-          >
-            <Trash2 size={16} color="#ef4444" />
+            <MoreVertical size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
-      ) : user?.role === "CASHIER" ? (
-        <TouchableOpacity
-          style={[styles.addButton, {
-            backgroundColor: product.stock > 0 ? colors.primary : colors.border,
-            opacity: product.stock > 0 ? 1 : 0.5
-          }]}
-          onPress={() => handleAddToCart(product)}
-          disabled={product.stock === 0}
-        >
-          <ShoppingCart size={16} color="#ffffff" />
-        </TouchableOpacity>
-      ) : null}
-    </View>
-  );
+      </View>
+    );
+  };
 
   if (!type || !id || !name) {
     return (
@@ -248,30 +227,32 @@ export default function ProductsByFilterScreen() {
               Memuat produk...
             </Text>
           </View>
-        ) : products.length === 0 ? (
-          <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
-            <Package size={48} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.text }]}>
-              Tidak ada produk
-            </Text>
-            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-              Belum ada produk dalam {type === "category" ? "kategori" : "brand"} "{name}"
-            </Text>
-          </View>
         ) : (
-          <View style={styles.productsContainer}>
-            {products.map(renderProductCard)}
+          <View style={styles.section}>
+            {products.length === 0 ? (
+              <View style={[styles.emptyContainer, { backgroundColor: colors.card }]}>
+                <Package size={48} color={colors.textSecondary} />
+                <Text style={[styles.emptyText, { color: colors.text }]}>
+                  Tidak ada produk
+                </Text>
+                <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+                  Belum ada produk dalam {type === "category" ? "kategori" : "brand"} "{name}"
+                </Text>
+              </View>
+            ) : (
+              products.map(renderProductCard)
+            )}
           </View>
         )}
 
-        <View style={{ height: 80 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* FAB untuk Add Product (ADMIN only) */}
+      {/* FAB untuk Select Product (ADMIN only) */}
       {user?.role === "ADMIN" && (
         <TouchableOpacity
           style={[styles.fab, { backgroundColor: colors.primary }]}
-          onPress={() => setShowAddModal(true)}
+          onPress={() => setShowSelectModal(true)}
         >
           <Plus size={28} color="#ffffff" />
         </TouchableOpacity>
@@ -281,6 +262,7 @@ export default function ProductsByFilterScreen() {
       <EditProductModal
         visible={showEditModal}
         product={selectedProduct}
+        onDelete={handleDeleteProduct}
         onClose={() => {
           setShowEditModal(false);
           setSelectedProduct(null);
@@ -291,19 +273,21 @@ export default function ProductsByFilterScreen() {
           setSelectedProduct(null);
         }}
       />
-      <AddProductModal
-        visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
+      <SelectProductModal
+        visible={showSelectModal}
+        type={type}
+        filterId={parseInt(id)}
+        filterName={name}
+        onClose={() => setShowSelectModal(false)}
         onSuccess={() => {
           loadProducts();
-          setShowAddModal(false);
+          setShowSelectModal(false);
         }}
-        preSelectedCategoryId={type === "category" ? parseInt(id) : undefined}
-        preSelectedBrandId={type === "brand" ? parseInt(id) : undefined}
       />
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -334,82 +318,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  productsContainer: {
-    padding: 20,
-    gap: 16,
-  },
-  productCard: {
-    flexDirection: "row",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "flex-start",
-  },
-  productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 16,
-  },
-  productImagePlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  productInfo: {
-    flex: 1,
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 6,
-    lineHeight: 20,
-  },
-  productPrice: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  productMeta: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginBottom: 8,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  productStock: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  adminActions: {
-    flexDirection: "column",
-    gap: 8,
-    marginLeft: 12,
-  },
-  actionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 12,
+  section: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
   },
   fab: {
     position: "absolute",
@@ -427,8 +338,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   loadingContainer: {
+    flex: 1,
     padding: 60,
     alignItems: "center",
+    justifyContent: "center",
   },
   loadingText: {
     fontSize: 14,
@@ -462,5 +375,58 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
+  },
+  card: {
+    flexDirection: "row",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    alignItems: "center",
+  },
+  imageContainer: {
+    marginRight: 12,
+  },
+  productImageSmall: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+  },
+  productImagePlaceholderSmall: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  cardPrice: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  cardStock: {
+    fontSize: 12,
+  },
+  cardActions: {
+    justifyContent: "center",
+  },
+  actionBtn: {
+    padding: 4,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: "600",
   },
 });

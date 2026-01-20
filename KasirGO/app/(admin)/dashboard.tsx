@@ -1,45 +1,133 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
 import { useAuth } from "../../src/context/AuthContext";
 import { DollarSign, Package, Users, TrendingUp, Settings } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
 import RevenueChart from "../../src/components/shared/RevenueChart";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../src/context/ThemeContext";
+import { getFinancialSummary } from "../../src/api/financial";
+import { getAllProducts } from "../../src/api/product";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const { colors } = useTheme();
 
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
+  const [statsData, setStatsData] = useState({
+    totalRevenue: "Rp 0",
+    totalProducts: "0",
+    totalTransactions: "0",
+    growth: "0%",
+  });
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboardStats();
+    setRefreshing(false);
+  };
+
+  const getCurrentDate = () => {
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    };
+    return new Date().toLocaleDateString('id-ID', options);
+  };
+
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+
+      // Get current month dates
+      const now = new Date();
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const currentMonthEnd = now;
+
+      // Get last month dates
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+      // Fetch data in parallel
+      const [currentMonthData, lastMonthData, productsData] = await Promise.all([
+        getFinancialSummary({
+          start_date: currentMonthStart.toISOString().split('T')[0],
+          end_date: currentMonthEnd.toISOString().split('T')[0],
+        }),
+        getFinancialSummary({
+          start_date: lastMonthStart.toISOString().split('T')[0],
+          end_date: lastMonthEnd.toISOString().split('T')[0],
+        }),
+        getAllProducts(),
+      ]);
+
+      // Extract data
+      const currentRevenue = currentMonthData.data?.revenue?.total || 0;
+      const lastRevenue = lastMonthData.data?.revenue?.total || 0;
+      const totalProducts = productsData.data?.length || 0;
+      const totalTransactions = currentMonthData.data?.transactions?.total || 0;
+
+      // Filter low stock products (stock <= 5)
+      const lowStock = (productsData.data || []).filter(
+        (product: any) => product.product_qty <= 5 && product.is_active
+      );
+      setLowStockProducts(lowStock);
+
+      // Calculate growth percentage
+      let growthPercentage = 0;
+      if (lastRevenue > 0) {
+        growthPercentage = ((currentRevenue - lastRevenue) / lastRevenue) * 100;
+      } else if (currentRevenue > 0) {
+        growthPercentage = 100;
+      }
+
+      // Format data
+      setStatsData({
+        totalRevenue: formatRupiah(currentRevenue),
+        totalProducts: totalProducts.toString(),
+        totalTransactions: totalTransactions.toString(),
+        growth: `${growthPercentage >= 0 ? '+' : ''}${growthPercentage.toFixed(1)}%`,
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      // Keep default values on error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatRupiah = (amount: number): string => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const stats = [
     {
-      title: "Total Revenue",
-      value: "Rp 12,500,000",
-      icon: DollarSign,
-      color: "#10b981",
-      bgColor: "#064e3b",
-    },
-    {
-      title: "Products",
-      value: "248",
+      title: "Produk",
+      value: statsData.totalProducts,
       icon: Package,
       color: "#3b82f6",
       bgColor: "#1e3a8a",
     },
     {
-      title: "Customers",
-      value: "1,234",
+      title: "Transaksi",
+      value: statsData.totalTransactions,
       icon: Users,
       color: "#f59e0b",
       bgColor: "#78350f",
-    },
-    {
-      title: "Growth",
-      value: "+23%",
-      icon: TrendingUp,
-      color: "#ec4899",
-      bgColor: "#831843",
     },
   ];
 
@@ -47,60 +135,138 @@ export default function AdminDashboard() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <View>
-          <Text style={[styles.greeting, { color: colors.textSecondary }]}>Selamat Datang Kembali,</Text>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.greeting, { color: colors.textSecondary }]}>Selamat Datang,</Text>
           <Text style={[styles.userName, { color: colors.text }]}>{user?.user_name || "Admin"}</Text>
+          <Text style={[styles.dateText, { color: colors.textSecondary }]}>{getCurrentDate()}</Text>
         </View>
-        <TouchableOpacity 
-          onPress={() => router.push("/(admin)/settings")} 
+        <TouchableOpacity
+          onPress={() => router.push("/(admin)/settings")}
           style={styles.settingsBtn}
         >
           <Settings size={24} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <View key={index} style={[styles.statCard, { borderLeftColor: stat.color, backgroundColor: colors.card }]}>
-                <View style={[styles.iconContainer, { backgroundColor: stat.bgColor }]}>
-                  <Icon size={24} color={stat.color} />
-                </View>
-                <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
-                <Text style={[styles.statTitle, { color: colors.textSecondary }]}>{stat.title}</Text>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {/* Stats Section */}
+        <View style={styles.statsSection}>
+          {/* Total Pendapatan - Prominent */}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Memuat statistik...</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.revenueContainer}>
+                <Text style={[styles.revenueLabel, { color: colors.textSecondary }]}>Total Pendapatan</Text>
+                <Text style={[styles.revenueValue, { color: colors.text }]}>{statsData.totalRevenue}</Text>
+                <Text style={[styles.revenueSubtext, { color: colors.textSecondary }]}>Bulan ini</Text>
               </View>
-            );
-          })}
+
+              {/* Smaller Stats Cards */}
+              <View style={styles.statsGrid}>
+                {stats.map((stat, index) => {
+                  return (
+                    <View key={index} style={[styles.statCard, { backgroundColor: colors.card }]}>
+                      <Text style={[styles.statTitle, { color: colors.textSecondary }]}>{stat.title}</Text>
+                      <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </>
+          )}
         </View>
+
+        {/* Low Stock Alert */}
+        {!loading && lowStockProducts.length > 0 && (
+          <View style={styles.lowStockSection}>
+            <View style={styles.lowStockHeader}>
+              <Text style={[styles.lowStockTitle, { color: colors.text }]}>⚠️ Stok Rendah</Text>
+              <Text style={[styles.lowStockCount, { color: colors.textSecondary }]}>
+                {lowStockProducts.length} produk
+              </Text>
+            </View>
+            <View style={[styles.lowStockCard, { backgroundColor: colors.card }]}>
+              {lowStockProducts.slice(0, 5).map((product, index) => (
+                <View
+                  key={product.product_id}
+                  style={[
+                    styles.lowStockItem,
+                    index < lowStockProducts.slice(0, 5).length - 1 && styles.lowStockItemBorder,
+                    { borderBottomColor: colors.border || 'rgba(255,255,255,0.1)' }
+                  ]}
+                >
+                  <View style={styles.lowStockItemLeft}>
+                    <Text style={[styles.lowStockProductName, { color: colors.text }]} numberOfLines={1}>
+                      {product.product_name}
+                    </Text>
+                    {product.m_category && (
+                      <Text style={[styles.lowStockCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {product.m_category.category_name}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.lowStockItemRight}>
+                    <Text style={[styles.lowStockQuantity, { color: '#ef4444' }]}>
+                      {product.product_qty}
+                    </Text>
+                    <Text style={[styles.lowStockLabel, { color: colors.textSecondary }]}>stok</Text>
+                  </View>
+                </View>
+              ))}
+              {lowStockProducts.length > 5 && (
+                <TouchableOpacity
+                  style={styles.lowStockMore}
+                  onPress={() => router.push("/(admin)/products")}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.lowStockMoreText, { color: colors.primary }]}>
+                    Lihat {lowStockProducts.length - 5} produk lainnya
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Revenue Chart */}
         <View style={styles.chartSection}>
           <RevenueChart />
         </View>
 
-        {/* Recent Activity Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Aktivitas Terkini</Text>
-          <View style={[styles.activityCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.activityText, { color: colors.textSecondary }]}>Belum ada transaksi</Text>
-            <Text style={[styles.activitySubtext, { color: colors.textSecondary }]}>Data transaksi akan muncul di sini</Text>
-          </View>
-        </View>
-
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Aksi Cepat</Text>
           <View style={styles.quickActions}>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
-              <Package size={20} color={colors.primary} />
-              <Text style={[styles.actionText, { color: colors.primary }]}>Tambah Produk</Text>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.card }]}
+              onPress={() => router.push("/(admin)/products")}
+              activeOpacity={0.7}
+            >
+              <Package size={24} color={colors.primary} />
+              <Text style={[styles.actionText, { color: colors.text }]}>Kelola Produk</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
-              <Users size={20} color={colors.primary} />
-              <Text style={[styles.actionText, { color: colors.primary }]}>Tambah Pengguna</Text>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.card }]}
+              onPress={() => router.push("/(admin)/stock")}
+              activeOpacity={0.7}
+            >
+              <Package size={24} color={colors.primary} />
+              <Text style={[styles.actionText, { color: colors.text }]}>Kelola Stok</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -121,13 +287,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.05)",
+  },
+  headerLeft: {
+    flex: 1,
   },
   greeting: {
-    fontSize: 14,
+    fontSize: 13,
+    opacity: 0.7,
+  },
+  dateText: {
+    fontSize: 12,
+    opacity: 0.6,
+    marginTop: 4,
   },
   userName: {
     fontSize: 24,
@@ -140,36 +317,156 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  lowStockSection: {
+    paddingHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  lowStockHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  lowStockTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  lowStockCount: {
+    fontSize: 13,
+  },
+  lowStockCard: {
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  lowStockItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+  },
+  lowStockItemBorder: {
+    borderBottomWidth: 1,
+  },
+  lowStockItemLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  lowStockProductName: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  lowStockCategory: {
+    fontSize: 12,
+    opacity: 0.6,
+  },
+  lowStockItemRight: {
+    alignItems: "flex-end",
+  },
+  lowStockQuantity: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  lowStockLabel: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  lowStockMore: {
+    padding: 16,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+  },
+  lowStockMoreText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  statsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  revenueContainer: {
+    marginTop: 12,
+    marginBottom: 20,
+    paddingVertical: 24,
+    alignItems: "center",
+  },
+  revenueLabel: {
+    fontSize: 13,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    opacity: 0.6,
+    marginBottom: 12,
+    fontWeight: "600",
+  },
+  revenueValue: {
+    fontSize: 40,
+    fontWeight: "700",
+    lineHeight: 48,
+    letterSpacing: -0.5,
+  },
+  revenueSubtext: {
+    fontSize: 12,
+    opacity: 0.5,
+    marginTop: 4,
+  },
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    padding: 16,
     gap: 12,
+    marginTop: 0,
   },
-  statCard: {
-    width: "48%",
-    padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  loadingContainer: {
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
+    paddingVertical: 40,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 4,
+  loadingText: {
+    fontSize: 14,
+    marginTop: 12,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: "45%",
+    maxWidth: "48%",
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   statTitle: {
-    fontSize: 12,
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 12,
+    opacity: 0.6,
+    fontWeight: "500",
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: "700",
+    lineHeight: 32,
   },
   chartSection: {
     paddingHorizontal: 20,
+    marginTop: 16,
     marginBottom: 24,
   },
   section: {
@@ -177,35 +474,32 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  activityCard: {
-    padding: 20,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  activityText: {
     fontSize: 16,
+    fontWeight: "700",
     marginBottom: 4,
-  },
-  activitySubtext: {
-    fontSize: 12,
+    letterSpacing: 0.3,
   },
   quickActions: {
     flexDirection: "row",
-    gap: 12,
+    gap: 16,
   },
   actionButton: {
     flex: 1,
-    padding: 16,
+    padding: 18,
     borderRadius: 12,
     alignItems: "center",
-    gap: 8,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
   },
 });

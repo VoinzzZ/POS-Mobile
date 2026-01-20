@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
-import { DollarSign, TrendingUp, Briefcase, Wallet } from "lucide-react-native";
+import { BanknoteArrowUp, BanknoteArrowDown, TrendingUp, Briefcase, Wallet } from "lucide-react-native";
 import { getFinancialSummary, FinancialSummary } from "../../api/financial";
 import { formatCurrency, formatPercentage } from "../../utils/financial.helpers";
 import { useTheme } from "../../context/ThemeContext";
@@ -51,7 +51,7 @@ export default function FinancialOverview() {
         {
             title: "Total Pendapatan",
             value: formatCurrency(summary.revenue.total),
-            icon: DollarSign,
+            icon: BanknoteArrowUp,
             color: "#10b981",
             bgColor: "#064e3b",
         },

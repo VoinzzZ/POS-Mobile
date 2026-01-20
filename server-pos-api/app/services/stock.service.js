@@ -1,6 +1,6 @@
 const prisma = require('../config/mysql.db.js');
 
-const createStockMovement = async (movementData) => {
+const createStockMovement = async (movementData, skipProductUpdate = false) => {
     try {
         const { product_id, movement_type, quantity, cost_per_unit, reference_type, reference_id, notes, tenant_id, created_by } = movementData;
 
@@ -49,10 +49,12 @@ const createStockMovement = async (movementData) => {
             }
         });
 
-        await prisma.m_product.update({
-            where: { product_id: parseInt(product_id) },
-            data: { product_qty: after_qty }
-        });
+        if (!skipProductUpdate) {
+            await prisma.m_product.update({
+                where: { product_id: parseInt(product_id) },
+                data: { product_qty: after_qty }
+            });
+        }
 
         return movement;
     } catch (error) {
@@ -236,7 +238,19 @@ const getLowStockProducts = async (tenant_id) => {
       ORDER BY shortage DESC
     `;
 
-        return products;
+        // Convert BigInt values to Numbers for JSON serialization
+        const serializedProducts = products.map(product => ({
+            product_id: Number(product.product_id),
+            product_name: product.product_name,
+            product_sku: product.product_sku,
+            product_qty: Number(product.product_qty),
+            product_min_stock: Number(product.product_min_stock),
+            product_price: parseFloat(product.product_price),
+            product_cost: product.product_cost ? parseFloat(product.product_cost) : null,
+            shortage: Number(product.shortage)
+        }));
+
+        return serializedProducts;
     } catch (error) {
         throw error;
     }
@@ -266,7 +280,20 @@ const getDeadStockProducts = async (tenant_id, days = 90) => {
       ORDER BY tied_capital DESC
     `;
 
-        return deadStockProducts;
+        // Convert BigInt values to Numbers for JSON serialization
+        const serializedProducts = deadStockProducts.map(product => ({
+            product_id: Number(product.product_id),
+            product_name: product.product_name,
+            product_sku: product.product_sku,
+            product_qty: Number(product.product_qty),
+            product_price: parseFloat(product.product_price),
+            product_cost: product.product_cost ? parseFloat(product.product_cost) : null,
+            tied_capital: product.tied_capital ? parseFloat(product.tied_capital) : 0,
+            last_movement_date: product.last_movement_date,
+            days_no_movement: product.days_no_movement ? Number(product.days_no_movement) : null
+        }));
+
+        return serializedProducts;
     } catch (error) {
         throw error;
     }

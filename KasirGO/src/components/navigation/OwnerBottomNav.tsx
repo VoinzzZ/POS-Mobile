@@ -41,6 +41,9 @@ export default function OwnerBottomNav() {
             style={styles.tab}
             onPress={() => router.push(tab.route as any)}
           >
+            {active && (
+              <View style={[styles.indicator, { backgroundColor: colors.primary }]} />
+            )}
             <Icon
               size={24}
               color={active ? colors.primary : colors.textSecondary}
@@ -69,6 +72,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
+    position: "relative",
+  },
+  indicator: {
+    position: "absolute",
+    top: 0,
+    width: 40,
+    height: 3,
+    borderRadius: 2,
   },
   label: {
     fontSize: 11,

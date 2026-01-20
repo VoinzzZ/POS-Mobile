@@ -9,7 +9,7 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { History, Settings, Receipt, ChevronRight, Trash2, Edit, Filter, ChevronLeft } from "lucide-react-native";
+import { History, Settings, ReceiptText, ChevronRight, Trash2, Edit, Filter, ChevronLeft } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -236,7 +236,7 @@ export default function HistoryScreen() {
       <TouchableOpacity onPress={() => handleTransactionPress(transaction)}>
         <View style={styles.transactionHeader}>
           <View style={styles.transactionIconContainer}>
-            <Receipt size={20} color={colors.primary} />
+            <ReceiptText size={20} color={colors.primary} />
           </View>
           <View style={styles.transactionInfo}>
             <Text style={[styles.transactionId, { color: colors.text }]}>
@@ -297,7 +297,7 @@ export default function HistoryScreen() {
             style={[styles.actionButton, { backgroundColor: `${colors.primary}15` }]}
             onPress={() => router.push(`/(admin)/receipt/${transaction.id}` as any)}
           >
-            <Receipt size={16} color={colors.primary} />
+            <ReceiptText size={16} color={colors.primary} />
             <Text style={[styles.actionButtonText, { color: colors.primary }]}>Cetak</Text>
           </TouchableOpacity>
         )}
@@ -352,7 +352,7 @@ export default function HistoryScreen() {
       <View style={styles.statsContainer}>
         <View style={[styles.statCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.statValue, { color: colors.primary }]}>{formatCurrency(stats.totalAmount)}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Revenue</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Pendapatan</Text>
         </View>
         <View style={{ gap: 8, flex: 1 }}>
           <View style={[styles.miniStatCard, { backgroundColor: colors.card }]}>

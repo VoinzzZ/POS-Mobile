@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated, ActivityIndicator } from "react-native";
-import { TrendingUp, Calendar, DollarSign, Users, BarChart3, PieChart, Filter, Settings, Activity, Target, ShoppingCart, Star } from "lucide-react-native";
+import { BanknoteArrowUp, BanknoteArrowDown, TrendingUp, Calendar, DollarSign, Users, BarChart3, PieChart, Filter, Settings, Activity, Target, ShoppingCart, Star, Wallet } from "lucide-react-native";
 import OwnerBottomNav from "../../src/components/navigation/OwnerBottomNav";
-import RevenueChart from "../../src/components/shared/RevenueChart";
+import TopSellingProducts from "../../src/components/owner/TopSellingProducts";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter } from "expo-router";
 import { getFinancialSummary, getRevenueReport, getEmployeePerformance } from "../../src/api/financial";
@@ -78,7 +78,7 @@ export default function AnalyticsScreen() {
       value: formatCurrency(summary.revenue.total),
       change: "+18.5%",
       color: "#10b981",
-      icon: DollarSign,
+      icon: BanknoteArrowUp,
       trend: "up"
     },
     {
@@ -185,9 +185,9 @@ export default function AnalyticsScreen() {
             </View>
           )}
 
-          {/* Revenue Chart */}
+          {/* Top Selling Products */}
           <View style={styles.chartSection}>
-            <RevenueChart />
+            <TopSellingProducts timeRange={timeRange} limit={5} />
           </View>
 
           {/* Employee Performance */}
@@ -241,7 +241,7 @@ export default function AnalyticsScreen() {
                       <View
                         style={[
                           styles.paymentMethodFill,
-                          { width: `${percentage}%`, backgroundColor: methodColors[method] }
+                          { width: `${percentage}%` as any, backgroundColor: methodColors[method] }
                         ]}
                       />
                     </View>

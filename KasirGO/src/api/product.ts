@@ -166,7 +166,7 @@ export const createProduct = async (
       formData.append('product_category_id', data.product_category_id.toString());
     }
 
-    formData.append('image', data.image);
+    formData.append('product_image', data.image);
 
     const res = await api.post("/products", formData, {
       headers: {
@@ -250,7 +250,7 @@ export const updateProduct = async (
       formData.append('product_category_id', data.product_category_id.toString());
     }
 
-    formData.append('image', data.image);
+    formData.append('product_image', data.image);
 
     const res = await api.put(`/products/${id}`, formData, {
       headers: {
@@ -436,4 +436,56 @@ export const prepareImageFile = (imageUri: string, productName: string): any => 
     name: `${productName.replace(/\s/g, '_')}_${Date.now()}.${fileType}`,
     type: `image/${fileType}`,
   };
+};
+
+/**
+ * Get products available for linking to a brand
+ * @param brand_id - Brand ID
+ */
+export const getAvailableProductsForBrand = async (
+  brand_id: number
+): Promise<ApiResponse<Product[]>> => {
+  const res = await api.get(`/products/available/brand/${brand_id}`);
+  return res.data;
+};
+
+/**
+ * Get products available for linking to a category
+ * @param category_id - Category ID
+ */
+export const getAvailableProductsForCategory = async (
+  category_id: number
+): Promise<ApiResponse<Product[]>> => {
+  const res = await api.get(`/products/available/category/${category_id}`);
+  return res.data;
+};
+
+/**
+ * Link multiple products to a brand
+ * @param brand_id - Brand ID
+ * @param product_ids - Array of product IDs to link
+ */
+export const linkProductsToBrand = async (
+  brand_id: number,
+  product_ids: number[]
+): Promise<ApiResponse> => {
+  const res = await api.patch(`/products/link/brand/${brand_id}`, {
+    product_ids
+  });
+  return res.data;
+};
+
+/**
+ * Link multiple products to a category
+ * @param category_id - Category ID
+ * @param product_ids - Array of product IDs to link
+ */
+export const linkProductsToCategory = async (
+  category_id: number,
+  product_ids: number[]
+): Promise<ApiResponse> => {
+  const res = await api.patch(`/products/link/category/${category_id}`, {
+    product_ids
+  });
+  return res.data;
 };

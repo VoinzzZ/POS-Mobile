@@ -44,14 +44,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [stock, setStock] = useState("");
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [brandId, setBrandId] = useState<number | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
   const [sku, setSku] = useState("");
   const [description, setDescription] = useState("");
-  const [cost, setCost] = useState("");
   const [minStock, setMinStock] = useState("");
   const [isTrackStock, setIsTrackStock] = useState(true);
   const [isSellable, setIsSellable] = useState(true);
@@ -65,29 +63,23 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
   const [errors, setErrors] = useState<{
     name?: string;
     price?: string;
-    stock?: string;
     category?: string;
   }>({});
 
-  // Load product data when modal opens
   useEffect(() => {
     if (visible && product) {
       setName(product.product_name);
       setPrice(product.product_price.toString());
-      setStock(product.product_qty.toString());
-      // Set categoryId from product's category
-      // Set categoryId from product's category directly (preferred) or fallback to brand's category
-      const productCategoryId = product.categoryId || product.product_category_id || product.m_brand?.m_category?.category_id || null;
+      const productCategoryId = product.product_category_id || null;
       setCategoryId(productCategoryId);
       setBrandId(product.product_brand_id || null);
       setExistingImageUrl(product.product_image_url || null);
       setSku(product.product_sku || "");
       setDescription(product.product_description || "");
-      setCost(product.product_cost?.toString() || "");
       setMinStock(product.product_min_stock?.toString() || "");
       setIsTrackStock(product.is_track_stock ?? true);
       setIsSellable(product.is_sellable ?? true);
-      setImageUri(null); // Reset new image
+      setImageUri(null);
       loadCategoriesAndBrands();
     }
   }, [visible, product]);
@@ -112,16 +104,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
   };
 
   useEffect(() => {
-    if (categoryId) {
-      const filtered = brands.filter(b => b.brand_category_id === categoryId);
-      setFilteredBrands(filtered);
-      if (brandId && !filtered.find(b => b.brand_id === brandId)) {
-        setBrandId(null);
-      }
-    } else {
-      setFilteredBrands(brands);
-    }
-  }, [categoryId, brands, brandId]);
+    // No filtering needed - brands are independent of categories in this system
+    setFilteredBrands(brands);
+  }, [brands]);
 
   const validateInputs = (): boolean => {
     const newErrors: typeof errors = {};
@@ -134,12 +119,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
       newErrors.price = "Harga tidak boleh kosong";
     } else if (isNaN(Number(price)) || Number(price) <= 0) {
       newErrors.price = "Harga harus berupa angka positif";
-    }
-
-    if (!stock.trim()) {
-      newErrors.stock = "Stok tidak boleh kosong";
-    } else if (isNaN(Number(stock)) || Number(stock) < 0) {
-      newErrors.stock = "Stok harus berupa angka positif atau 0";
     }
 
     setErrors(newErrors);
@@ -206,15 +185,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
       const productData: any = {
         product_name: name.trim(),
         product_price: Number(price),
-        product_qty: Number(stock),
-        product_cost: cost ? Number(cost) : undefined,
         product_sku: sku.trim() || undefined,
         product_description: description.trim() || undefined,
         product_min_stock: minStock ? Number(minStock) : undefined,
         is_track_stock: isTrackStock,
         is_sellable: isSellable,
-        brand_id: brandId || undefined,
-        category_id: categoryId || undefined,
+        product_brand_id: brandId,
+        product_category_id: categoryId,
       };
 
       if (imageUri) {
@@ -444,58 +421,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
               )}
             </View>
 
-            {/* Cost Price */}
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Harga Modal (Opsional)
-              </Text>
-              <View
-                style={[
-                  styles.input,
-                  { borderColor: colors.border },
-                ]}
-              >
-                <TextInput
-                  style={{ color: colors.text, flex: 1 }}
-                  placeholder="Contoh: 3000"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                  value={cost}
-                  onChangeText={setCost}
-                />
-              </View>
-            </View>
-
-            {/* Stock */}
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Stok *
-              </Text>
-              <View
-                style={[
-                  styles.input,
-                  { borderColor: errors.stock ? "#ef4444" : colors.border },
-                ]}
-              >
-                <TextInput
-                  style={{ color: colors.text, flex: 1 }}
-                  placeholder="Contoh: 100"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                  value={stock}
-                  onChangeText={(text) => {
-                    setStock(text);
-                    if (errors.stock) {
-                      setErrors({ ...errors, stock: undefined });
-                    }
-                  }}
-                />
-              </View>
-              {errors.stock && (
-                <Text style={styles.errorText}>{errors.stock}</Text>
-              )}
-            </View>
-
             {/* Min Stock */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.label, { color: colors.text }]}>
@@ -548,15 +473,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
               <Text style={[styles.label, { color: colors.text }]}>
                 Kategori (Opsional)
               </Text>
-              <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-                Brand akan difilter berdasarkan kategori yang dipilih
-              </Text>
+
               <View style={[styles.dropdownContainer, { borderColor: colors.border }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <TouchableOpacity
                     onPress={() => {
                       setCategoryId(null);
-                      setBrandId(null);
                     }}
                     style={[
                       styles.dropdownChip,
@@ -604,11 +526,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
               <Text style={[styles.label, { color: colors.text }]}>
                 Brand (Opsional)
               </Text>
-              {categoryId && filteredBrands.length === 0 && (
-                <Text style={[styles.warningText, { color: colors.textSecondary }]}>
-                  Tidak ada brand untuk kategori ini.
-                </Text>
-              )}
+
               <View style={[
                 styles.dropdownContainer,
                 {
@@ -666,7 +584,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
               onPress={() => {
                 if (product && onDelete) {
                   onDelete(product.product_id, product.product_name);
-                  onClose();
                 }
               }}
               style={[styles.button, styles.cancelButton, { backgroundColor: "#ef4444" + "20" }]}

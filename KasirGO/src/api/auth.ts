@@ -120,6 +120,7 @@ export const getProfileApi = async (): Promise<
  * Update user profile (requires authentication)
  */
 export const updateProfileApi = async (data: {
+  fullname?: string;
   name?: string;
   phone?: string;
 }): Promise<ApiResponse<{ user: User }>> => {

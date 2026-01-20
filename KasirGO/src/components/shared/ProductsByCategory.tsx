@@ -99,13 +99,19 @@ export default function ProductsByCategory({
         onPress={() => handleAddToCart(product)}
         activeOpacity={0.7}
       >
-        {product.imageUrl ? (
-          <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
-        ) : (
-          <View style={[styles.productImagePlaceholder, { backgroundColor: colors.primary + "20" }]}>
-            <Package size={24} color={colors.primary} />
-          </View>
-        )}
+        <View style={styles.productImageContainer}>
+          {product.product_image_url ? (
+            <Image
+              source={{ uri: product.product_image_url }}
+              style={styles.productImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.productImagePlaceholder, { backgroundColor: colors.primary + "20" }]}>
+              <Package size={32} color={colors.primary} />
+            </View>
+          )}
+        </View>
         <View style={styles.productInfo}>
           <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>
             {product.name}
@@ -113,15 +119,6 @@ export default function ProductsByCategory({
           <Text style={[styles.productPrice, { color: colors.primary }]}>
             Rp {product.price.toLocaleString("id-ID")}
           </Text>
-          <View style={styles.productMeta}>
-            {product.m_category && (
-              <View style={[styles.badge, { backgroundColor: "#3b82f6" + "20" }]}>
-                <Text style={[styles.badgeText, { color: "#3b82f6" }]}>
-                  {product.m_category.category_name}
-                </Text>
-              </View>
-            )}
-          </View>
           <Text style={[styles.productStock, {
             color: product.stock < 10 ? "#ef4444" : colors.textSecondary
           }]}>
@@ -240,44 +237,46 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   productCardInner: {
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   productImageContainer: {
     width: "100%",
-    height: 100, // Fixed height for image container
+    height: 120,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   productImage: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
   },
   productImagePlaceholder: {
     width: "100%",
-    height: 100,
+    height: 120,
     alignItems: "center",
     justifyContent: "center",
   },
   productInfo: {
-    padding: 10,
+    padding: 12,
+    gap: 4,
   },
   productName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-    marginBottom: 4,
+    marginBottom: 2,
     lineHeight: 18,
+    minHeight: 36,
   },
   productPrice: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   productMeta: {
     flexDirection: "row",

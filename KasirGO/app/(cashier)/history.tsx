@@ -9,12 +9,11 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { History, Settings, Receipt, ChevronRight, Trash2 } from "lucide-react-native";
+import { History, Settings, ReceiptText, ChevronRight, Trash2 } from "lucide-react-native";
 import CashierSidebar from "../../src/components/navigation/CashierSidebar";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter, useFocusEffect } from "expo-router";
 import { transactionService, Transaction } from "../../src/api/transaction";
-import TransactionEditModal from "../../src/components/modals/TransactionEditModal";
 
 export default function HistoryScreen() {
   const { colors } = useTheme();
@@ -23,13 +22,10 @@ export default function HistoryScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [selectedTransactionId, setSelectedTransactionId] = useState<number | null>(null);
 
   // Auto-refresh when screen comes into focus (e.g., after returning from edit screen)
   useFocusEffect(
     useCallback(() => {
-      console.log('🔄 History screen focused - Refreshing transactions...');
       fetchTransactions();
     }, [])
   );
@@ -38,23 +34,21 @@ export default function HistoryScreen() {
     try {
       // Fetch only today's transactions with COMPLETED status (belum LOCKED)
       const today = new Date();
-      const startDate = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-      const endDate = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+      const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0).toISOString();
+      const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).toISOString();
 
       const response = await transactionService.getAllTransactions({
-        startDate,
-        endDate,
+        start_date: startDate,
+        end_date: endDate,
         status: 'COMPLETED', // Hanya tampilkan yang sudah complete tapi belum locked
         page: 1,
         limit: 50,
       });
-      console.log('📦 Transaction Response:', JSON.stringify(response, null, 2));
       if (response.success) {
         // Check if data is array directly or nested in data.data
         const transactionsData = Array.isArray(response.data)
           ? response.data
           : (response.data?.data || []);
-        console.log('✅ Transactions loaded:', transactionsData.length);
         setTransactions(transactionsData);
       }
     } catch (error) {
@@ -141,19 +135,8 @@ export default function HistoryScreen() {
   };
 
   const handleTransactionPress = (transaction: Transaction) => {
-    // Open modal instead of navigating
-    setSelectedTransactionId(transaction.id);
-    setEditModalVisible(true);
-  };
-
-  const handleEditModalClose = () => {
-    setEditModalVisible(false);
-    setSelectedTransactionId(null);
-  };
-
-  const handleEditModalSaved = () => {
-    // Refresh transactions after successful edit
-    fetchTransactions();
+    // Navigate to transaction detail
+    router.push(`/(cashier)/receipt/${transaction.id}`);
   };
 
   const renderTransactionItem = (transaction: Transaction) => (
@@ -164,11 +147,11 @@ export default function HistoryScreen() {
       <TouchableOpacity onPress={() => handleTransactionPress(transaction)}>
         <View style={styles.transactionHeader}>
           <View style={styles.transactionIconContainer}>
-            <Receipt size={20} color={colors.primary} />
+            <ReceiptText size={20} color={colors.primary} />
           </View>
           <View style={styles.transactionInfo}>
             <Text style={[styles.transactionId, { color: colors.text }]}>
-              Transaksi #{transaction.id}
+              Transaksi #{transaction.dailyNumber || transaction.id}
             </Text>
             <Text style={[styles.transactionDate, { color: colors.textSecondary }]}>
               {formatDate(transaction.createdAt)}
@@ -218,7 +201,7 @@ export default function HistoryScreen() {
           style={[styles.actionButton, { backgroundColor: `${colors.primary}15` }]}
           onPress={() => router.push(`/(cashier)/receipt/${transaction.id}`)}
         >
-          <Receipt size={16} color={colors.primary} />
+          <ReceiptText size={16} color={colors.primary} />
           <Text style={[styles.actionButtonText, { color: colors.primary }]}>Cetak Struk</Text>
         </TouchableOpacity>
 
@@ -278,13 +261,7 @@ export default function HistoryScreen() {
             </ScrollView>
           )}
 
-          {/* Transaction Edit Modal */}
-          <TransactionEditModal
-            visible={editModalVisible}
-            transactionId={selectedTransactionId}
-            onClose={handleEditModalClose}
-            onSaved={handleEditModalSaved}
-          />
+
         </View>
       </View>
     </View>

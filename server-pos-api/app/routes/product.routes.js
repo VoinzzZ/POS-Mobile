@@ -3,12 +3,15 @@ const router = express.Router();
 const ProductController = require('../controllers/product.controller');
 const { verifyToken } = require('../middlewares/verifyToken');
 const { requireRole } = require('../middlewares/verifyRole');
+const { upload, handleMulterError } = require('../middlewares/upload.middleware');
 
 // Create new product
 router.post(
   '/',
   verifyToken,
   requireRole(['OWNER', 'ADMIN']),
+  upload.single('product_image'),
+  handleMulterError,
   ProductController.createProduct
 );
 
@@ -73,6 +76,8 @@ router.put(
   '/:productId',
   verifyToken,
   requireRole(['OWNER', 'ADMIN']),
+  upload.single('product_image'),
+  handleMulterError,
   ProductController.updateProduct
 );
 
@@ -80,7 +85,7 @@ router.put(
 router.delete(
   '/:productId',
   verifyToken,
-  requireRole(['OWNER']),
+  requireRole(['OWNER', 'ADMIN']),
   ProductController.deleteProduct
 );
 
@@ -122,6 +127,38 @@ router.patch(
   verifyToken,
   requireRole(['OWNER', 'ADMIN', 'CASHIER']),
   ProductController.updateProductStock
+);
+
+// Get products available for linking to brand
+router.get(
+  '/available/brand/:brandId',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN']),
+  ProductController.getAvailableProductsForBrand
+);
+
+// Get products available for linking to category
+router.get(
+  '/available/category/:categoryId',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN']),
+  ProductController.getAvailableProductsForCategory
+);
+
+// Link products to brand
+router.patch(
+  '/link/brand/:brandId',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN']),
+  ProductController.linkProductsToBrand
+);
+
+// Link products to category
+router.patch(
+  '/link/category/:categoryId',
+  verifyToken,
+  requireRole(['OWNER', 'ADMIN']),
+  ProductController.linkProductsToCategory
 );
 
 module.exports = router;

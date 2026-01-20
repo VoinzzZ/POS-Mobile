@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, FlatList } from "react-native";
 import { useAuth } from "../../src/context/AuthContext";
-import { Settings, LogOut } from "lucide-react-native";
+
 import CashierSidebar from "../../src/components/navigation/CashierSidebar";
 import ProductCard from "../../src/components/cashier/ProductCard";
 import ProductSearchBar from "../../src/components/cashier/ProductSearchBar";
@@ -31,10 +31,7 @@ export default function ProductCatalog() {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
 
-    const handleLogout = async () => {
-        await logout();
-        router.replace("/auth/login");
-    };
+
 
     const fetchProducts = async () => {
         try {
@@ -133,19 +130,6 @@ export default function ProductCatalog() {
                     <Text style={[styles.headerTitle, { color: colors.text }]}>Product Catalog</Text>
                     <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Browse product information</Text>
                 </View>
-                {!isLand || !isTab ? (
-                    <View style={styles.headerActions}>
-                        <TouchableOpacity
-                            onPress={() => router.push("/(cashier)/settings")}
-                            style={styles.settingsBtn}
-                        >
-                            <Settings size={20} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-                            <LogOut size={20} color="#f87171" />
-                        </TouchableOpacity>
-                    </View>
-                ) : null}
             </View>
 
             {loading ? (

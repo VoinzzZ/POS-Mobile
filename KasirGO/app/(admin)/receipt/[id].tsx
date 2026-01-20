@@ -30,6 +30,7 @@ export default function AdminReceiptPreviewScreen() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [isViewReady, setIsViewReady] = useState(false);
   const receiptRef = useRef<View>(null);
 
   useEffect(() => {
@@ -39,19 +40,16 @@ export default function AdminReceiptPreviewScreen() {
   const loadTransactionData = async () => {
     try {
       setLoading(true);
-      // Admin menggunakan getTransactionDetail karena bisa akses semua transaksi
-      // Load both transaction and store data in parallel
       const [transactionResponse, storeResponse] = await Promise.all([
         transactionService.getTransactionDetail(Number(id)),
         getStoreSettings(),
       ]);
-      
+
       if (transactionResponse.success && transactionResponse.data) {
         setTransaction(transactionResponse.data);
         if (storeResponse.success && storeResponse.data) {
           setStoreData(storeResponse.data);
         }
-        // Generate image automatically after component renders
         setTimeout(() => generateImage(), 500);
       } else {
         Alert.alert("Error", "Gagal memuat data transaksi");
@@ -67,25 +65,33 @@ export default function AdminReceiptPreviewScreen() {
   };
 
   const generateImage = async () => {
-    if (!receiptRef.current) return;
+    if (!receiptRef.current || !isViewReady) {
+      Alert.alert("Error", "Struk belum siap untuk di-generate");
+      return;
+    }
 
     try {
       setGenerating(true);
-      
-      // Capture the receipt component as PNG
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const uri = await captureRef(receiptRef, {
         format: "png",
         quality: 1,
         result: "tmpfile",
       });
-      
+
       console.log("✅ Image generated:", uri);
       setImageUri(uri);
-      
+
       return uri;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating image:", error);
-      Alert.alert("Error", "Gagal generate struk");
+
+      const errorMessage = Platform.OS === 'android'
+        ? "Gagal generate struk. Jika menggunakan emulator, coba di perangkat nyata."
+        : "Gagal generate struk";
+
+      Alert.alert("Error", errorMessage);
       throw error;
     } finally {
       setGenerating(false);
@@ -362,7 +368,7 @@ export default function AdminReceiptPreviewScreen() {
 
     try {
       setGenerating(true);
-      
+
       // Request media library permissions
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== "granted") {
@@ -412,7 +418,7 @@ export default function AdminReceiptPreviewScreen() {
 
     try {
       const canShare = await Sharing.isAvailableAsync();
-      
+
       if (canShare) {
         await Sharing.shareAsync(imageUri, {
           mimeType: "image/png",
@@ -470,37 +476,35 @@ export default function AdminReceiptPreviewScreen() {
       {/* Preview Content */}
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         {/* Receipt Card Preview - This will be captured as PNG */}
-        <View 
+        <View
           ref={receiptRef}
-          style={[styles.receiptCard, { backgroundColor: colors.surface }]}
+          style={[styles.receiptCard, { backgroundColor: '#FFFFFF' }]}
           collapsable={false}
+          onLayout={() => setIsViewReady(true)}
         >
-          {/* Store Header */}
           <View style={styles.storeHeader}>
-            {storeData?.logoUrl ? (
+            {storeData?.logoUrl && (
               <Image
                 source={{ uri: storeData.logoUrl }}
                 style={styles.storeLogo}
                 resizeMode="contain"
               />
-            ) : (
-              <StoreIcon size={48} color={colors.primary} />
             )}
-            <Text style={[styles.storeName, { color: colors.text }]}>
+            <Text style={[styles.storeName, { color: '#1f2937' }]}>
               {storeData?.name || "KasirGO"}
             </Text>
             {storeData?.description && (
-              <Text style={[styles.storeDescription, { color: colors.textSecondary }]}>
+              <Text style={[styles.storeDescription, { color: '#6b7280' }]}>
                 {storeData.description}
               </Text>
             )}
             {storeData?.address && (
-              <Text style={[styles.storeAddress, { color: colors.textSecondary }]}>
+              <Text style={[styles.storeAddress, { color: '#6b7280' }]}>
                 {storeData.address}
               </Text>
             )}
             {(storeData?.phone || storeData?.email) && (
-              <Text style={[styles.storeContact, { color: colors.textSecondary }]}>
+              <Text style={[styles.storeContact, { color: '#6b7280' }]}>
                 {storeData?.phone && `Telp: ${storeData.phone}`}
                 {storeData?.phone && storeData?.email && " | "}
                 {storeData?.email && `Email: ${storeData.email}`}
@@ -508,23 +512,22 @@ export default function AdminReceiptPreviewScreen() {
             )}
           </View>
 
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <View style={[styles.dividerLine, { backgroundColor: '#e5e7eb' }]} />
 
-          {/* Transaction Info */}
           <View style={styles.transactionInfo}>
             <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+              <Text style={[styles.infoLabel, { color: '#6b7280' }]}>
                 No. Transaksi
               </Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
+              <Text style={[styles.infoValue, { color: '#1f2937' }]}>
                 #{transaction.id}
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+              <Text style={[styles.infoLabel, { color: '#6b7280' }]}>
                 Tanggal
               </Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
+              <Text style={[styles.infoValue, { color: '#1f2937' }]}>
                 {new Date(transaction.createdAt).toLocaleString("id-ID", {
                   day: "2-digit",
                   month: "long",
@@ -535,81 +538,78 @@ export default function AdminReceiptPreviewScreen() {
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+              <Text style={[styles.infoLabel, { color: '#6b7280' }]}>
                 Kasir
               </Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
+              <Text style={[styles.infoValue, { color: '#1f2937' }]}>
                 {transaction.cashier?.userName || "N/A"}
               </Text>
             </View>
           </View>
 
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <View style={[styles.dividerLine, { backgroundColor: '#e5e7eb' }]} />
 
-          {/* Items */}
           <View style={styles.itemsSection}>
             <View style={styles.itemHeader}>
-              <Text style={[styles.itemHeaderText, { color: colors.text }]}>Item</Text>
-              <Text style={[styles.itemHeaderText, { color: colors.text }]}>Qty</Text>
-              <Text style={[styles.itemHeaderText, { color: colors.text }]}>Harga</Text>
-              <Text style={[styles.itemHeaderText, { color: colors.text }]}>Subtotal</Text>
+              <Text style={[styles.itemHeaderText, { color: '#1f2937' }]}>Item</Text>
+              <Text style={[styles.itemHeaderText, { color: '#1f2937' }]}>Qty</Text>
+              <Text style={[styles.itemHeaderText, { color: '#1f2937' }]}>Harga</Text>
+              <Text style={[styles.itemHeaderText, { color: '#1f2937' }]}>Subtotal</Text>
             </View>
             {transaction.items.map((item) => (
               <View key={item.id} style={styles.item}>
-                <Text style={[styles.itemName, { color: colors.text }]}>
+                <Text style={[styles.itemName, { color: '#1f2937' }]}>
                   {item.product.name}
                 </Text>
-                <Text style={[styles.itemQty, { color: colors.text }]}>
+                <Text style={[styles.itemQty, { color: '#1f2937' }]}>
                   {item.quantity}
                 </Text>
-                <Text style={[styles.itemPrice, { color: colors.text }]}>
+                <Text style={[styles.itemPrice, { color: '#1f2937' }]}>
                   {formatCurrency(item.price)}
                 </Text>
-                <Text style={[styles.itemSubtotal, { color: colors.text }]}>
+                <Text style={[styles.itemSubtotal, { color: '#1f2937' }]}>
                   {formatCurrency(item.subtotal)}
                 </Text>
               </View>
             ))}
           </View>
 
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <View style={[styles.dividerLine, { backgroundColor: '#e5e7eb' }]} />
 
-          {/* Total */}
           <View style={styles.totalsSection}>
             <View style={styles.totalRow}>
-              <Text style={[styles.totalLabel, { color: colors.text }]}>
+              <Text style={[styles.totalLabel, { color: '#1f2937' }]}>
                 TOTAL
               </Text>
-              <Text style={[styles.totalValue, { color: colors.text }]}>
+              <Text style={[styles.totalValue, { color: '#1f2937' }]}>
                 {formatCurrency(transaction.total)}
               </Text>
             </View>
             <View style={styles.totalRow}>
-              <Text style={[styles.paymentLabel, { color: colors.textSecondary }]}>
+              <Text style={[styles.paymentLabel, { color: '#6b7280' }]}>
                 Bayar
               </Text>
-              <Text style={[styles.paymentValue, { color: colors.textSecondary }]}>
+              <Text style={[styles.paymentValue, { color: '#6b7280' }]}>
                 {formatCurrency(transaction.paymentAmount || 0)}
               </Text>
             </View>
             <View style={styles.totalRow}>
-              <Text style={[styles.paymentLabel, { color: colors.textSecondary }]}>
+              <Text style={[styles.paymentLabel, { color: '#6b7280' }]}>
                 Kembali
               </Text>
-              <Text style={[styles.paymentValue, { color: colors.textSecondary }]}>
+              <Text style={[styles.paymentValue, { color: '#6b7280' }]}>
                 {formatCurrency(transaction.changeAmount || 0)}
               </Text>
             </View>
           </View>
 
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <View style={[styles.dividerLine, { backgroundColor: '#e5e7eb' }]} />
 
-          {/* Footer */}
           <View style={styles.receiptFooter}>
-            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+            <Text style={[styles.footerText, { color: '#6b7280' }]}>
               Terima kasih atas kunjungan Anda!
             </Text>
-            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+            <Text style={[styles.footerText, { color: '#6b7280' }]}>
               Made by KasirGo - @VoinzzZ
             </Text>
           </View>

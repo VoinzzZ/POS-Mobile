@@ -40,7 +40,7 @@ router.put(
 router.delete(
   '/:categoryId',
   verifyToken,
-  requireRole(['OWNER']),
+  requireRole(['OWNER', 'ADMIN']),
   CategoryController.deleteCategory
 );
 

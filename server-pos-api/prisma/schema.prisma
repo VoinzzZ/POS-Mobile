@@ -156,6 +156,7 @@ model m_product {
   product_name          String
   product_description   String?                 @db.Text
   product_sku           String?                 @unique
+  product_image_url     String?
   brand_id              Int?
   category_id           Int?
   tenant_id             Int
@@ -371,6 +372,7 @@ enum payment_method {
 
 model t_transaction {
   transaction_id             Int                  @id @default(autoincrement())
+  transaction_number         Int?
   tenant_id                  Int
   transaction_cashier_id     Int
   transaction_total          Decimal              @db.Decimal(12, 2)
@@ -409,8 +411,71 @@ model t_transaction_item {
   @@map("t_transaction_item")
 }
 
+enum cash_transaction_type {
+  INCOME
+  EXPENSE
+}
 
+model t_expense_category {
+  category_id          Int                    @id @default(autoincrement())
+  category_code        String                 @unique @db.VarChar(50)
+  category_name        String                 @db.VarChar(100)
+  category_description String?                @db.Text
+  tenant_id            Int?
+  is_active            Boolean                @default(true)
+  is_system            Boolean                @default(false)
+  created_by           Int?
+  updated_by           Int?
+  created_at           DateTime               @default(now())
+  updated_at           DateTime               @updatedAt
+  
+  t_cash_transaction   t_cash_transaction[]
 
+  @@index([tenant_id])
+  @@index([category_code])
+  @@index([is_active])
+  @@map("t_expense_category")
+}
 
+model t_cash_transaction {
+  cash_transaction_id      Int                        @id @default(autoincrement())
+  transaction_number       String                     @unique @db.VarChar(50)
+  tenant_id                Int
+  
+  transaction_type         cash_transaction_type
+  amount                   Decimal                    @db.Decimal(15, 2)
+  payment_method           payment_method
+  
+  category_id              Int?
+  category_type            String?                    @db.VarChar(20)
+  
+  sale_transaction_id      Int?
+  
+  description              String?                    @db.Text
+  notes                    String?                    @db.Text
+  receipt_image_url        String?                    @db.VarChar(500)
+  
+  is_verified              Boolean                    @default(false)
+  verified_by              Int?
+  verified_at              DateTime?
+  
+  transaction_date         DateTime                   @default(now())
+  created_by               Int?
+  updated_by               Int?
+  deleted_at               DateTime?
+  created_at               DateTime                   @default(now())
+  updated_at               DateTime                   @updatedAt
+  
+  t_expense_category       t_expense_category?        @relation(fields: [category_id], references: [category_id])
+
+  @@index([tenant_id])
+  @@index([transaction_type])
+  @@index([transaction_date])
+  @@index([payment_method])
+  @@index([sale_transaction_id])
+  @@index([category_id])
+  @@index([is_verified])
+  @@map("t_cash_transaction")
+}
 
 

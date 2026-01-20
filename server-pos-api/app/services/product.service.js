@@ -1,12 +1,63 @@
 const prisma = require('../config/mysql.db.js');
 
+const generateUniqueSKU = async (tenant_id) => {
+  try {
+    const lastProduct = await prisma.m_product.findFirst({
+      where: {
+        tenant_id: parseInt(tenant_id),
+        product_sku: {
+          startsWith: 'PRD-'
+        }
+      },
+      orderBy: {
+        product_sku: 'desc'
+      },
+      select: {
+        product_sku: true
+      }
+    });
+
+    let nextNumber = 1;
+    if (lastProduct && lastProduct.product_sku) {
+      const match = lastProduct.product_sku.match(/PRD-(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1]) + 1;
+      }
+    }
+
+    const sku = `PRD-${String(nextNumber).padStart(5, '0')}`;
+
+    const existing = await prisma.m_product.findFirst({
+      where: {
+        product_sku: sku,
+        tenant_id: parseInt(tenant_id)
+      }
+    });
+
+    if (existing) {
+      return generateUniqueSKU(tenant_id);
+    }
+
+    return sku;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const createProduct = async (productData) => {
   try {
+    let finalSKU = productData.product_sku;
+
+    if (!finalSKU || finalSKU.trim() === '') {
+      finalSKU = await generateUniqueSKU(productData.tenant_id);
+    }
+
     const product = await prisma.m_product.create({
       data: {
         product_name: productData.product_name,
         product_description: productData.product_description || null,
-        product_sku: productData.product_sku || null,
+        product_sku: finalSKU,
+        product_image_url: productData.product_image_url || null,
         brand_id: productData.brand_id || null,
         category_id: productData.category_id || null,
         tenant_id: productData.tenant_id,
@@ -43,7 +94,7 @@ const createProduct = async (productData) => {
     });
     return product;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -67,7 +118,9 @@ const getProducts = async (filters = {}) => {
       cursor_direction = 'forward'
     } = filters;
 
-    const where = {};
+    const where = {
+      deleted_at: null  // Filter soft deleted products
+    };
 
     if (tenant_id) where.tenant_id = parseInt(tenant_id);
     if (brand_id) where.brand_id = parseInt(brand_id);
@@ -97,9 +150,9 @@ const getProducts = async (filters = {}) => {
 
     // Simple orderBy construction
     const sortField = sort_by === 'created_at' ? 'created_at' :
-                     sort_by === 'product_name' ? 'product_name' :
-                     sort_by === 'product_price' ? 'product_price' :
-                     sort_by === 'product_qty' ? 'product_qty' : 'created_at';
+      sort_by === 'product_name' ? 'product_name' :
+        sort_by === 'product_price' ? 'product_price' :
+          sort_by === 'product_qty' ? 'product_qty' : 'created_at';
 
     const orderBy = {
       [sortField]: sort_order === 'asc' ? 'asc' : 'desc'
@@ -163,15 +216,15 @@ const getProducts = async (filters = {}) => {
     // Generate next and previous cursors
     const nextCursor = hasNextPage && finalProducts.length > 0 ?
       finalProducts[finalProducts.length - 1][sort_by === 'created_at' ? 'created_at' :
-                                             sort_by === 'product_name' ? 'product_name' :
-                                             sort_by === 'product_price' ? 'product_price' :
-                                             sort_by === 'product_qty' ? 'product_qty' : 'created_at'] : null;
+        sort_by === 'product_name' ? 'product_name' :
+          sort_by === 'product_price' ? 'product_price' :
+            sort_by === 'product_qty' ? 'product_qty' : 'created_at'] : null;
 
     const previousCursor = hasPreviousPage && finalProducts.length > 0 ?
       finalProducts[0][sort_by === 'created_at' ? 'created_at' :
-                         sort_by === 'product_name' ? 'product_name' :
-                         sort_by === 'product_price' ? 'product_price' :
-                         sort_by === 'product_qty' ? 'product_qty' : 'created_at'] : null;
+        sort_by === 'product_name' ? 'product_name' :
+          sort_by === 'product_price' ? 'product_price' :
+            sort_by === 'product_qty' ? 'product_qty' : 'created_at'] : null;
 
     return {
       data: finalProducts,
@@ -189,7 +242,7 @@ const getProducts = async (filters = {}) => {
       }
     };
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -224,7 +277,7 @@ const getProductById = async (product_id, includeRelations = true) => {
     });
     return product;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -246,8 +299,9 @@ const updateProduct = async (product_id, updateData) => {
         ...(updateData.product_name && { product_name: updateData.product_name }),
         ...(updateData.product_description !== undefined && { product_description: updateData.product_description }),
         ...(updateData.product_sku !== undefined && { product_sku: updateData.product_sku }),
-        ...(updateData.brand_id && { brand_id: updateData.brand_id }),
-        ...(updateData.category_id && { category_id: updateData.category_id }),
+        ...(updateData.product_image_url !== undefined && { product_image_url: updateData.product_image_url }),
+        ...(updateData.brand_id !== undefined && { brand_id: updateData.brand_id }),
+        ...(updateData.category_id !== undefined && { category_id: updateData.category_id }),
         ...(updateData.product_price && { product_price: updateData.product_price }),
         ...(updateData.product_cost !== undefined && { product_cost: updateData.product_cost }),
         ...(updateData.product_qty !== undefined && { product_qty: updateData.product_qty }),
@@ -281,7 +335,7 @@ const updateProduct = async (product_id, updateData) => {
     });
     return product;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -308,7 +362,7 @@ const deleteProduct = async (product_id, deleted_by = null) => {
     });
     return product;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -323,7 +377,7 @@ const getProductBySku = async (product_sku, tenant_id) => {
     });
     return product;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -332,6 +386,7 @@ const getProductsByCategory = async (category_id, tenant_id, isActiveOnly = true
     const where = {
       category_id: parseInt(category_id),
       tenant_id: parseInt(tenant_id),
+      deleted_at: null,  // Filter soft deleted products
       ...(isActiveOnly && { is_active: true }),
       ...(isSellableOnly && { is_sellable: true })
     };
@@ -362,7 +417,7 @@ const getProductsByCategory = async (category_id, tenant_id, isActiveOnly = true
     });
     return products;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -371,6 +426,7 @@ const getProductsByBrand = async (brand_id, tenant_id, isActiveOnly = true, isSe
     const where = {
       brand_id: parseInt(brand_id),
       tenant_id: parseInt(tenant_id),
+      deleted_at: null,  // Filter soft deleted products
       ...(isActiveOnly && { is_active: true }),
       ...(isSellableOnly && { is_sellable: true })
     };
@@ -401,7 +457,7 @@ const getProductsByBrand = async (brand_id, tenant_id, isActiveOnly = true, isSe
     });
     return products;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -441,7 +497,7 @@ const toggleProductStatus = async (product_id, updated_by = null) => {
     });
     return product;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -481,7 +537,7 @@ const toggleProductSellableStatus = async (product_id, updated_by = null) => {
     });
     return product;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -536,7 +592,7 @@ const updateProductStock = async (product_id, stock, operation = 'set', updated_
     });
     return product;
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -559,7 +615,9 @@ const getProductsInfinite = async (filters = {}) => {
       sort_order = 'desc'
     } = filters;
 
-    const where = {};
+    const where = {
+      deleted_at: null  // Filter soft deleted products
+    };
 
     if (tenant_id) where.tenant_id = parseInt(tenant_id);
     if (brand_id) where.brand_id = parseInt(brand_id);
@@ -588,9 +646,9 @@ const getProductsInfinite = async (filters = {}) => {
     }
 
     const sortField = sort_by === 'created_at' ? 'created_at' :
-                     sort_by === 'product_name' ? 'product_name' :
-                     sort_by === 'product_price' ? 'product_price' :
-                     sort_by === 'product_qty' ? 'product_qty' : 'created_at';
+      sort_by === 'product_name' ? 'product_name' :
+        sort_by === 'product_price' ? 'product_price' :
+          sort_by === 'product_qty' ? 'product_qty' : 'created_at';
 
     const orderBy = {};
     orderBy[sortField] = sort_order === 'asc' ? 'asc' : 'desc';
@@ -644,7 +702,7 @@ const getProductsInfinite = async (filters = {}) => {
       sort_order
     };
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -661,6 +719,7 @@ const searchProductsInfinite = async (searchTerm, filters = {}) => {
 
     const where = {
       tenant_id: parseInt(tenant_id),
+      deleted_at: null,  // Filter soft deleted products
       OR: [
         { product_name: { contains: searchTerm } },
         { product_description: { contains: searchTerm } },
@@ -669,9 +728,9 @@ const searchProductsInfinite = async (searchTerm, filters = {}) => {
     };
 
     const sortField = sort_by === 'created_at' ? 'created_at' :
-                     sort_by === 'product_name' ? 'product_name' :
-                     sort_by === 'product_price' ? 'product_price' :
-                     sort_by === 'product_qty' ? 'product_qty' : 'product_name';
+      sort_by === 'product_name' ? 'product_name' :
+        sort_by === 'product_price' ? 'product_price' :
+          sort_by === 'product_qty' ? 'product_qty' : 'product_name';
 
     const orderBy = {};
     orderBy[sortField] = sort_order === 'asc' ? 'asc' : 'desc';
@@ -723,7 +782,7 @@ const searchProductsInfinite = async (searchTerm, filters = {}) => {
       totalResults: products.length // Note: This is not the total count, just current page count
     };
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -746,7 +805,9 @@ const getProductsMobile = async (filters = {}) => {
       sort_order = 'desc'
     } = filters;
 
-    const where = {};
+    const where = {
+      deleted_at: null  // Filter soft deleted products
+    };
 
     if (tenant_id) where.tenant_id = parseInt(tenant_id);
     if (brand_id) where.brand_id = parseInt(brand_id);
@@ -775,9 +836,9 @@ const getProductsMobile = async (filters = {}) => {
     }
 
     const sortField = sort_by === 'created_at' ? 'created_at' :
-                     sort_by === 'product_name' ? 'product_name' :
-                     sort_by === 'product_price' ? 'product_price' :
-                     sort_by === 'product_qty' ? 'product_qty' : 'created_at';
+      sort_by === 'product_name' ? 'product_name' :
+        sort_by === 'product_price' ? 'product_price' :
+          sort_by === 'product_qty' ? 'product_qty' : 'created_at';
 
     const orderBy = {};
     orderBy[sortField] = sort_order === 'asc' ? 'asc' : 'desc';
@@ -801,6 +862,7 @@ const getProductsMobile = async (filters = {}) => {
         product_id: true,
         product_name: true,
         product_sku: true,
+        product_image_url: true,
         product_price: true,
         product_qty: true,
         product_min_stock: true,
@@ -843,7 +905,7 @@ const getProductsMobile = async (filters = {}) => {
       loadedCount: finalProducts.length
     };
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -860,6 +922,7 @@ const searchProductsMobile = async (searchTerm, filters = {}) => {
 
     const where = {
       tenant_id: parseInt(tenant_id),
+      deleted_at: null,  // Filter soft deleted products
       OR: [
         { product_name: { contains: searchTerm } },
         { product_sku: { contains: searchTerm } }
@@ -868,9 +931,9 @@ const searchProductsMobile = async (searchTerm, filters = {}) => {
     };
 
     const sortField = sort_by === 'created_at' ? 'created_at' :
-                     sort_by === 'product_name' ? 'product_name' :
-                     sort_by === 'product_price' ? 'product_price' :
-                     sort_by === 'product_qty' ? 'product_qty' : 'product_name';
+      sort_by === 'product_name' ? 'product_name' :
+        sort_by === 'product_price' ? 'product_price' :
+          sort_by === 'product_qty' ? 'product_qty' : 'product_name';
 
     const orderBy = {};
     orderBy[sortField] = sort_order === 'asc' ? 'asc' : 'desc';
@@ -894,6 +957,7 @@ const searchProductsMobile = async (searchTerm, filters = {}) => {
         product_id: true,
         product_name: true,
         product_sku: true,
+        product_image_url: true,
         product_price: true,
         product_qty: true,
         is_active: true,
@@ -930,7 +994,7 @@ const searchProductsMobile = async (searchTerm, filters = {}) => {
       loadedCount: finalProducts.length
     };
   } catch (error) {
-        throw error;
+    throw error;
   }
 };
 
@@ -945,6 +1009,7 @@ const getProductsQuickLoad = async (filters = {}) => {
 
     const where = {
       tenant_id: parseInt(tenant_id),
+      deleted_at: null,  // Filter soft deleted products
       is_active: true,
       is_sellable: true
     };
@@ -963,6 +1028,7 @@ const getProductsQuickLoad = async (filters = {}) => {
         // Only essential fields for quick loading
         product_id: true,
         product_name: true,
+        product_image_url: true,
         product_price: true,
         product_qty: true,
         is_sellable: true
@@ -987,7 +1053,145 @@ const getProductsQuickLoad = async (filters = {}) => {
       loadedCount: finalProducts.length
     };
   } catch (error) {
-        throw error;
+    throw error;
+  }
+};
+
+// Get products available for linking to a brand (products without this brand or with no brand)
+const getAvailableProductsForBrand = async (brand_id, tenant_id) => {
+  try {
+    const where = {
+      tenant_id: parseInt(tenant_id),
+      deleted_at: null,
+      OR: [
+        { brand_id: null },
+        { brand_id: { not: parseInt(brand_id) } }
+      ]
+    };
+
+    const products = await prisma.m_product.findMany({
+      where,
+      select: {
+        product_id: true,
+        product_name: true,
+        product_description: true,
+        product_sku: true,
+        product_price: true,
+        product_qty: true,
+        product_image_url: true,
+        is_active: true,
+        is_sellable: true,
+        m_brand: {
+          select: {
+            brand_id: true,
+            brand_name: true
+          }
+        },
+        m_category: {
+          select: {
+            category_id: true,
+            category_name: true
+          }
+        }
+      },
+      orderBy: {
+        product_name: 'asc'
+      }
+    });
+    return products;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get products available for linking to a category (products without this category or with no category)
+const getAvailableProductsForCategory = async (category_id, tenant_id) => {
+  try {
+    const where = {
+      tenant_id: parseInt(tenant_id),
+      deleted_at: null,
+      OR: [
+        { category_id: null },
+        { category_id: { not: parseInt(category_id) } }
+      ]
+    };
+
+    const products = await prisma.m_product.findMany({
+      where,
+      select: {
+        product_id: true,
+        product_name: true,
+        product_description: true,
+        product_sku: true,
+        product_price: true,
+        product_qty: true,
+        product_image_url: true,
+        is_active: true,
+        is_sellable: true,
+        m_brand: {
+          select: {
+            brand_id: true,
+            brand_name: true
+          }
+        },
+        m_category: {
+          select: {
+            category_id: true,
+            category_name: true
+          }
+        }
+      },
+      orderBy: {
+        product_name: 'asc'
+      }
+    });
+    return products;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Batch link products to a brand
+const linkProductsToBrand = async (brand_id, product_ids, updated_by = null) => {
+  try {
+    const result = await prisma.m_product.updateMany({
+      where: {
+        product_id: {
+          in: product_ids.map(id => parseInt(id))
+        },
+        deleted_at: null
+      },
+      data: {
+        brand_id: parseInt(brand_id),
+        updated_by,
+        updated_at: new Date()
+      }
+    });
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Batch link products to a category
+const linkProductsToCategory = async (category_id, product_ids, updated_by = null) => {
+  try {
+    const result = await prisma.m_product.updateMany({
+      where: {
+        product_id: {
+          in: product_ids.map(id => parseInt(id))
+        },
+        deleted_at: null
+      },
+      data: {
+        category_id: parseInt(category_id),
+        updated_by,
+        updated_at: new Date()
+      }
+    });
+    return result;
+  } catch (error) {
+    throw error;
   }
 };
 
@@ -1007,5 +1211,9 @@ module.exports = {
   searchProductsInfinite,
   getProductsMobile,
   searchProductsMobile,
-  getProductsQuickLoad
+  getProductsQuickLoad,
+  getAvailableProductsForBrand,
+  getAvailableProductsForCategory,
+  linkProductsToBrand,
+  linkProductsToCategory
 };

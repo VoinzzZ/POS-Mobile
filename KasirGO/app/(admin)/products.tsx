@@ -16,7 +16,7 @@ import { TabView, TabBar } from "react-native-tab-view";
 import { useAuth } from "../../src/context/AuthContext";
 import { Package, Search, Settings, Plus, Edit, Trash2, Tag, Folder, MoreVertical } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useTheme } from "../../src/context/ThemeContext";
 import {
   getAllCategories,
@@ -54,9 +54,9 @@ export default function AdminProducts() {
 
   const [index, setIndex] = useState(0);
   const [routes] = useState([
-    { key: 'products', title: 'Products' },
-    { key: 'categories', title: 'Categories' },
-    { key: 'brands', title: 'Brands' },
+    { key: 'products', title: 'Produk' },
+    { key: 'categories', title: 'Kategori' },
+    { key: 'brands', title: 'Brand' },
   ]);
 
   const {
@@ -99,6 +99,14 @@ export default function AdminProducts() {
   useEffect(() => {
     handleLocalSearch(localSearchQuery);
   }, [localSearchQuery, categories, brands, index]);
+
+  // Refresh products when screen comes into focus (e.g., coming back from productsByFilter)
+  useFocusEffect(
+    React.useCallback(() => {
+      // Refresh only products, not categories/brands to avoid unnecessary loading
+      refreshProducts();
+    }, [])
+  );
 
   const loadCategoriesAndBrands = async () => {
     await Promise.all([loadCategories(), loadBrands()]);
@@ -164,10 +172,10 @@ export default function AdminProducts() {
           text: "Hapus",
           style: "destructive",
           onPress: async () => {
-            const success = await deleteExistingProduct(id);
-            if (success) {
-              Alert.alert("Berhasil", "Produk berhasil dihapus");
-            }
+            await deleteExistingProduct(id);
+            // Close the edit modal after successful delete
+            setShowEditProductModal(false);
+            setSelectedProduct(null);
           },
         },
       ]
@@ -186,8 +194,9 @@ export default function AdminProducts() {
           onPress: async () => {
             try {
               await deleteCategory(id);
-              Alert.alert("Berhasil", "Kategori berhasil dihapus. Produk terkait telah diupdate.");
               await Promise.all([loadCategories(), refreshProducts()]);
+              setShowEditCategoryModal(false);
+              setSelectedCategory(null);
             } catch (error: any) {
               Alert.alert("Error", error.message || "Gagal menghapus kategori");
             }
@@ -209,8 +218,9 @@ export default function AdminProducts() {
           onPress: async () => {
             try {
               await deleteBrand(id);
-              Alert.alert("Berhasil", "Brand berhasil dihapus. Produk terkait telah diupdate.");
               await Promise.all([loadBrands(), refreshProducts()]);
+              setShowEditBrandModal(false);
+              setSelectedBrand(null);
             } catch (error: any) {
               Alert.alert("Error", error.message || "Gagal menghapus brand");
             }
@@ -231,13 +241,19 @@ export default function AdminProducts() {
         key={product.product_id}
         style={[styles.card, { backgroundColor: colors.card }]}
       >
-        {product.product_image_url ? (
-          <Image source={{ uri: product.product_image_url }} style={[styles.productImageSmall, { marginRight: 12 }]} />
-        ) : (
-          <View style={[styles.productImagePlaceholderSmall, { backgroundColor: colors.primary + "10", marginRight: 12 }]}>
-            <Package size={20} color={colors.primary} />
-          </View>
-        )}
+        <View style={styles.imageContainer}>
+          {product.product_image_url ? (
+            <Image
+              source={{ uri: product.product_image_url }}
+              style={styles.productImageSmall}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.productImagePlaceholderSmall, { backgroundColor: colors.primary + "20" }]}>
+              <Package size={24} color={colors.primary} />
+            </View>
+          )}
+        </View>
         <View style={styles.cardContent}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>
             {product.product_name}
@@ -528,7 +544,7 @@ export default function AdminProducts() {
         <View style={[styles.header, { backgroundColor: colors.surface }]}>
           <View>
             <Text style={[styles.headerTitle, { color: colors.text }]}>
-              Product Management
+              Manajemen Produk
             </Text>
             <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
               Kelola produk, kategori, dan brand
@@ -548,7 +564,7 @@ export default function AdminProducts() {
               {products.length}
             </Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-              Products
+              Produk
             </Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.card }]}>
@@ -556,7 +572,7 @@ export default function AdminProducts() {
               {categories.length}
             </Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-              Categories
+              Kategori
             </Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.card }]}>
@@ -564,7 +580,7 @@ export default function AdminProducts() {
               {brands.length}
             </Text>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-              Brands
+              Brand
             </Text>
           </View>
         </View>
@@ -731,6 +747,10 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
+    alignItems: "center",
+  },
+  imageContainer: {
+    marginRight: 12,
   },
   productImageSmall: {
     width: 50,

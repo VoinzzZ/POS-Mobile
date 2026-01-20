@@ -35,6 +35,7 @@ export default function AdminLayout() {
       <Stack.Screen name="settings" />
       <Stack.Screen name="stock" />
       <Stack.Screen name="store" />
+      <Stack.Screen name="manual-purchases" />
     </Stack>
   );
 }

@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from "react-native";
-import { X, Package, Tag, DollarSign, Boxes, ShoppingBag } from "lucide-react-native";
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Image } from "react-native";
+import { X, Package, Tag, Banknote, Boxes, ShoppingBag } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { Product } from "../../api/product";
 
@@ -48,9 +48,19 @@ export default function ProductDetailModal({ visible, product, onClose }: Produc
                     </View>
 
                     <ScrollView showsVerticalScrollIndicator={false} style={styles.modalBody}>
-                        <View style={[styles.productIcon, { backgroundColor: categoryColor + "20" }]}>
-                            <Package size={64} color={categoryColor} />
-                        </View>
+                        {product.product_image_url ? (
+                            <View style={styles.productImageContainer}>
+                                <Image
+                                    source={{ uri: product.product_image_url }}
+                                    style={styles.productImage}
+                                    resizeMode="cover"
+                                />
+                            </View>
+                        ) : (
+                            <View style={[styles.productIcon, { backgroundColor: categoryColor + "20" }]}>
+                                <Package size={64} color={categoryColor} />
+                            </View>
+                        )}
 
                         <Text style={[styles.productName, { color: colors.text }]}>{product.product_name}</Text>
 
@@ -77,7 +87,7 @@ export default function ProductDetailModal({ visible, product, onClose }: Produc
 
                             <View style={[styles.detailCard, { backgroundColor: colors.background }]}>
                                 <View style={[styles.detailIconContainer, { backgroundColor: colors.primary + "20" }]}>
-                                    <DollarSign size={20} color={colors.primary} />
+                                    <Banknote size={20} color={colors.primary} />
                                 </View>
                                 <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Selling Price</Text>
                                 <Text style={[styles.detailValue, { color: colors.primary }]}>
@@ -207,6 +217,18 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignSelf: "center",
         marginBottom: 20,
+    },
+    productImageContainer: {
+        width: 120,
+        height: 120,
+        alignSelf: "center",
+        marginBottom: 20,
+        borderRadius: 16,
+        overflow: "hidden",
+    },
+    productImage: {
+        width: "100%",
+        height: "100%",
     },
     productName: {
         fontSize: 24,

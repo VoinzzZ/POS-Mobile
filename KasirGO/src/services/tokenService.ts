@@ -293,6 +293,10 @@ export class TokenService {
       await AsyncStorage.removeItem('@tokens');
       await AsyncStorage.removeItem('@user');
 
+      // Reset refresh failure count when clearing tokens
+      this.refreshFailureCount = 0;
+      console.log('🔄 Reset refresh failure count to 0');
+
       // Verify clearing
       const afterClearTokens = await AsyncStorage.getItem('@tokens');
       const afterClearUser = await AsyncStorage.getItem('@user');

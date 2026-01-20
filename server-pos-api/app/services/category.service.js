@@ -34,7 +34,9 @@ const getCategories = async (filters = {}) => {
       search
     } = filters;
 
-    const where = {};
+    const where = {
+      deleted_at: null  // Filter soft deleted categories
+    };
 
     if (tenant_id) where.tenant_id = parseInt(tenant_id);
     // if (brand_id) where.brand_id = parseInt(brand_id); // Deprecated
@@ -148,10 +150,21 @@ const deleteCategory = async (category_id, deleted_by = null) => {
       throw new Error('Category not found');
     }
 
+    // Update all products with this category to have null category_id
     if (existingCategory._count.m_product > 0) {
-      throw new Error('Cannot delete category that has associated products');
+      await prisma.m_product.updateMany({
+        where: {
+          category_id: parseInt(category_id)
+        },
+        data: {
+          category_id: null,
+          updated_by: deleted_by,
+          updated_at: new Date()
+        }
+      });
     }
 
+    // Soft delete the category
     const category = await prisma.m_category.update({
       where: {
         category_id: parseInt(category_id)

@@ -10,6 +10,12 @@ router.post('/',
     TransactionController.createTransaction
 );
 
+router.get('/dashboard/stats',
+    verifyToken,
+    requireRole(['CASHIER', 'ADMIN', 'OWNER']),
+    TransactionController.getDashboardStats
+);
+
 router.get('/',
     verifyToken,
     requireRole(['CASHIER', 'ADMIN', 'OWNER']),
@@ -34,11 +40,6 @@ router.post('/:transactionId/complete',
     TransactionController.completeTransaction
 );
 
-router.put('/:transactionId',
-    verifyToken,
-    requireRole(['CASHIER', 'ADMIN', 'OWNER']),
-    TransactionController.updateTransaction
-);
 
 router.delete('/:transactionId',
     verifyToken,

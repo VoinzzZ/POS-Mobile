@@ -40,7 +40,7 @@ router.put(
 router.delete(
   '/:brandId',
   verifyToken,
-  requireRole(['OWNER']),
+  requireRole(['OWNER', 'ADMIN']),
   BrandController.deleteBrand
 );
 

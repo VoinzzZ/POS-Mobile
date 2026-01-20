@@ -35,7 +35,9 @@ const getBrands = async (filters = {}) => {
       search
     } = filters;
 
-    const where = {};
+    const where = {
+      deleted_at: null  // Filter soft deleted brands
+    };
 
     if (tenant_id) where.tenant_id = parseInt(tenant_id);
     if (is_active !== undefined) where.is_active = is_active === 'true' || is_active === true;
@@ -153,10 +155,21 @@ const deleteBrand = async (brand_id, deleted_by = null) => {
       throw new Error('Brand not found');
     }
 
+    // Update all products with this brand to have null brand_id
     if (existingBrand._count.m_product > 0) {
-      throw new Error('Cannot delete brand that has associated products');
+      await prisma.m_product.updateMany({
+        where: {
+          brand_id: parseInt(brand_id)
+        },
+        data: {
+          brand_id: null,
+          updated_by: deleted_by,
+          updated_at: new Date()
+        }
+      });
     }
 
+    // Soft delete the brand
     const brand = await prisma.m_brand.update({
       where: {
         brand_id: parseInt(brand_id)

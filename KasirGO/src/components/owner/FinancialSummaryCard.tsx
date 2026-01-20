@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from "react-native";
-import { DollarSign, TrendingUp, TrendingDown, ShoppingBag, Wallet, CreditCard, Receipt, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react-native";
+import { BanknoteArrowUp, BanknoteArrowDown, DollarSign, TrendingUp, TrendingDown, ShoppingBag, Wallet, CreditCard, Receipt, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react-native";
 import { getFinancialSummary, FinancialSummary } from "../../api/financial";
 import { formatCurrency, formatPercentage, getDateRange, formatDateRangeLabel, ChangeIndicator, getChangeIndicator } from "../../utils/financial.helpers";
 import { useTheme } from "../../context/ThemeContext";

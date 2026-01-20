@@ -15,15 +15,22 @@ class ProductController {
       }
 
       const { tenantId, userId } = req.user;
+
+      // Handle Cloudinary image upload
+      let product_image_url = value.product_image_url || null;
+      if (req.file) {
+        product_image_url = req.file.path; // Cloudinary URL
+      }
+
       const productData = {
         ...value,
+        product_image_url,
         brand_id: value.brand_id || value.product_brand_id || null,
         category_id: value.category_id || value.product_category_id || null,
         tenant_id: tenantId,
         created_by: userId,
         updated_by: userId
       };
-
       if (productData.product_sku) {
         const existingProduct = await productService.getProductBySku(
           productData.product_sku,
@@ -364,11 +371,26 @@ class ProductController {
 
       const { productId } = req.params;
       const { tenantId, userId } = req.user;
-      const updateData = {
+
+      // Handle Cloudinary image upload
+      let updateData = {
         ...value,
         updated_by: userId
       };
 
+      // Map frontend field names to backend field names
+      if (value.product_brand_id !== undefined) {
+        updateData.brand_id = value.product_brand_id;
+        delete updateData.product_brand_id;
+      }
+      if (value.product_category_id !== undefined) {
+        updateData.category_id = value.product_category_id;
+        delete updateData.product_category_id;
+      }
+
+      if (req.file) {
+        updateData.product_image_url = req.file.path; // Cloudinary URL
+      }
       const existingProduct = await productService.getProductById(productId, false);
       if (!existingProduct) {
         return res.status(404).json({
@@ -641,6 +663,116 @@ class ProductController {
         });
       }
 
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  static async getAvailableProductsForBrand(req, res) {
+    try {
+      const { brandId } = req.params;
+      const { tenantId } = req.user;
+
+      const products = await productService.getAvailableProductsForBrand(
+        brandId,
+        tenantId
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Available products retrieved successfully',
+        data: products
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  static async getAvailableProductsForCategory(req, res) {
+    try {
+      const { categoryId } = req.params;
+      const { tenantId } = req.user;
+
+      const products = await productService.getAvailableProductsForCategory(
+        categoryId,
+        tenantId
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Available products retrieved successfully',
+        data: products
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  static async linkProductsToBrand(req, res) {
+    try {
+      const { brandId } = req.params;
+      const { tenantId, userId } = req.user;
+      const { product_ids } = req.body;
+
+      if (!product_ids || !Array.isArray(product_ids) || product_ids.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'product_ids array is required and must not be empty'
+        });
+      }
+
+      const result = await productService.linkProductsToBrand(
+        brandId,
+        product_ids,
+        userId
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `${result.count} product(s) linked to brand successfully`,
+        data: result
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  static async linkProductsToCategory(req, res) {
+    try {
+      const { categoryId } = req.params;
+      const { tenantId, userId } = req.user;
+      const { product_ids } = req.body;
+
+      if (!product_ids || !Array.isArray(product_ids) || product_ids.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'product_ids array is required and must not be empty'
+        });
+      }
+
+      const result = await productService.linkProductsToCategory(
+        categoryId,
+        product_ids,
+        userId
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `${result.count} product(s) linked to category successfully`,
+        data: result
+      });
+    } catch (error) {
       res.status(500).json({
         success: false,
         message: error.message

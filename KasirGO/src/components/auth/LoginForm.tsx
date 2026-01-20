@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator, Dimensions } from "react-native";
 import PasswordInput from "../shared/PasswordInput";
 import { useRouter } from "expo-router";
@@ -6,7 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useOrientation } from "../../hooks/useOrientation";
 
-interface LoginFormProps {}
+interface LoginFormProps { }
 
 const LoginForm = (props: LoginFormProps) => {
   const { isLandscape: isLand, isTablet: isTab } = useOrientation();
@@ -24,7 +24,7 @@ const LoginForm = (props: LoginFormProps) => {
 
   const validateInputs = (): boolean => {
     const newErrors: typeof errors = {};
-    
+
     if (!email.trim()) {
       newErrors.email = "Email tidak boleh kosong";
     } else {
@@ -33,13 +33,13 @@ const LoginForm = (props: LoginFormProps) => {
         newErrors.email = "Format email tidak valid";
       }
     }
-    
+
     if (!password.trim()) {
       newErrors.password = "Password tidak boleh kosong";
     } else if (password.length < 8) {
       newErrors.password = "Password minimal 8 karakter";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -99,24 +99,28 @@ const LoginForm = (props: LoginFormProps) => {
     },
   });
 
+  // Determine styling based on orientation and device type
+  // Only use larger styles when it's a tablet in landscape mode
+  const shouldUseLargerStyles = isTab && isLand;
+
   return (
-    <View style={[styles.container, isLand && isTab ? styles.landscapeContainer : {}, dynamicStyles.container]}>
+    <View style={[styles.container, shouldUseLargerStyles && styles.landscapeContainer, dynamicStyles.container]}>
       {/* Logo */}
       <Image
         source={require("../../../assets/images/KasirGOTrnsprt.png")}
-        style={[styles.logo, isLand && isTab ? styles.landscapeLogo : {}]}
+        style={[styles.logo, shouldUseLargerStyles && styles.landscapeLogo]}
       />
 
       {/* Title */}
-      <Text style={[styles.title, isLand && isTab ? styles.landscapeTitle : {}, dynamicStyles.title]}>MASUK</Text>
-      <Text style={[styles.subtitle, isLand && isTab ? styles.landscapeSubtitle : {}, dynamicStyles.subtitle]}>Akses Sistem Point-of-Sale Anda</Text>
+      <Text style={[styles.title, shouldUseLargerStyles && styles.landscapeTitle, dynamicStyles.title]}>MASUK</Text>
+      <Text style={[styles.subtitle, shouldUseLargerStyles && styles.landscapeSubtitle, dynamicStyles.subtitle]}>Akses Sistem Point-of-Sale Anda</Text>
 
       {/* Email Input */}
       <View style={styles.fieldContainer}>
-        <Text style={[styles.label, isLand && isTab ? styles.landscapeLabel : {}, dynamicStyles.label]}>Email</Text>
-        <View style={[styles.inputWrapper, isLand && isTab ? styles.landscapeInputWrapper : {}, { borderColor: errors.email ? '#ef4444' : colors.border }]}>
+        <Text style={[styles.label, shouldUseLargerStyles && styles.landscapeLabel, dynamicStyles.label]}>Email</Text>
+        <View style={[styles.inputWrapper, shouldUseLargerStyles && styles.landscapeInputWrapper, { borderColor: errors.email ? '#ef4444' : colors.border }]}>
           <TextInput
-            style={[styles.input, isLand && isTab ? styles.landscapeInput : {}, dynamicStyles.input]}
+            style={[styles.input, shouldUseLargerStyles && styles.landscapeInput, dynamicStyles.input]}
             placeholder="contoh@email.com"
             placeholderTextColor={colors.textSecondary}
             keyboardType="email-address"
@@ -131,13 +135,13 @@ const LoginForm = (props: LoginFormProps) => {
           />
         </View>
         {errors.email && (
-          <Text style={[styles.errorText, isLand && isTab ? styles.landscapeErrorText : {}]}>{errors.email}</Text>
+          <Text style={[styles.errorText, shouldUseLargerStyles && styles.landscapeErrorText]}>{errors.email}</Text>
         )}
       </View>
 
       {/* Password Input */}
       <View style={styles.fieldContainer}>
-        <Text style={[styles.label, isLand && isTab ? styles.landscapeLabel : {}, dynamicStyles.label]}>Password</Text>
+        <Text style={[styles.label, shouldUseLargerStyles && styles.landscapeLabel, dynamicStyles.label]}>Password</Text>
         <PasswordInput
           value={password}
           onChangeText={(text) => {
@@ -150,31 +154,31 @@ const LoginForm = (props: LoginFormProps) => {
           hasError={!!errors.password}
         />
         {errors.password && (
-          <Text style={[styles.errorText, isLand && isTab ? styles.landscapeErrorText : {}]}>{errors.password}</Text>
+          <Text style={[styles.errorText, shouldUseLargerStyles && styles.landscapeErrorText]}>{errors.password}</Text>
         )}
       </View>
 
       {/* Button Login */}
       <TouchableOpacity
-        style={[styles.button, isLand && isTab ? styles.landscapeButton : {}, dynamicStyles.button, isLoading && styles.buttonDisabled]}
+        style={[styles.button, shouldUseLargerStyles && styles.landscapeButton, dynamicStyles.button, isLoading && styles.buttonDisabled]}
         onPress={handleLogin}
         disabled={isLoading}
       >
         {isLoading ? (
-          <ActivityIndicator size={isLand && isTab ? "large" : "small"} color="white" />
+          <ActivityIndicator size={shouldUseLargerStyles ? "large" : "small"} color="white" />
         ) : (
-          <Text style={[styles.buttonText, isLand && isTab ? styles.landscapeButtonText : {}]}>MASUK</Text>
+          <Text style={[styles.buttonText, shouldUseLargerStyles && styles.landscapeButtonText]}>MASUK</Text>
         )}
       </TouchableOpacity>
 
       {/* Links */}
       <TouchableOpacity onPress={() => console.log("Lupa Password - coming soon")}>
-        <Text style={[styles.link, isLand && isTab ? styles.landscapeLink : {}, dynamicStyles.link]}>Lupa Password?</Text>
+        <Text style={[styles.link, shouldUseLargerStyles && styles.landscapeLink, dynamicStyles.link]}>Lupa Password?</Text>
       </TouchableOpacity>
-      <Text style={[styles.footer, isLand && isTab ? styles.landscapeFooter : {}, dynamicStyles.footer]}>
+      <Text style={[styles.footer, shouldUseLargerStyles && styles.landscapeFooter, dynamicStyles.footer]}>
         Belum punya akun?{" "}
         <Text
-          style={[styles.linkInline, isLand && isTab ? styles.landscapeLinkInline : {}, dynamicStyles.link]}
+          style={[styles.linkInline, shouldUseLargerStyles && styles.landscapeLinkInline, dynamicStyles.link]}
           onPress={() => router.push("/auth/registerSelectType")}
         >
           Daftar Sekarang

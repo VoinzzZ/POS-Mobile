@@ -1,7 +1,7 @@
 import React from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
-import { LayoutDashboard, Package, History, Store } from "lucide-react-native";
+import { LayoutDashboard, Package, Warehouse, Store, ShoppingCart } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
 
 export default function AdminBottomNav() {
@@ -11,19 +11,24 @@ export default function AdminBottomNav() {
 
   const tabs = [
     {
-      icon: Package,
-      route: "/(admin)/products",
-      path: "/products",
-    },
-    {
       icon: LayoutDashboard,
       route: "/(admin)/dashboard",
       path: "/dashboard",
     },
     {
-      icon: History,
-      route: "/(admin)/history",
-      path: "/history",
+      icon: Package,
+      route: "/(admin)/products",
+      path: "/products",
+    },
+    {
+      icon: ShoppingCart,
+      route: "/(admin)/manual-purchases",
+      path: "/manual-purchases",
+    },
+    {
+      icon: Warehouse,
+      route: "/(admin)/stock",
+      path: "/stock",
     },
   ];
 
@@ -41,6 +46,9 @@ export default function AdminBottomNav() {
             style={styles.tab}
             onPress={() => router.push(tab.route as any)}
           >
+            {active && (
+              <View style={[styles.indicator, { backgroundColor: colors.primary }]} />
+            )}
             <Icon
               size={24}
               color={active ? colors.primary : colors.textSecondary}
@@ -72,6 +80,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
+    position: "relative",
+  },
+  indicator: {
+    position: "absolute",
+    top: 0,
+    width: 40,
+    height: 3,
+    borderRadius: 2,
   },
   label: {
     fontSize: 11,

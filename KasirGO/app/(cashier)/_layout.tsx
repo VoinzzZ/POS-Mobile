@@ -17,9 +17,13 @@ export default function CashierLayout() {
     return <Redirect href="/auth/login" />;
   }
 
-  if (user?.role !== "CASHIER") {
-    if (user?.role === "ADMIN") {
+  const userRole = user?.role || user?.user_role;
+
+  if (userRole !== "CASHIER") {
+    if (userRole === "ADMIN") {
       return <Redirect href="/(admin)/dashboard" />;
+    } else if (userRole === "OWNER") {
+      return <Redirect href="/(owner)/dashboard" />;
     }
     return <Redirect href="/auth/login" />;
   }

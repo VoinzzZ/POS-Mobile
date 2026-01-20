@@ -136,12 +136,9 @@ export default function EditTransactionScreen() {
       const response = await transactionService.updateTransaction(Number(id), payload);
 
       if (response.success) {
-        console.log('✅ Transaction updated successfully');
-        // Navigate back immediately - history screen will auto-refresh
         router.back();
       }
     } catch (error: any) {
-      console.error("Error updating transaction:", error);
       Alert.alert("Error", error.response?.data?.message || "Gagal mengupdate transaksi");
     } finally {
       setSaving(false);
@@ -149,7 +146,6 @@ export default function EditTransactionScreen() {
   };
 
   const handleCancel = () => {
-    // Langsung kembali tanpa konfirmasi
     router.back();
   };
 

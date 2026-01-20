@@ -48,7 +48,7 @@ export interface CashDrawerFilters {
 }
 
 export const openCashDrawer = async (
-    opening_balance: number
+    opening_balance: number = 0
 ): Promise<ApiResponse<CashDrawer>> => {
     const res = await api.post("/cash-drawer/open", { opening_balance });
     return res.data;

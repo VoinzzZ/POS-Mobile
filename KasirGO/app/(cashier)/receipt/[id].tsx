@@ -10,9 +10,10 @@ import {
   Platform,
   Image,
   BackHandler,
+  PixelRatio,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Receipt, Check, Store as StoreIcon } from "lucide-react-native";
+import { ReceiptText, Check, Store as StoreIcon, ArrowLeft, Printer } from "lucide-react-native";
 import { useTheme } from "../../../src/context/ThemeContext";
 import { useOrientation } from "../../../src/hooks/useOrientation";
 import { transactionService, Transaction } from "../../../src/api/transaction";
@@ -25,16 +26,18 @@ export default function ReceiptPreviewScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { colors } = useTheme();
-  const { isLandscape, isTablet } = useOrientation();
+  const { isLandscape, isTablet, dimensions } = useOrientation();
 
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [storeData, setStoreData] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [isViewReady, setIsViewReady] = useState(false);
   const receiptRef = useRef<View>(null);
 
-  const showLandscape = isLandscape && isTablet;
+  const showLandscape = (isLandscape && isTablet) ||
+    (dimensions.width > dimensions.height && dimensions.width > 600);
 
   useEffect(() => {
     loadTransactionData();
@@ -79,10 +82,16 @@ export default function ReceiptPreviewScreen() {
   };
 
   const generateImage = async () => {
-    if (!receiptRef.current) return;
+    if (!receiptRef.current || !isViewReady) {
+      Alert.alert("Error", "Struk belum siap untuk di-generate");
+      return;
+    }
 
     try {
       setGenerating(true);
+
+      // Add delay to ensure view is fully rendered (especially important for emulator)
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Capture the receipt component as PNG
       const uri = await captureRef(receiptRef, {
@@ -95,9 +104,15 @@ export default function ReceiptPreviewScreen() {
       setImageUri(uri);
 
       return uri;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating image:", error);
-      Alert.alert("Error", "Gagal generate struk");
+
+      // Provide more helpful error messages
+      const errorMessage = Platform.OS === 'android'
+        ? "Gagal generate struk. Jika menggunakan emulator, coba di perangkat nyata."
+        : "Gagal generate struk";
+
+      Alert.alert("Error", errorMessage);
       throw error;
     } finally {
       setGenerating(false);
@@ -147,6 +162,7 @@ export default function ReceiptPreviewScreen() {
     return `Rp ${amount.toLocaleString("id-ID")}`;
   };
 
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
@@ -171,34 +187,33 @@ export default function ReceiptPreviewScreen() {
   const ReceiptContent = () => (
     <View
       ref={receiptRef}
-      style={[styles.receiptCard, { backgroundColor: colors.surface }]}
+      style={[styles.receiptCard, { backgroundColor: '#FFFFFF' }]}
       collapsable={false}
+      onLayout={() => setIsViewReady(true)}
     >
       <View style={styles.storeHeader}>
-        {storeData?.logoUrl ? (
+        {storeData?.logoUrl && (
           <Image
             source={{ uri: storeData.logoUrl }}
             style={styles.storeLogo}
             resizeMode="contain"
           />
-        ) : (
-          <StoreIcon size={48} color={colors.primary} />
         )}
-        <Text style={[styles.storeName, { color: colors.text }]}>
+        <Text style={[styles.storeName, { color: '#1f2937' }]}>
           {storeData?.name || "KasirGO"}
         </Text>
         {storeData?.description && (
-          <Text style={[styles.storeDescription, { color: colors.textSecondary }]}>
+          <Text style={[styles.storeDescription, { color: '#6b7280' }]}>
             {storeData.description}
           </Text>
         )}
         {storeData?.address && (
-          <Text style={[styles.storeAddress, { color: colors.textSecondary }]}>
+          <Text style={[styles.storeAddress, { color: '#6b7280' }]}>
             {storeData.address}
           </Text>
         )}
         {(storeData?.phone || storeData?.email) && (
-          <Text style={[styles.storeContact, { color: colors.textSecondary }]}>
+          <Text style={[styles.storeContact, { color: '#6b7280' }]}>
             {storeData?.phone && `Telp: ${storeData.phone}`}
             {storeData?.phone && storeData?.email && " | "}
             {storeData?.email && `Email: ${storeData.email}`}
@@ -206,108 +221,108 @@ export default function ReceiptPreviewScreen() {
         )}
       </View>
 
-      <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+      <View style={[styles.dividerLine, { backgroundColor: '#e5e7eb' }]} />
 
       <View style={styles.receiptHeader}>
-        <Text style={[styles.receiptTitle, { color: colors.text }]}>
+        <Text style={[styles.receiptTitle, { color: '#1f2937' }]}>
           Struk Transaksi
         </Text>
-        <Text style={[styles.receiptId, { color: colors.textSecondary }]}>
-          #{transaction.id}
+        <Text style={[styles.receiptId, { color: '#6b7280' }]}>
+          #{transaction.dailyNumber || transaction.id}
         </Text>
       </View>
 
-      <View style={[styles.infoSection, { borderTopColor: colors.border }]}>
+      <View style={[styles.infoSection, { borderTopColor: '#e5e7eb' }]}>
         <View style={styles.infoRow}>
-          <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.infoLabel, { color: '#6b7280' }]}>
             Kasir:
           </Text>
-          <Text style={[styles.infoValue, { color: colors.text }]}>
+          <Text style={[styles.infoValue, { color: '#1f2937' }]}>
             {transaction.cashier?.userName || "N/A"}
           </Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.infoLabel, { color: '#6b7280' }]}>
             Total Item:
           </Text>
-          <Text style={[styles.infoValue, { color: colors.text }]}>
+          <Text style={[styles.infoValue, { color: '#1f2937' }]}>
             {transaction.items.length} item
           </Text>
         </View>
       </View>
 
-      <View style={[styles.itemsSection, { borderTopColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+      <View style={[styles.itemsSection, { borderTopColor: '#e5e7eb' }]}>
+        <Text style={[styles.sectionTitle, { color: '#1f2937' }]}>
           Detail Pembelian
         </Text>
         {transaction.items.map((item) => (
-          <View key={item.id} style={[styles.item, { borderBottomColor: colors.border }]}>
+          <View key={item.id} style={[styles.item, { borderBottomColor: '#e5e7eb' }]}>
             <View style={styles.itemInfo}>
-              <Text style={[styles.itemName, { color: colors.text }]}>
+              <Text style={[styles.itemName, { color: '#1f2937' }]}>
                 {item.product.name}
               </Text>
-              <Text style={[styles.itemDetail, { color: colors.textSecondary }]}>
+              <Text style={[styles.itemDetail, { color: '#6b7280' }]}>
                 {item.quantity} x {formatCurrency(item.price)}
               </Text>
             </View>
-            <Text style={[styles.itemTotal, { color: colors.text }]}>
+            <Text style={[styles.itemTotal, { color: '#1f2937' }]}>
               {formatCurrency(item.subtotal)}
             </Text>
           </View>
         ))}
       </View>
 
-      <View style={[styles.totalsSection, { borderTopColor: colors.border }]}>
+      <View style={[styles.totalsSection, { borderTopColor: '#e5e7eb' }]}>
         <View style={styles.totalRow}>
-          <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.totalLabel, { color: '#6b7280' }]}>
             Subtotal:
           </Text>
-          <Text style={[styles.totalValue, { color: colors.text }]}>
+          <Text style={[styles.totalValue, { color: '#1f2937' }]}>
             {formatCurrency(transaction.total)}
           </Text>
         </View>
         <View style={[styles.totalRow, styles.mainTotal]}>
-          <Text style={[styles.totalLabel, styles.mainTotalText, { color: colors.primary }]}>
+          <Text style={[styles.totalLabel, styles.mainTotalText, { color: '#059669' }]}>
             TOTAL:
           </Text>
-          <Text style={[styles.totalValue, styles.mainTotalText, { color: colors.primary }]}>
+          <Text style={[styles.totalValue, styles.mainTotalText, { color: '#059669' }]}>
             {formatCurrency(transaction.total)}
           </Text>
         </View>
         <View style={styles.totalRow}>
-          <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.totalLabel, { color: '#6b7280' }]}>
             Metode:
           </Text>
-          <Text style={[styles.totalValue, { color: colors.text }]}>
+          <Text style={[styles.totalValue, { color: '#1f2937' }]}>
             {transaction.paymentMethod === 'CASH' ? 'Tunai' :
               transaction.paymentMethod === 'QRIS' ? 'QRIS' : 'Debit'}
           </Text>
         </View>
         <View style={styles.totalRow}>
-          <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.totalLabel, { color: '#6b7280' }]}>
             Bayar:
           </Text>
-          <Text style={[styles.totalValue, { color: colors.text }]}>
+          <Text style={[styles.totalValue, { color: '#1f2937' }]}>
             {formatCurrency(transaction.paymentAmount || 0)}
           </Text>
         </View>
         <View style={styles.totalRow}>
-          <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
+          <Text style={[styles.totalLabel, { color: '#6b7280' }]}>
             Kembalian:
           </Text>
-          <Text style={[styles.totalValue, { color: colors.text }]}>
+          <Text style={[styles.totalValue, { color: '#1f2937' }]}>
             {formatCurrency(transaction.changeAmount || 0)}
           </Text>
         </View>
       </View>
 
-      <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+      <View style={[styles.dividerLine, { backgroundColor: '#e5e7eb' }]} />
 
       <View style={styles.receiptFooter}>
-        <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+        <Text style={[styles.footerText, { color: '#6b7280' }]}>
           Terima kasih atas kunjungan Anda!
         </Text>
-        <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+        <Text style={[styles.footerText, { color: '#6b7280' }]}>
           Made by KasirGo - @VoinzzZ
         </Text>
       </View>
@@ -320,53 +335,187 @@ export default function ReceiptPreviewScreen() {
         <View style={styles.landscapeMaster}>
           <CashierSidebar />
           <View style={styles.landscapeContent}>
-            <View style={[styles.header, { backgroundColor: colors.surface }]}>
-              <View style={styles.headerContent}>
-                <Text style={[styles.title, { color: colors.text }]}>Preview Struk</Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                  Transaksi #{transaction.id}
-                </Text>
-              </View>
-            </View>
-
-            <ScrollView
-              style={styles.landscapeScroll}
-              contentContainerStyle={styles.landscapeScrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.receiptCenterContainer}>
-                <ReceiptContent />
-                <View style={[styles.statusCard, { backgroundColor: "#d1fae5" }]}>
-                  <Text style={styles.statusText}>✓ Transaksi Lunas</Text>
-                </View>
-              </View>
-            </ScrollView>
-
-            <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+            <View style={[styles.landscapeHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
               <TouchableOpacity
-                style={[styles.actionButton, styles.finishButton, { borderColor: colors.border }]}
+                style={styles.backButton}
                 onPress={() => router.back()}
               >
-                <Check size={22} color={colors.text} />
-                <Text style={[styles.buttonText, { color: colors.text }]}>Selesai</Text>
+                <ArrowLeft size={24} color={colors.text} />
+                <Text style={[styles.backButtonText, { color: colors.text }]}>Kembali</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionButton, styles.printButton, { backgroundColor: colors.primary }]}
-                onPress={handleShareReceipt}
-                disabled={generating}
-              >
-                {generating ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Receipt size={22} color="#fff" />
-                    <Text style={[styles.buttonText, { color: "#fff" }]}>Cetak Struk</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              <View style={styles.landscapeHeaderCenter}>
+                <Text style={[styles.landscapeHeaderTitle, { color: colors.text }]}>Preview Struk</Text>
+                <Text style={[styles.landscapeHeaderSubtitle, { color: colors.textSecondary }]}>
+                  Transaksi #{transaction.dailyNumber || transaction.id}
+                </Text>
+              </View>
+              <View style={{ width: 100 }} />
             </View>
+
+            <View style={styles.landscapeTwoColumn}>
+              {/* Left Column: Detailed Items Breakdown */}
+              <ScrollView
+                style={[styles.landscapeLeftColumn, { backgroundColor: colors.surface }]}
+                contentContainerStyle={styles.landscapeLeftContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.detailsContainer}>
+                  {/* Transaction Info Header */}
+                  <View style={[styles.detailsHeader, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.detailsTitle, { color: colors.text }]}>
+                      Rincian Transaksi
+                    </Text>
+                    <View style={styles.detailsInfoRow}>
+                      <Text style={[styles.detailsLabel, { color: colors.textSecondary }]}>
+                        Kasir:
+                      </Text>
+                      <Text style={[styles.detailsValue, { color: colors.text }]}>
+                        {transaction.cashier?.userName || "N/A"}
+                      </Text>
+                    </View>
+                    <View style={styles.detailsInfoRow}>
+                      <Text style={[styles.detailsLabel, { color: colors.textSecondary }]}>
+                        Waktu:
+                      </Text>
+                      <Text style={[styles.detailsValue, { color: colors.text }]}>
+                        {new Date(transaction.createdAt).toLocaleString('id-ID', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Items Table */}
+                  <View style={styles.itemsTableContainer}>
+                    {/* Table Header */}
+                    <View style={[styles.tableHeader, { backgroundColor: colors.primary + '10', borderBottomColor: colors.border }]}>
+                      <Text style={[styles.tableHeaderCell, styles.tableProductName, { color: colors.text }]}>
+                        Nama Produk
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, styles.tablePrice, { color: colors.text }]}>
+                        Harga Satuan
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, styles.tableQty, { color: colors.text }]}>
+                        Jumlah
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, styles.tableSubtotal, { color: colors.text }]}>
+                        Subtotal
+                      </Text>
+                    </View>
+
+                    {/* Table Rows */}
+                    {transaction.items.map((item, index) => (
+                      <View
+                        key={item.id}
+                        style={[
+                          styles.tableRow,
+                          { backgroundColor: index % 2 === 0 ? colors.background : colors.surface },
+                          { borderBottomColor: colors.border }
+                        ]}
+                      >
+                        <Text style={[styles.tableCell, styles.tableProductName, { color: colors.text }]}>
+                          {item.product.name}
+                        </Text>
+                        <Text style={[styles.tableCell, styles.tablePrice, { color: colors.textSecondary }]}>
+                          {formatCurrency(item.price)}
+                        </Text>
+                        <Text style={[styles.tableCell, styles.tableQty, { color: colors.text }]}>
+                          {item.quantity}
+                        </Text>
+                        <Text style={[styles.tableCell, styles.tableSubtotal, { color: colors.text, fontWeight: '600' }]}>
+                          {formatCurrency(item.subtotal)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Summary Section */}
+                  <View style={[styles.summarySection, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+                        Total Item:
+                      </Text>
+                      <Text style={[styles.summaryValue, { color: colors.text }]}>
+                        {transaction.items.length} item
+                      </Text>
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+                        Subtotal:
+                      </Text>
+                      <Text style={[styles.summaryValue, { color: colors.text }]}>
+                        {formatCurrency(transaction.total)}
+                      </Text>
+                    </View>
+                    <View style={[styles.summaryRow, styles.summaryMainTotal, { borderTopColor: colors.border }]}>
+                      <Text style={[styles.summaryLabel, styles.summaryMainTotalText, { color: colors.primary }]}>
+                        TOTAL:
+                      </Text>
+                      <Text style={[styles.summaryValue, styles.summaryMainTotalText, { color: colors.primary }]}>
+                        {formatCurrency(transaction.total)}
+                      </Text>
+                    </View>
+                    <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+                        Metode Pembayaran:
+                      </Text>
+                      <Text style={[styles.summaryValue, { color: colors.text }]}>
+                        {transaction.paymentMethod === 'CASH' ? 'Tunai' :
+                          transaction.paymentMethod === 'QRIS' ? 'QRIS' : 'Debit'}
+                      </Text>
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+                        Jumlah Bayar:
+                      </Text>
+                      <Text style={[styles.summaryValue, { color: colors.text }]}>
+                        {formatCurrency(transaction.paymentAmount || 0)}
+                      </Text>
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+                        Kembalian:
+                      </Text>
+                      <Text style={[styles.summaryValue, { color: colors.text }]}>
+                        {formatCurrency(transaction.changeAmount || 0)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </ScrollView>
+
+              {/* Right Column: Receipt Preview */}
+              <ScrollView
+                style={styles.landscapeRightColumn}
+                contentContainerStyle={styles.landscapeRightContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <ReceiptContent />
+              </ScrollView>
+            </View>
+
           </View>
+
+          {/* Floating Print Button - Bottom Right */}
+          <TouchableOpacity
+            style={[styles.floatingPrintButton, { backgroundColor: colors.primary }]}
+            onPress={handleShareReceipt}
+            disabled={generating}
+          >
+            {generating ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Printer size={22} color="#fff" />
+                <Text style={styles.floatingButtonText}>Cetak</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -378,7 +527,7 @@ export default function ReceiptPreviewScreen() {
         <View style={styles.headerContent}>
           <Text style={[styles.title, { color: colors.text }]}>Preview Struk</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Transaksi #{transaction.id}
+            Transaksi #{transaction.dailyNumber || transaction.id}
           </Text>
         </View>
       </View>
@@ -408,7 +557,7 @@ export default function ReceiptPreviewScreen() {
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <>
-              <Receipt size={22} color="#fff" />
+              <ReceiptText size={22} color="#fff" />
               <Text style={[styles.buttonText, { color: "#fff" }]}>Cetak Struk</Text>
             </>
           )}
@@ -461,12 +610,15 @@ const styles = StyleSheet.create({
   },
   receiptCard: {
     borderRadius: 12,
-    padding: 20,
+    padding: 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    maxWidth: 450,  // Reduced from 600 to make it smaller
+    alignSelf: "center",
+    width: "100%",
   },
   storeHeader: {
     alignItems: "center",
@@ -478,7 +630,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   storeName: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: "700",
     marginBottom: 4,
     textAlign: "center",
@@ -506,12 +658,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   receiptTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "700",
     marginTop: 12,
   },
   receiptId: {
-    fontSize: 14,
+    fontSize: 16,
     marginTop: 4,
   },
   infoSection: {
@@ -525,10 +677,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: 15,
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
   },
   itemsSection: {
@@ -537,7 +689,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
     marginBottom: 12,
   },
@@ -551,15 +703,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
     marginBottom: 4,
   },
   itemDetail: {
-    fontSize: 12,
+    fontSize: 13,
   },
   itemTotal: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
   },
   totalsSection: {
@@ -579,14 +731,14 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
   },
   totalLabel: {
-    fontSize: 14,
+    fontSize: 15,
   },
   totalValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
   },
   mainTotalText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700",
   },
   receiptFooter: {
@@ -659,5 +811,208 @@ const styles = StyleSheet.create({
     maxWidth: 500,
     alignSelf: "center",
     width: "100%",
+  },
+  landscapeTwoColumn: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  // Left Column Styles
+  landscapeLeftColumn: {
+    flex: 5,
+    borderRightWidth: 1,
+    borderRightColor: "#e5e7eb",
+  },
+  landscapeLeftContent: {
+    padding: 24,
+  },
+  detailsContainer: {
+    flex: 1,
+  },
+  detailsHeader: {
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 2,
+  },
+  detailsTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+  detailsInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  detailsLabel: {
+    fontSize: 12,
+  },
+  detailsValue: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  // Items Table Styles
+  itemsTableContainer: {
+    marginBottom: 16,
+  },
+  tableHeader: {
+    flexDirection: "row",
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderBottomWidth: 2,
+  },
+  tableHeaderCell: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  tableRow: {
+    flexDirection: "row",
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderBottomWidth: 1,
+  },
+  tableCell: {
+    fontSize: 12,
+  },
+  tableProductName: {
+    flex: 3,
+  },
+  tablePrice: {
+    flex: 2,
+    textAlign: "right",
+  },
+  tableQty: {
+    flex: 1,
+    textAlign: "center",
+  },
+  tableSubtotal: {
+    flex: 2,
+    textAlign: "right",
+  },
+  // Summary Section Styles
+  summarySection: {
+    padding: 12,
+    borderTopWidth: 2,
+    borderRadius: 8,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  summaryLabel: {
+    fontSize: 13,
+  },
+  summaryValue: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  summaryMainTotal: {
+    marginTop: 6,
+    marginBottom: 8,
+    paddingTop: 8,
+    borderTopWidth: 2,
+  },
+  summaryMainTotalText: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  summaryDivider: {
+    height: 1,
+    marginVertical: 8,
+  },
+  // Right Column Styles
+  landscapeRightColumn: {
+    flex: 5,
+    backgroundColor: "#f3f4f6",
+  },
+  landscapeRightContent: {
+    padding: 32,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  // Landscape Footer Styles
+  landscapeFooter: {
+    flexDirection: "row",
+    padding: 16,
+    gap: 12,
+    borderTopWidth: 1,
+  },
+  landscapeActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 10,
+  },
+  landscapePrintButton: {
+    marginBottom: 8,
+  },
+  landscapeFinishButton: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+  },
+  landscapeButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  // New Landscape Header Styles
+  landscapeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    minWidth: 100,
+  },
+  backButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  landscapeHeaderCenter: {
+    flex: 1,
+    alignItems: "center",
+  },
+  landscapeHeaderTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  landscapeHeaderSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  // Floating Print Button
+  floatingPrintButton: {
+    position: "absolute",
+    bottom: 24,
+    right: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 50,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  floatingButtonText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#fff",
   },
 });

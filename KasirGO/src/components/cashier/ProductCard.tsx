@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Package } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { Product } from "../../api/product";
@@ -29,9 +29,19 @@ export default function ProductCard({ product, onPress, showStock = true, gridVi
     const categoryColor = getCategoryColor(product.m_category?.category_name || "");
 
     const GridCardContent = () => (
-        <View style={[styles.gridCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.gridIconContainer, { backgroundColor: categoryColor + "20" }]}>
-                <Package size={32} color={categoryColor} />
+        <View style={[styles.gridCard, { backgroundColor: colors.card }]}>
+            <View style={styles.gridIconContainer}>
+                {product.product_image_url ? (
+                    <Image
+                        source={{ uri: product.product_image_url }}
+                        style={styles.gridImage}
+                        resizeMode="cover"
+                    />
+                ) : (
+                    <View style={[styles.gridImagePlaceholder, { backgroundColor: categoryColor + "20" }]}>
+                        <Package size={32} color={categoryColor} />
+                    </View>
+                )}
             </View>
             <Text style={[styles.gridName, { color: colors.text }]} numberOfLines={2}>
                 {product.name}
@@ -53,9 +63,19 @@ export default function ProductCard({ product, onPress, showStock = true, gridVi
     );
 
     const ListCardContent = () => (
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <View style={[styles.iconContainer, { backgroundColor: categoryColor + "20" }]}>
-                <Package size={24} color={categoryColor} />
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+            <View style={styles.iconContainer}>
+                {product.product_image_url ? (
+                    <Image
+                        source={{ uri: product.product_image_url }}
+                        style={styles.listImage}
+                        resizeMode="cover"
+                    />
+                ) : (
+                    <View style={[styles.listImagePlaceholder, { backgroundColor: categoryColor + "20" }]}>
+                        <Package size={24} color={categoryColor} />
+                    </View>
+                )}
             </View>
             <View style={styles.info}>
                 <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
@@ -192,5 +212,30 @@ const styles = StyleSheet.create({
     gridStockText: {
         fontSize: 11,
         fontWeight: "600",
+    },
+    // Image styles
+    gridImage: {
+        width: 64,
+        height: 64,
+        borderRadius: 12,
+    },
+    gridImagePlaceholder: {
+        width: 64,
+        height: 64,
+        borderRadius: 12,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    listImage: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+    },
+    listImagePlaceholder: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        alignItems: "center",
+        justifyContent: "center",
     },
 });

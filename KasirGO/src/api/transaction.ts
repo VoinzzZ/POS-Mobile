@@ -11,6 +11,7 @@ export interface TransactionPayload {
 
 export interface Transaction {
   id: number;
+  dailyNumber?: number;
   cashierId: number;
   total: number;
   paymentAmount?: number;
@@ -48,6 +49,7 @@ export interface ApiResponse<T> {
 export const transformTransaction = (serverData: any): Transaction => {
   return {
     id: serverData.transaction_id,
+    dailyNumber: serverData.transaction_number,
     cashierId: serverData.transaction_cashier_id,
     total: serverData.transaction_total,
     paymentAmount: serverData.transaction_payment_amount,
@@ -84,6 +86,22 @@ export const transactionService = {
   // Create new transaction (draft)
   createTransaction: async (payload: TransactionPayload): Promise<ApiResponse<Transaction>> => {
     const response = await axiosInstance.post('/transactions', payload);
+
+    // Transform the server data to match our interface
+    if (response.data.success && response.data.data) {
+      const transformedData = {
+        ...response.data,
+        data: transformTransaction(response.data.data)
+      };
+      return transformedData;
+    }
+
+    return response.data;
+  },
+
+  // Update existing transaction (draft)
+  updateTransaction: async (transactionId: number, payload: TransactionPayload): Promise<ApiResponse<Transaction>> => {
+    const response = await axiosInstance.put(`/transactions/${transactionId}`, payload);
 
     // Transform the server data to match our interface
     if (response.data.success && response.data.data) {
@@ -178,15 +196,48 @@ export const transactionService = {
     return response.data;
   },
 
-  // Update transaction (edit items)
-  updateTransaction: async (transactionId: number, payload: TransactionPayload): Promise<ApiResponse<Transaction>> => {
-    const response = await axiosInstance.put(`/transactions/${transactionId}`, payload);
-    return response.data;
-  },
-
   // Delete transaction
   deleteTransaction: async (transactionId: number): Promise<ApiResponse<null>> => {
     const response = await axiosInstance.delete(`/transactions/${transactionId}`);
+    return response.data;
+  },
+
+  getDashboardStats: async (): Promise<ApiResponse<{
+    todaySales: number;
+    transactionCount: number;
+    averageSale: number;
+    recentTransactions: Transaction[];
+    paymentMethodBreakdown: {
+      CASH: { total: number; count: number };
+      QRIS: { total: number; count: number };
+      DEBIT: { total: number; count: number };
+    };
+  }>> => {
+    const response = await axiosInstance.get('/transactions/dashboard/stats');
+
+    if (response.data.success && response.data.data) {
+      const transformedData = {
+        ...response.data,
+        data: {
+          ...response.data.data,
+          recentTransactions: transformTransactions(response.data.data.recentTransactions)
+        }
+      };
+      return transformedData;
+    }
+
+    return response.data;
+  },
+
+  getTopProducts: async (limit: number = 5): Promise<ApiResponse<{
+    topProducts: Array<{
+      product_id: number;
+      product_name: string;
+      total_quantity: number;
+      total_revenue: number;
+    }>;
+  }>> => {
+    const response = await axiosInstance.get('/dashboard/top-products', { params: { limit } });
     return response.data;
   }
 };
