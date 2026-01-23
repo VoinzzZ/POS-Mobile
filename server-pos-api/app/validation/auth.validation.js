@@ -159,6 +159,15 @@ const registerEmployeeWithPinSchema = Joi.object({
   })
 });
 
+const verifyPasswordSchema = Joi.object({
+  currentPassword: Joi.string().min(8).required().messages({
+    'string.base': 'Password harus berupa teks',
+    'string.empty': 'Password saat ini wajib diisi',
+    'string.min': 'Password minimal harus memiliki {#limit} karakter',
+    'any.required': 'Password saat ini wajib diisi'
+  })
+});
+
 const validatePinSchema = Joi.object({
   pin: Joi.string().required().messages({
     'string.base': 'PIN harus berupa teks',
@@ -175,6 +184,7 @@ module.exports = {
   completeRegistrationSchema,
   registerEmployeeWithPinSchema,
   validatePinSchema,
+  verifyPasswordSchema,
 
   loginSchema,
   approveUserSchema,

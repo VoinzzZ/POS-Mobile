@@ -1,6 +1,7 @@
 const prisma = require('../config/mysql.db.js');
 
 const DEFAULT_CATEGORIES = [
+    { code: 'PURCHASE_INVENTORY', name: 'Pembelian Barang', description: 'Pembelian barang dagangan dan stok inventory' },
     { code: 'SALARY', name: 'Gaji Karyawan', description: 'Gaji karyawan bulanan atau upah harian' },
     { code: 'RENT', name: 'Sewa Toko', description: 'Biaya sewa tempat usaha' },
     { code: 'UTILITIES', name: 'Listrik & Air', description: 'Tagihan listrik, air, dan internet' },

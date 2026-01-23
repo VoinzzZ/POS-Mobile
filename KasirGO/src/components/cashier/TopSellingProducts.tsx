@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
-        marginBottom: 20,
+        marginBottom: 16,
     },
     title: {
         fontSize: 17,
@@ -197,11 +197,11 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     productsContainer: {
-        gap: 16,
-        minHeight: 234,
+        gap: 14,
+        minHeight: 236,
     },
     productRow: {
-        gap: 10,
+        gap: 8,
     },
     productInfo: {
         flexDirection: "row",
@@ -217,8 +217,8 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     imageContainer: {
-        width: 44,
-        height: 44,
+        width: 42,
+        height: 42,
         borderRadius: 10,
         alignItems: "center",
         justifyContent: "center",
@@ -239,13 +239,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     productName: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: "600",
         marginBottom: 3,
         letterSpacing: -0.2,
     },
     productRevenue: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: "500",
     },
     quantitySection: {
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     },
     barContainer: {
         flex: 1,
-        height: 10,
+        height: 9,
         backgroundColor: "rgba(0,0,0,0.05)",
         borderRadius: 5,
         overflow: "hidden",
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
         minWidth: 4,
     },
     quantityText: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: "700",
         width: 90,
         textAlign: "right",

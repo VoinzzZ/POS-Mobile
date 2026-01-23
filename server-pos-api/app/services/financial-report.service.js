@@ -5,8 +5,14 @@ class FinancialReportService {
         const { startDate, endDate } = filters;
         const dateFilter = {};
 
-        if (startDate) dateFilter.gte = new Date(startDate);
-        if (endDate) dateFilter.lte = new Date(endDate);
+        if (startDate) {
+            const start = new Date(startDate + 'T00:00:00');
+            dateFilter.gte = start;
+        }
+        if (endDate) {
+            const endOfDay = new Date(endDate + 'T23:59:59.999');
+            dateFilter.lte = endOfDay;
+        }
 
         const transactionFilter = {
             tenant_id: tenantId,
@@ -18,37 +24,53 @@ class FinancialReportService {
             transactionFilter.transaction_completed_at = dateFilter;
         }
 
+        const cashTransactionFilter = {
+            tenant_id: tenantId,
+            transaction_type: 'EXPENSE',
+            deleted_at: null,
+        };
+
+        if (Object.keys(dateFilter).length > 0) {
+            cashTransactionFilter.transaction_date = dateFilter;
+        }
+
         const [
-            totalRevenue,
+            revenueData,
             totalTransactions,
             revenueByPaymentMethod,
-            inventoryValue
+            inventoryValue,
+            totalExpenses
         ] = await Promise.all([
             this._calculateRevenue(transactionFilter),
             this._countTransactions(transactionFilter),
             this._getRevenueByPaymentMethod(transactionFilter),
-            this._getInventoryValue(tenantId)
+            this._getInventoryValue(tenantId),
+            this._calculateExpenses(cashTransactionFilter)
         ]);
 
-        const grossProfit = totalRevenue.revenue - totalRevenue.totalCost;
-        const netProfit = grossProfit > 0 ? grossProfit : 0;
-        const profitMargin = totalRevenue.revenue > 0
-            ? ((grossProfit / totalRevenue.revenue) * 100).toFixed(2)
+        const grossProfit = revenueData.grossProfit;
+        const netProfit = grossProfit;
+        const profitMargin = revenueData.revenue > 0
+            ? ((grossProfit / revenueData.revenue) * 100).toFixed(2)
             : 0;
+        const netProfitMargin = profitMargin;
 
         return {
             revenue: {
-                total: parseFloat(totalRevenue.revenue),
-                totalCost: parseFloat(totalRevenue.totalCost),
+                total: parseFloat(revenueData.revenue),
+                totalCost: parseFloat(revenueData.totalCost),
                 grossProfit: parseFloat(grossProfit),
                 netProfit: parseFloat(netProfit),
                 profitMargin: parseFloat(profitMargin),
+                netProfitMargin: parseFloat(netProfitMargin),
             },
             transactions: {
                 total: totalTransactions,
                 byPaymentMethod: revenueByPaymentMethod,
             },
-            expenses: null,
+            expenses: {
+                total: parseFloat(totalExpenses),
+            },
             inventory: {
                 totalValue: parseFloat(inventoryValue),
             },
@@ -66,7 +88,13 @@ class FinancialReportService {
             include: {
                 t_transaction_item: {
                     include: {
-                        m_product: true,
+                        m_product: {
+                            select: {
+                                product_id: true,
+                                product_name: true,
+                                product_cost: true,
+                            },
+                        },
                     },
                 },
             },
@@ -74,19 +102,46 @@ class FinancialReportService {
 
         let totalRevenue = 0;
         let totalCost = 0;
+        let totalMargin = 0;
+        let itemsWithoutCost = 0;
 
         transactions.forEach(transaction => {
             totalRevenue += parseFloat(transaction.transaction_total);
 
             transaction.t_transaction_item.forEach(item => {
-                const productCost = item.m_product.product_cost || 0;
-                totalCost += parseFloat(productCost) * item.transaction_item_quantity;
+                const productCost = parseFloat(item.m_product.product_cost || 0);
+                const itemQuantity = item.transaction_item_quantity;
+                const itemPrice = parseFloat(item.transaction_item_price);
+
+                const itemCost = productCost * itemQuantity;
+                const itemRevenue = itemPrice * itemQuantity;
+                const itemMargin = itemRevenue - itemCost;
+
+                if (!item.m_product.product_cost || item.m_product.product_cost === 0) {
+                    itemsWithoutCost++;
+                    console.warn(`Product ${item.m_product.product_name} (ID: ${item.m_product.product_id}) has no cost set`);
+                }
+
+                totalCost += itemCost;
+                totalMargin += itemMargin;
             });
+        });
+
+        if (itemsWithoutCost > 0) {
+            console.warn(`Total items sold without cost data: ${itemsWithoutCost}`);
+        }
+
+        console.log('Revenue Calculation:', {
+            totalRevenue: totalRevenue.toFixed(2),
+            totalCost: totalCost.toFixed(2),
+            grossProfit: totalMargin.toFixed(2),
+            itemsWithoutCost
         });
 
         return {
             revenue: totalRevenue,
             totalCost: totalCost,
+            grossProfit: totalMargin,
         };
     }
 
@@ -140,6 +195,44 @@ class FinancialReportService {
         return totalValue;
     }
 
+    static async _calculateExpenses(filter) {
+        const result = await prisma.t_cash_transaction.aggregate({
+            where: {
+                ...filter,
+            },
+            _sum: {
+                amount: true,
+            },
+        });
+
+        const totalAllExpenses = result._sum.amount || 0;
+
+        const excludedResult = await prisma.t_cash_transaction.aggregate({
+            where: {
+                ...filter,
+                t_expense_category: {
+                    category_code: {
+                        in: ['PURCHASE_INVENTORY', 'RETURN_REFUND']
+                    }
+                }
+            },
+            _sum: {
+                amount: true,
+            },
+        });
+
+        const excludedExpenses = excludedResult._sum.amount || 0;
+        const totalOperationalExpenses = totalAllExpenses - excludedExpenses;
+
+        console.log('Operational Expenses (excluding inventory purchases):', {
+            totalAll: parseFloat(totalAllExpenses).toFixed(2),
+            excluded: parseFloat(excludedExpenses).toFixed(2),
+            total: parseFloat(totalOperationalExpenses).toFixed(2),
+        });
+
+        return totalOperationalExpenses;
+    }
+
 
 
 
@@ -156,10 +249,12 @@ class FinancialReportService {
         if (startDate || endDate) {
             dateFilter.transaction_completed_at = {};
             if (startDate) {
-                dateFilter.transaction_completed_at.gte = new Date(startDate);
+                const start = new Date(startDate + 'T00:00:00');
+                dateFilter.transaction_completed_at.gte = start;
             }
             if (endDate) {
-                dateFilter.transaction_completed_at.lte = new Date(endDate);
+                const endOfDay = new Date(endDate + 'T23:59:59.999');
+                dateFilter.transaction_completed_at.lte = endOfDay;
             }
         }
 
@@ -188,11 +283,18 @@ class FinancialReportService {
             let key;
 
             if (groupBy === 'day') {
-                key = date.toISOString().split('T')[0];
+                // Use local date instead of UTC to match user's timezone
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                key = `${year}-${month}-${day}`;
             } else if (groupBy === 'week') {
                 const weekStart = new Date(date);
                 weekStart.setDate(date.getDate() - date.getDay());
-                key = weekStart.toISOString().split('T')[0];
+                const year = weekStart.getFullYear();
+                const month = String(weekStart.getMonth() + 1).padStart(2, '0');
+                const day = String(weekStart.getDate()).padStart(2, '0');
+                key = `${year}-${month}-${day}`;
             } else if (groupBy === 'month') {
                 key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             } else {
@@ -211,15 +313,21 @@ class FinancialReportService {
 
             const revenue = parseFloat(transaction.transaction_total);
             let cost = 0;
+            let profit = 0;
 
             transaction.t_transaction_item.forEach(item => {
                 const productCost = item.m_product.product_cost || 0;
-                cost += parseFloat(productCost) * item.transaction_item_quantity;
+                const itemCost = parseFloat(productCost) * item.transaction_item_quantity;
+                const itemRevenue = parseFloat(item.transaction_item_price) * item.transaction_item_quantity;
+                const itemMargin = itemRevenue - itemCost;
+
+                cost += itemCost;
+                profit += itemMargin;
             });
 
             grouped[key].revenue += revenue;
             grouped[key].cost += cost;
-            grouped[key].profit += (revenue - cost);
+            grouped[key].profit += profit;
             grouped[key].transactions += 1;
         });
 
@@ -244,13 +352,15 @@ class FinancialReportService {
         };
 
         if (startDate) {
-            dateFilter.transaction_completed_at = { gte: new Date(startDate) };
+            const start = new Date(startDate + 'T00:00:00');
+            dateFilter.transaction_completed_at = { gte: start };
         }
         if (endDate) {
+            const endOfDay = new Date(endDate + 'T23:59:59.999');
             if (dateFilter.transaction_completed_at) {
-                dateFilter.transaction_completed_at.lte = new Date(endDate);
+                dateFilter.transaction_completed_at.lte = endOfDay;
             } else {
-                dateFilter.transaction_completed_at = { lte: new Date(endDate) };
+                dateFilter.transaction_completed_at = { lte: endOfDay };
             }
         }
 

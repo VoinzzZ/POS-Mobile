@@ -106,7 +106,8 @@ const forgotPasswordOtpTemplate = (otpCode, userName) => {
             
             <div class="footer">
                 <p>Email ini dikirim secara otomatis, mohon jangan membalas email ini.</p>
-                <p>&copy; 2024 ${process.env.APP_NAME || 'Your App'}. All rights reserved.</p>
+                <p>&copy; ${new Date().getFullYear()} KasirGO. All rights reserved.</p>
+                <p>Butuh bantuan? Hubungi support@kasirgo.com</p>
             </div>
         </div>
     </body>

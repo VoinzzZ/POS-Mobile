@@ -462,6 +462,13 @@ class ProductController {
         });
       }
 
+      if (existingProduct.product_qty > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Produk tidak dapat dihapus karena produk ini sedang digunakan.'
+        });
+      }
+
       const product = await productService.deleteProduct(productId, userId);
 
       res.status(200).json({

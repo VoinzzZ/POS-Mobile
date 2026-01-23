@@ -154,6 +154,199 @@ class AuthController {
       });
     }
   }
+
+  static async sendEmailChangeOTP(req, res) {
+    try {
+      const { userId } = req.user;
+      const { newEmail, currentPassword } = req.body;
+
+      if (!newEmail || !currentPassword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email baru dan password saat ini wajib diisi'
+        });
+      }
+
+      const result = await AuthService.sendEmailChangeOTP(userId, newEmail, currentPassword);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: {
+          newEmail: result.newEmail,
+          expiresAt: result.expiresAt
+        }
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Gagal mengirim kode OTP'
+      });
+    }
+  }
+
+  static async verifyEmailChangeOTP(req, res) {
+    try {
+      const { userId } = req.user;
+      const { otpCode } = req.body;
+
+      if (!otpCode) {
+        return res.status(400).json({
+          success: false,
+          message: 'Kode OTP wajib diisi'
+        });
+      }
+
+      const result = await AuthService.verifyEmailChangeOTP(userId, otpCode);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: {
+          newEmail: result.newEmail
+        }
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Gagal memverifikasi kode OTP'
+      });
+    }
+  }
+
+  static async changePassword(req, res) {
+    try {
+      const { userId } = req.user;
+      const { current_password, new_password, confirm_password } = req.body;
+
+      if (!current_password || !new_password || !confirm_password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Semua field wajib diisi'
+        });
+      }
+
+      const result = await AuthService.changePassword(userId, current_password, new_password, confirm_password);
+
+      res.status(200).json({
+        success: true,
+        message: result.message
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Gagal mengubah password'
+      });
+    }
+  }
+
+  static async verifyCurrentPassword(req, res) {
+    try {
+      const { userId } = req.user;
+      const { currentPassword } = req.body;
+
+      if (!currentPassword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password saat ini wajib diisi'
+        });
+      }
+
+      const result = await AuthService.verifyCurrentPassword(userId, currentPassword);
+
+      res.status(200).json({
+        success: true,
+        message: result.message
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Gagal memverifikasi password'
+      });
+    }
+  }
+
+  static async sendForgotPasswordOTP(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email wajib diisi'
+        });
+      }
+
+      const result = await AuthService.sendForgotPasswordOTP(email);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: {
+          email: result.email,
+          expiresAt: result.expiresAt
+        }
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Gagal mengirim kode OTP'
+      });
+    }
+  }
+
+  static async verifyForgotPasswordOTP(req, res) {
+    try {
+      const { email, otpCode } = req.body;
+
+      if (!email || !otpCode) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email dan kode OTP wajib diisi'
+        });
+      }
+
+      const result = await AuthService.verifyForgotPasswordOTP(email, otpCode);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: {
+          email: result.email
+        }
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Gagal memverifikasi kode OTP'
+      });
+    }
+  }
+
+  static async resetPassword(req, res) {
+    try {
+      const { email, otpCode, new_password, confirm_password } = req.body;
+
+      if (!email || !otpCode || !new_password || !confirm_password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Semua field wajib diisi'
+        });
+      }
+
+      const result = await AuthService.resetPassword(email, otpCode, new_password, confirm_password);
+
+      res.status(200).json({
+        success: true,
+        message: result.message
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Gagal mereset password'
+      });
+    }
+  }
 }
 
 module.exports = AuthController;

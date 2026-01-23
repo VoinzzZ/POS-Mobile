@@ -137,6 +137,27 @@ class StockController {
             });
         }
     }
+
+    static async getStockMovementStatistics(req, res) {
+        try {
+            const { tenantId } = req.user;
+            const { start_date, end_date } = req.query;
+
+            const statistics = await stockService.getStockMovementStatistics(tenantId, start_date, end_date);
+
+            res.status(200).json({
+                success: true,
+                message: 'Stock movement statistics retrieved successfully',
+                data: statistics
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 }
 
 module.exports = StockController;
+

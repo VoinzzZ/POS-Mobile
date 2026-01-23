@@ -26,7 +26,6 @@ export default function AdminLayout() {
     return <Redirect href="/auth/login" />;
   }
 
-  // User is authenticated and is ADMIN
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="dashboard" />

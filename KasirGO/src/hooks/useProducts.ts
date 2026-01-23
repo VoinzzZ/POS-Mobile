@@ -216,30 +216,23 @@ export const useProducts = (options: UseProductsOptions = {}): UseProductsReturn
             try {
                 setError(null);
 
-                // Optimistically remove from UI
-                if (isMountedRef.current) {
-                    setProducts((prev) => prev.filter((p) => p.product_id !== id));
-                }
-
                 const response = await deleteProduct(id);
 
                 if (response.success) {
-                    // Invalidate ALL cache to ensure fresh data on next load
+                    if (isMountedRef.current) {
+                        setProducts((prev) => prev.filter((p) => p.product_id !== id));
+                    }
                     invalidateAllProductCache();
                     return true;
                 } else {
                     throw new Error(response.message || 'Failed to delete product');
                 }
             } catch (err: any) {
-                // Reload products if delete failed
-                await loadProducts();
-                if (isMountedRef.current) {
-                    setError(err.message || 'An error occurred while deleting product');
-                }
-                return false;
+                const errorMessage = err.message || 'An error occurred while deleting product';
+                throw new Error(errorMessage);
             }
         },
-        [loadProducts]
+        []
     );
 
     const clearError = useCallback(() => {

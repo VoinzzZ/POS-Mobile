@@ -20,7 +20,7 @@ const LoginForm = (props: LoginFormProps) => {
 
   const router = useRouter();
   const { login } = useAuth();
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
 
   const validateInputs = (): boolean => {
     const newErrors: typeof errors = {};
@@ -172,7 +172,7 @@ const LoginForm = (props: LoginFormProps) => {
       </TouchableOpacity>
 
       {/* Links */}
-      <TouchableOpacity onPress={() => console.log("Lupa Password - coming soon")}>
+      <TouchableOpacity onPress={() => router.push("/auth/forgot-password" as any)}>
         <Text style={[styles.link, shouldUseLargerStyles && styles.landscapeLink, dynamicStyles.link]}>Lupa Password?</Text>
       </TouchableOpacity>
       <Text style={[styles.footer, shouldUseLargerStyles && styles.landscapeFooter, dynamicStyles.footer]}>

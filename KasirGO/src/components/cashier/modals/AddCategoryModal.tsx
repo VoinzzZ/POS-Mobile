@@ -10,8 +10,8 @@ import {
   Alert,
 } from "react-native";
 import { X } from "lucide-react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { createCategory } from "../../api/product";
+import { useTheme } from "../../../context/ThemeContext";
+import { createCategory } from "../../../api/product";
 
 interface AddCategoryModalProps {
   visible: boolean;

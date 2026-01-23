@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput, Animated, Clipboard } from "react-native";
 import PagerView from "react-native-pager-view";
 import { useAuth } from "../../src/context/AuthContext";
-import { Store as StoreIcon, Users as UsersIcon, Receipt, Settings, Search, Key, UserPlus, UserCheck, UserX, Copy, Check, ClipboardCheck } from "lucide-react-native";
+import { Store as StoreIcon, Users as UsersIcon, Receipt, Settings, Search, Key, UserPlus, UserCheck, UserX, Copy, Check, ClipboardCheck, Wallet } from "lucide-react-native";
 import OwnerBottomNav from "../../src/components/navigation/OwnerBottomNav";
 import { useRouter } from "expo-router";
 import { getAllUsers, User, getPinHistory, PinHistory } from "../../src/api/user";
@@ -14,9 +14,11 @@ import ReceiptPreview from "../../src/components/admin/ReceiptPreview";
 import ApproveEmployeeModal from "../../src/components/owner/ApproveEmployeeModal";
 import RejectEmployeeModal from "../../src/components/owner/RejectEmployeeModal";
 import UserDetailModal from "../../src/components/owner/UserDetailModal";
+import ExpenseListCard from "../../src/components/owner/ExpenseListCard";
+import AddExpenseModal from "../../src/components/owner/AddExpenseModal";
 import { getPendingEmployeesApi } from "../../src/api/auth";
 
-type TabType = "store" | "cashiers" | "receipt";
+type TabType = "store" | "cashiers" | "receipt" | "expense";
 
 export default function OwnerStore() {
   const { user } = useAuth();
@@ -43,6 +45,7 @@ export default function OwnerStore() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserDetailModal, setShowUserDetailModal] = useState(false);
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
 
   const pagerRef = useRef<PagerView>(null);
 
@@ -63,9 +66,10 @@ export default function OwnerStore() {
 
   // Tab configuration
   const tabs: { key: TabType; title: string; icon: any }[] = [
-    { key: "store", title: "Info Toko", icon: StoreIcon },
-    { key: "cashiers", title: "Pengguna", icon: UsersIcon },
-    { key: "receipt", title: "Pratinjau Struk", icon: Receipt },
+    { key: "store", title: "Toko", icon: StoreIcon },
+    { key: "cashiers", title: "Karyawan", icon: UsersIcon },
+    { key: "receipt", title: "Struk", icon: Receipt },
+    { key: "expense", title: "Pengeluaran", icon: Wallet },
   ];
 
   // Check for active PIN
@@ -509,6 +513,11 @@ export default function OwnerStore() {
         <View key="receipt" style={styles.page}>
           <ReceiptPreview store={storeDataForReceipt} />
         </View>
+
+        {/* Page 4: Expense Management */}
+        <View key="expense" style={styles.page}>
+          <ExpenseListCard onAddExpense={() => setShowAddExpenseModal(true)} />
+        </View>
       </PagerView>
 
       {/* Bottom Navigation */}
@@ -576,6 +585,14 @@ export default function OwnerStore() {
           await fetchUsers();
         }}
       />
+
+      <AddExpenseModal
+        visible={showAddExpenseModal}
+        onClose={() => setShowAddExpenseModal(false)}
+        onSuccess={() => {
+          setShowAddExpenseModal(false);
+        }}
+      />
     </Animated.View>
   );
 }
@@ -611,10 +628,10 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 4,
     paddingVertical: 8,
     position: "relative",
   },

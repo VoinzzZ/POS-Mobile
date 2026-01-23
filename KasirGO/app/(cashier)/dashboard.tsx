@@ -327,34 +327,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statsContainer: {
-    gap: 20,
+    gap: 16,
   },
   statCard: {
-    padding: 24,
+    padding: 20,
     borderRadius: 16,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 5,
+    minHeight: 130,
   },
   statCardHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   statValue: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "800",
     letterSpacing: -1,
-    marginTop: 4,
+    marginTop: 2,
   },
   statTitle: {
     fontSize: 14,
@@ -364,10 +365,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   paymentMethodSection: {
-    marginTop: 24,
+    marginTop: 20,
   },
   sectionTitle: {
     fontSize: 18,
@@ -396,12 +397,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   transactionsContainer: {
-    gap: 12,
-    minHeight: 258,
+    gap: 10,
+    minHeight: 240,
   },
   transactionCard: {
-    padding: 18,
-    borderRadius: 14,
+    padding: 16,
+    borderRadius: 12,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   transactionIdContainer: {
     flexDirection: "row",
@@ -424,22 +425,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   transactionId: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     letterSpacing: -0.2,
   },
   paymentBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 7,
   },
   paymentBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     letterSpacing: 0.5,
   },
   transactionTotal: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "800",
     letterSpacing: -0.5,
   },
@@ -448,7 +449,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   transactionItems: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
   },
   transactionMethod: {

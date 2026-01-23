@@ -11,14 +11,14 @@ import {
     Alert,
 } from "react-native";
 import { X, Search, Package, CheckSquare, Square } from "lucide-react-native";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../../context/ThemeContext";
 import {
     Product,
     getAvailableProductsForBrand,
     getAvailableProductsForCategory,
     linkProductsToBrand,
     linkProductsToCategory,
-} from "../../api/product";
+} from "../../../api/product";
 
 interface SelectProductModalProps {
     visible: boolean;

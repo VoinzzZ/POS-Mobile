@@ -119,3 +119,19 @@ export const getDeadStockProducts = async (days?: number): Promise<ApiResponse<a
     const res = await api.get("/stock/dead-stock", { params: { days } });
     return res.data;
 };
+
+export interface StockMovementStatistics {
+    incoming_total: number;
+    return_total: number;
+    outgoing_transaction_total: number;
+    outgoing_nontransaction_total: number;
+}
+
+export const getStockMovementStatistics = async (filters?: {
+    start_date?: string;
+    end_date?: string;
+}): Promise<ApiResponse<StockMovementStatistics>> => {
+    const res = await api.get("/stock/movement-statistics", { params: filters });
+    return res.data;
+};
+

@@ -40,4 +40,10 @@ router.get('/dead-stock',
     StockController.getDeadStockProducts
 );
 
+router.get('/movement-statistics',
+    verifyToken,
+    requireRole(['ADMIN', 'OWNER']),
+    StockController.getStockMovementStatistics
+);
+
 module.exports = router;

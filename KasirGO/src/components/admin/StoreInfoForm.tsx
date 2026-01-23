@@ -123,23 +123,16 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
     const saveData = dataToSave || formData;
 
     if (!saveData.store_name || saveData.store_name.trim() === "") {
-      return; // Don't save if name is empty
-    }
-
-    // Only proceed with save if no input is currently active
-    if (activeInput) {
-      // Schedule save for later when no input is active
-      setTimeout(() => {
-        if (!activeInput) {
-          autoSave(dataToSave);
-        }
-      }, 500);
       return;
     }
+
+    // REMOVED activeInput blocking - timer delay (3s) is sufficient to prevent spam
+    // If user stopped typing for 3 seconds, we should save regardless of focus state
 
     try {
       setSaving(true);
       setSaveStatus('saving');
+
       // Animate save status
       Animated.parallel([
         Animated.timing(saveStatusOpacity, {
@@ -154,13 +147,13 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
       ]).start();
 
       const response = await updateStoreSettings(saveData);
+
       if (response.success) {
         originalData.current = { ...saveData };
         setHasChanges(false);
         setSaveStatus('saved');
-        console.log("✅ Store data saved successfully");
-        updateStore(response.data); // Update internal store state
-        onStoreUpdate?.(response.data); // Notify parent component with updated data
+        updateStore(response.data);
+        onStoreUpdate?.(response.data);
 
         // Hide success status after 2 seconds
         setTimeout(() => {
@@ -172,6 +165,10 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
         }, 2000);
       } else {
         setSaveStatus('error');
+        Alert.alert(
+          'Gagal Menyimpan',
+          response.message || 'Terjadi kesalahan saat menyimpan data toko. Silakan coba lagi.'
+        );
         // Show error for 3 seconds
         setTimeout(() => {
           Animated.timing(saveStatusOpacity, {
@@ -182,8 +179,15 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
         }, 3000);
       }
     } catch (error: any) {
-      console.error("Error auto-saving store data:", error);
+      console.error('Error auto-saving store data:', error);
       setSaveStatus('error');
+
+      // Show alert for critical errors
+      Alert.alert(
+        'Kesalahan Penyimpanan',
+        error.response?.data?.message || error.message || 'Tidak dapat menyimpan data. Periksa koneksi internet Anda.'
+      );
+
       // Show error for 3 seconds
       setTimeout(() => {
         Animated.timing(saveStatusOpacity, {
@@ -192,7 +196,6 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
           useNativeDriver: true,
         }).start();
       }, 3000);
-      // Don't show alert for auto-save errors to avoid interrupting user
     } finally {
       setSaving(false);
     }
@@ -202,7 +205,7 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
   const updateFormData = (updates: Partial<UpdateStoreData>) => {
     const newData = { ...formData, ...updates };
     setFormData(newData);
-    checkForChanges(newData);
+    const hasChangesNow = checkForChanges(newData);
 
     // Set typing status to true when user is actively typing
     setIsTyping(true);
@@ -236,10 +239,11 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
     // Set a timeout to reset typing status after user stops typing
     saveTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      if (checkForChanges(newData)) {
+      if (hasChangesNow) {
         autoSave(newData);
+      } else {
       }
-    }, 3000); // Match the same delay as auto-save
+    }, 3000);
   };
 
   const handlePickImage = async () => {
@@ -366,7 +370,13 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 placeholder="Contoh: Toko Berkah"
                 placeholderTextColor={colors.textSecondary}
                 onFocus={() => setActiveInput('store_name')}
-                onBlur={() => setActiveInput(null)}
+                onBlur={() => {
+                  setActiveInput(null);
+                  // Save on blur as fallback
+                  if (hasChanges && formData.store_name && formData.store_name.trim() !== '') {
+                    autoSave();
+                  }
+                }}
               />
             </View>
           </View>
@@ -385,7 +395,12 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 multiline
                 numberOfLines={3}
                 onFocus={() => setActiveInput('store_address')}
-                onBlur={() => setActiveInput(null)}
+                onBlur={() => {
+                  setActiveInput(null);
+                  if (hasChanges && formData.store_name && formData.store_name.trim() !== '') {
+                    autoSave();
+                  }
+                }}
               />
             </View>
           </View>
@@ -403,7 +418,12 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="phone-pad"
                 onFocus={() => setActiveInput('store_phone')}
-                onBlur={() => setActiveInput(null)}
+                onBlur={() => {
+                  setActiveInput(null);
+                  if (hasChanges && formData.store_name && formData.store_name.trim() !== '') {
+                    autoSave();
+                  }
+                }}
               />
             </View>
           </View>
@@ -422,7 +442,12 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 keyboardType="email-address"
                 autoCapitalize="none"
                 onFocus={() => setActiveInput('store_email')}
-                onBlur={() => setActiveInput(null)}
+                onBlur={() => {
+                  setActiveInput(null);
+                  if (hasChanges && formData.store_name && formData.store_name.trim() !== '') {
+                    autoSave();
+                  }
+                }}
               />
             </View>
           </View>
@@ -493,7 +518,12 @@ export default function StoreInfoForm({ store: externalStore, onStoreUpdate }: S
                 multiline
                 numberOfLines={2}
                 onFocus={() => setActiveInput('store_description')}
-                onBlur={() => setActiveInput(null)}
+                onBlur={() => {
+                  setActiveInput(null);
+                  if (hasChanges && formData.store_name && formData.store_name.trim() !== '') {
+                    autoSave();
+                  }
+                }}
               />
             </View>
           </View>
@@ -676,5 +706,20 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 24,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
   },
 });

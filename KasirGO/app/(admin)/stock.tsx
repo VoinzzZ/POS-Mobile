@@ -263,6 +263,7 @@ export default function StockScreen() {
   const [movements, setMovements] = useState<any[]>([]);
   const [movementsLoading, setMovementsLoading] = useState(false);
   const [movementsRefreshing, setMovementsRefreshing] = useState(false);
+  const [movementsLoadingMore, setMovementsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -272,20 +273,22 @@ export default function StockScreen() {
   const [opnamesRefreshing, setOpnamesRefreshing] = useState(false);
   const [opnamesPage, setOpnamesPage] = useState(1);
   const [opnamesTotalPages, setOpnamesTotalPages] = useState(1);
-  const [opnameFilter, setOpnameFilter] = useState<'all' | 'pending' | 'processed'>('all');
+  const [opnameFilter, setOpnameFilter] = useState<'all' | 'pending' | 'processed'>('pending');
   const [opnameModalVisible, setOpnameModalVisible] = useState(false);
 
-  const loadMovements = async (page = 1, refresh = false) => {
+  const loadMovements = async (page = 1, refresh = false, loadMore = false) => {
     try {
       if (refresh) {
         setMovementsRefreshing(true);
+      } else if (loadMore) {
+        setMovementsLoadingMore(true);
       } else {
         setMovementsLoading(true);
       }
 
       const filters: any = {
         page,
-        limit: 20,
+        limit: 10,
       };
 
       if (selectedMovementType) filters.movement_type = selectedMovementType;
@@ -294,7 +297,11 @@ export default function StockScreen() {
       const response = await getStockMovements(filters);
 
       if (response.success && response.data) {
-        setMovements(response.data);
+        if (loadMore) {
+          setMovements(prev => [...prev, ...(response.data || [])]);
+        } else {
+          setMovements(response.data);
+        }
         if (response.pagination) {
           setCurrentPage(response.pagination.currentPage);
           setTotalPages(response.pagination.totalPages);
@@ -305,16 +312,25 @@ export default function StockScreen() {
     } finally {
       setMovementsLoading(false);
       setMovementsRefreshing(false);
+      setMovementsLoadingMore(false);
     }
   };
 
   useEffect(() => {
+    setCurrentPage(1);
     loadMovements(1);
   }, [selectedMovementType, selectedReferenceType]);
 
   const onMovementsRefresh = useCallback(async () => {
-    await loadMovements(currentPage, true);
-  }, [currentPage, selectedMovementType, selectedReferenceType]);
+    setCurrentPage(1);
+    await loadMovements(1, true);
+  }, [selectedMovementType, selectedReferenceType]);
+
+  const handleLoadMore = () => {
+    if (currentPage < totalPages && !movementsLoadingMore && !movementsLoading) {
+      loadMovements(currentPage + 1, false, true);
+    }
+  };
 
   const handleResetFilters = () => {
     setSelectedMovementType(null);
@@ -478,6 +494,15 @@ export default function StockScreen() {
               tintColor={colors.primary}
             />
           }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={() => (
+            movementsLoadingMore ? (
+              <View style={styles.loadingMoreContainer}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : null
+          )}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Package size={48} color={colors.textSecondary} />
@@ -509,27 +534,12 @@ export default function StockScreen() {
   const OpnameRoute = () => (
     <View style={styles.movementsContainer}>
       <View style={styles.movementsHeader}>
-        <View style={styles.opnameFilters}>
-          <TouchableOpacity
-            style={[
-              styles.filterTab,
-              opnameFilter === 'all' && styles.filterTabActive,
-              opnameFilter === 'all' && { backgroundColor: colors.primary },
-            ]}
-            onPress={() => setOpnameFilter('all')}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                opnameFilter === 'all' && styles.filterTabTextActive,
-                opnameFilter === 'all' && { color: '#fff' },
-                { color: colors.text },
-              ]}
-            >
-              Semua
-            </Text>
-          </TouchableOpacity>
-
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.opnameFilters}
+          contentContainerStyle={styles.opnameFiltersContent}
+        >
           <TouchableOpacity
             style={[
               styles.filterTab,
@@ -569,7 +579,27 @@ export default function StockScreen() {
               Diproses
             </Text>
           </TouchableOpacity>
-        </View>
+
+          <TouchableOpacity
+            style={[
+              styles.filterTab,
+              opnameFilter === 'all' && styles.filterTabActive,
+              opnameFilter === 'all' && { backgroundColor: colors.primary },
+            ]}
+            onPress={() => setOpnameFilter('all')}
+          >
+            <Text
+              style={[
+                styles.filterTabText,
+                opnameFilter === 'all' && styles.filterTabTextActive,
+                opnameFilter === 'all' && { color: '#fff' },
+                { color: colors.text },
+              ]}
+            >
+              Semua
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
 
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: colors.primary }]}
@@ -873,7 +903,7 @@ const styles = StyleSheet.create({
   },
   movementsList: {
     paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   purchaseCard: {
     padding: 16,
@@ -914,16 +944,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   opnameFilters: {
-    flexDirection: "row",
     flex: 1,
+    marginRight: 10,
+  },
+  opnameFiltersContent: {
+    flexDirection: "row",
     gap: 8,
   },
   filterTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "rgba(0, 0, 0, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   filterTabActive: {
     borderColor: "transparent",
@@ -934,6 +969,10 @@ const styles = StyleSheet.create({
   },
   filterTabTextActive: {
     color: "#fff",
+  },
+  loadingMoreContainer: {
+    paddingVertical: 16,
+    alignItems: "center",
   },
   addButton: {
     width: 44,

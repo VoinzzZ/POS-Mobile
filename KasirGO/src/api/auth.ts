@@ -123,6 +123,7 @@ export const updateProfileApi = async (data: {
   fullname?: string;
   name?: string;
   phone?: string;
+  email?: string;
 }): Promise<ApiResponse<{ user: User }>> => {
   const res = await api.put("/auth/profile", data);
   return res.data;
@@ -144,6 +145,37 @@ export const changePasswordApi = async (
     new_password,
     confirm_password,
   });
+  return res.data;
+};
+
+/**
+ * Send OTP for email change
+ */
+export const sendEmailChangeOTPApi = async (data: {
+  newEmail: string;
+  currentPassword: string;
+}): Promise<ApiResponse<{ newEmail: string; expiresAt: string }>> => {
+  const res = await api.post("/auth/send-email-change-otp", data);
+  return res.data;
+};
+
+/**
+ * Verify OTP and change email
+ */
+export const verifyEmailChangeOTPApi = async (
+  otpCode: string
+): Promise<ApiResponse<{ newEmail: string }>> => {
+  const res = await api.post("/auth/verify-email-change-otp", { otpCode });
+  return res.data;
+};
+
+/**
+ * Verify current password
+ */
+export const verifyCurrentPasswordApi = async (
+  currentPassword: string
+): Promise<ApiResponse> => {
+  const res = await api.post("/auth/verify-password", { currentPassword });
   return res.data;
 };
 
@@ -419,4 +451,32 @@ export const getTenantInfoApi = async (): Promise<ApiResponse<{ tenant: any }>> 
   return res.data;
 };
 
-// Note: isTokenExpiringSoon function has been moved to TokenService to avoid require cycles
+export const sendForgotPasswordOTPApi = async (
+  email: string
+): Promise<ApiResponse<{ email: string; expiresAt: string }>> => {
+  const res = await api.post("/auth/forgot-password/send-otp", { email });
+  return res.data;
+};
+
+export const verifyForgotPasswordOTPApi = async (
+  email: string,
+  otpCode: string
+): Promise<ApiResponse<{ email: string }>> => {
+  const res = await api.post("/auth/forgot-password/verify-otp", { email, otpCode });
+  return res.data;
+};
+
+export const resetPasswordApi = async (
+  email: string,
+  otpCode: string,
+  new_password: string,
+  confirm_password: string
+): Promise<ApiResponse> => {
+  const res = await api.post("/auth/forgot-password/reset", {
+    email,
+    otpCode,
+    new_password,
+    confirm_password,
+  });
+  return res.data;
+};

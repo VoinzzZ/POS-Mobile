@@ -66,18 +66,22 @@ export const getStoreSettings = async (): Promise<StoreResponse> => {
 
 // Update store settings (admin only)
 export const updateStoreSettings = async (data: UpdateStoreData): Promise<StoreResponse> => {
-  const response = await api.put("/store", data);
+  try {
+    const response = await api.put("/store", data);
 
-  // Transform the server data to add camelCase aliases
-  if (response.data.success && response.data.data) {
-    const transformedData = {
-      ...response.data,
-      data: transformStore(response.data.data)
-    };
-    return transformedData;
+    // Transform the server data to add camelCase aliases
+    if (response.data.success && response.data.data) {
+      const transformedData = {
+        ...response.data,
+        data: transformStore(response.data.data)
+      };
+      return transformedData;
+    }
+
+    return response.data;
+  } catch (error: any) {
+    throw error;
   }
-
-  return response.data;
 };
 
 // Upload store logo (admin only)
@@ -88,7 +92,7 @@ export const uploadStoreLogo = async (logoFile: any): Promise<UploadLogoResponse
     type: logoFile.mimeType || 'image/jpeg',
     name: logoFile.fileName || 'logo.jpg',
   } as any);
-  
+
   const response = await api.post("/store/logo", formData, {
     headers: {
       'Content-Type': 'multipart/form-data',

@@ -22,8 +22,8 @@ import {
 } from "../src/api/product";
 import { formatPrice, getStockStatus, getStockStatusColor, calculateProfitMargin } from "../src/utils/product.helpers";
 import { STOCK_STATUS } from "../src/constants/product.constants";
-import EditProductModal from "../src/components/modals/EditProductModal";
-import SelectProductModal from "../src/components/modals/SelectProductModal";
+import EditProductModal from "../src/components/cashier/modals/EditProductModal";
+import SelectProductModal from "../src/components/cashier/modals/SelectProductModal";
 
 export default function ProductsByFilterScreen() {
   const params = useLocalSearchParams();

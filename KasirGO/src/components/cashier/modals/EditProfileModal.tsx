@@ -13,8 +13,8 @@ import {
     StatusBar,
 } from "react-native";
 import { X } from "lucide-react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../../context/ThemeContext";
+import { useAuth } from "../../../context/AuthContext";
 import SlideModal from "./SlideModal";
 
 interface EditProfileModalProps {

@@ -8,23 +8,24 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  TouchableWithoutFeedback,
 } from "react-native";
-import { X, Trash2 } from "lucide-react-native";
-import { TouchableWithoutFeedback } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { updateCategory, Category } from "../../api/product";
+import { X, ChevronDown, Trash2 } from "lucide-react-native";
+import { useTheme } from "../../../context/ThemeContext";
+import { updateBrand, Brand } from "../../../api/product";
 
-interface EditCategoryModalProps {
+interface EditBrandModalProps {
   visible: boolean;
-  category: Category | null;
+  brand: Brand | null;
   onClose: () => void;
   onSuccess: () => void;
   onDelete: (id: number, name: string) => void;
 }
 
-const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
+const EditBrandModal: React.FC<EditBrandModalProps> = ({
   visible,
-  category,
+  brand,
   onClose,
   onSuccess,
   onDelete,
@@ -35,39 +36,41 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+
   useEffect(() => {
-    if (category) {
-      setName(category.category_name);
+    if (brand) {
+      setName(brand.brand_name);
     }
-  }, [category]);
+  }, [brand]);
+
 
   const handleSubmit = async () => {
-    if (!category) return;
+    if (!brand) return;
 
     // Validation
     if (!name.trim()) {
-      setError("Nama kategori tidak boleh kosong");
+      setError("Nama brand tidak boleh kosong");
       return;
     }
 
     setLoading(true);
     try {
-      const response = await updateCategory(category.category_id, name.trim());
+      const response = await updateBrand(brand.brand_id, name.trim());
 
       if (response.success) {
         setError("");
         onSuccess();
         onClose();
       } else {
-        Alert.alert("Kesalahan", response.message || "Gagal mengupdate kategori");
+        Alert.alert("Kesalahan", response.message || "Gagal mengupdate brand");
       }
     } catch (error: any) {
-      console.error("Error updating category:", error);
+      console.error("Error updating brand:", error);
       Alert.alert(
         "Kesalahan",
         error.response?.data?.message ||
         error.message ||
-        "Terjadi kesalahan saat mengupdate kategori"
+        "Terjadi kesalahan saat mengupdate brand"
       );
     } finally {
       setLoading(false);
@@ -79,7 +82,8 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
     onClose();
   };
 
-  if (!category) return null;
+
+  if (!brand) return null;
 
   return (
     <Modal
@@ -95,7 +99,7 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
               {/* Header */}
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
-                  Edit Kategori
+                  Edit Brand
                 </Text>
                 <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
                   <X size={24} color={colors.text} />
@@ -103,16 +107,16 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
               </View>
 
               {/* Body */}
-              <View style={styles.modalBody}>
+              <ScrollView style={styles.modalBody}>
                 <Text style={[styles.label, { color: colors.text }]}>
-                  Nama Kategori *
+                  Nama Brand *
                 </Text>
                 <TextInput
                   style={[
                     styles.input,
                     { borderColor: error ? "#ef4444" : colors.border, color: colors.text },
                   ]}
-                  placeholder="Contoh: Makanan, Minuman, Snack"
+                  placeholder="Contoh: Coca-Cola, Indomie, ABC"
                   placeholderTextColor={colors.textSecondary}
                   value={name}
                   onChangeText={(text) => {
@@ -122,12 +126,12 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
                   autoFocus
                 />
                 {error && <Text style={styles.errorText}>{error}</Text>}
-              </View>
+              </ScrollView>
 
               {/* Footer */}
               <View style={styles.modalFooter}>
                 <TouchableOpacity
-                  onPress={() => onDelete(category.category_id, category.category_name)}
+                  onPress={() => brand && onDelete(brand.brand_id, brand.brand_name)}
                   style={[styles.button, styles.deleteButton]}
                   disabled={loading}
                 >
@@ -198,6 +202,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  picker: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  pickerText: {
+    fontSize: 14,
+  },
+  pickerDropdown: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    maxHeight: 200,
+  },
+  pickerItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.1)",
+  },
+  pickerItemText: {
+    fontSize: 14,
+  },
   errorText: {
     color: "#ef4444",
     fontSize: 12,
@@ -239,4 +270,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EditCategoryModal;
+export default EditBrandModal;

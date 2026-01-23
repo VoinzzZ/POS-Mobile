@@ -10,7 +10,8 @@ import {
     Settings,
     LogOut,
     User,
-    LaptopMinimal
+    LaptopMinimal,
+    RotateCcw
 } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
@@ -49,6 +50,12 @@ export default function CashierSidebar({ currentRoute }: CashierSidebarProps) {
             icon: History,
             route: "/(cashier)/history",
             path: "/history",
+        },
+        {
+            name: "Retur",
+            icon: RotateCcw,
+            route: "/(cashier)/returns",
+            path: "/returns",
         },
         {
             name: "Settings",

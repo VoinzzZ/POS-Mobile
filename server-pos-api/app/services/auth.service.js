@@ -1,6 +1,13 @@
 const prisma = require('../config/mysql.db.js');
 const PasswordService = require('../utils/passwordService.js');
 const JWTService = require('../utils/jwtService.js');
+const EmailService = require('./email.service.js');
+
+const emailService = new EmailService();
+
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 class AuthService {
   static async loginUser({ email, password }) {
@@ -300,6 +307,355 @@ class AuthService {
         lastLogin: updatedUser.user_last_login
       }
     };
+  }
+
+  static async sendEmailChangeOTP(userId, newEmail, currentPassword) {
+    return await prisma.$transaction(async (tx) => {
+      const user = await tx.m_user.findFirst({
+        where: {
+          user_id: userId,
+          deleted_at: null
+        }
+      });
+
+      if (!user) {
+        throw new Error("User tidak ditemukan");
+      }
+
+      const isPasswordValid = await PasswordService.comparePassword(currentPassword, user.user_password);
+      if (!isPasswordValid) {
+        throw new Error("Password saat ini salah");
+      }
+
+      if (newEmail === user.user_email) {
+        throw new Error("Email baru tidak boleh sama dengan email saat ini");
+      }
+
+      const existingEmail = await tx.m_user.findFirst({
+        where: {
+          user_email: newEmail,
+          deleted_at: null,
+          user_id: { not: userId }
+        }
+      });
+
+      if (existingEmail) {
+        throw new Error("Email sudah digunakan oleh user lain");
+      }
+
+      await tx.s_email_verification.updateMany({
+        where: {
+          user_id: userId,
+          type: 'EMAIL_CHANGE',
+          verified: false
+        },
+        data: {
+          verified: true
+        }
+      });
+
+      const otpCode = generateOTP();
+      const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await tx.s_email_verification.create({
+        data: {
+          user_id: userId,
+          email: newEmail,
+          code: otpCode,
+          expires_at: otpExpiresAt,
+          type: 'EMAIL_CHANGE'
+        }
+      });
+
+      try {
+        await emailService.sendOtpEmail(newEmail, otpCode);
+      } catch (emailError) {
+        console.error('Failed to send OTP email:', emailError);
+      }
+
+      return {
+        message: 'Kode OTP telah dikirim ke email baru Anda',
+        newEmail: newEmail,
+        expiresAt: otpExpiresAt
+      };
+    });
+  }
+
+  static async verifyEmailChangeOTP(userId, otpCode) {
+    return await prisma.$transaction(async (tx) => {
+      const user = await tx.m_user.findFirst({
+        where: {
+          user_id: userId,
+          deleted_at: null
+        }
+      });
+
+      if (!user) {
+        throw new Error("User tidak ditemukan");
+      }
+
+      const emailVerification = await tx.s_email_verification.findFirst({
+        where: {
+          user_id: userId,
+          code: otpCode,
+          verified: false,
+          expires_at: { gt: new Date() },
+          type: 'EMAIL_CHANGE'
+        },
+        orderBy: { created_at: 'desc' }
+      });
+
+      if (!emailVerification) {
+        throw new Error("Kode OTP tidak valid atau sudah kadaluarsa");
+      }
+
+      await tx.s_email_verification.update({
+        where: { id: emailVerification.id },
+        data: {
+          verified: true,
+          verified_at: new Date()
+        }
+      });
+
+      const updatedUser = await tx.m_user.update({
+        where: { user_id: userId },
+        data: {
+          user_email: emailVerification.email,
+          updated_at: new Date()
+        }
+      });
+
+      return {
+        message: 'Email berhasil diubah',
+        newEmail: updatedUser.user_email
+      };
+    });
+  }
+
+  static async changePassword(userId, currentPassword, newPassword, confirmPassword) {
+    return await prisma.$transaction(async (tx) => {
+      const user = await tx.m_user.findFirst({
+        where: {
+          user_id: userId,
+          deleted_at: null
+        }
+      });
+
+      if (!user) {
+        throw new Error("User tidak ditemukan");
+      }
+
+      const isPasswordValid = await PasswordService.comparePassword(currentPassword, user.user_password);
+      if (!isPasswordValid) {
+        throw new Error("Password saat ini salah");
+      }
+
+      if (newPassword !== confirmPassword) {
+        throw new Error("Password baru dan konfirmasi password tidak sama");
+      }
+
+      if (newPassword.length < 8) {
+        throw new Error("Password baru minimal 8 karakter");
+      }
+
+      if (currentPassword === newPassword) {
+        throw new Error("Password baru tidak boleh sama dengan password saat ini");
+      }
+
+      const hashedPassword = await PasswordService.hashPassword(newPassword);
+
+      await tx.m_user.update({
+        where: { user_id: userId },
+        data: {
+          user_password: hashedPassword,
+          updated_at: new Date()
+        }
+      });
+
+      return {
+        message: 'Password berhasil diubah'
+      };
+    });
+  }
+
+  static async verifyCurrentPassword(userId, currentPassword) {
+    const user = await prisma.m_user.findFirst({
+      where: {
+        user_id: userId,
+        deleted_at: null
+      }
+    });
+
+    if (!user) {
+      throw new Error("User tidak ditemukan");
+    }
+
+    const isPasswordValid = await PasswordService.comparePassword(currentPassword, user.user_password);
+    if (!isPasswordValid) {
+      throw new Error("Password saat ini salah");
+    }
+
+    return {
+      message: 'Password valid'
+    };
+  }
+
+  static async sendForgotPasswordOTP(email) {
+    return await prisma.$transaction(async (tx) => {
+      const user = await tx.m_user.findFirst({
+        where: {
+          user_email: email,
+          deleted_at: null
+        }
+      });
+
+      if (!user) {
+        throw new Error("Email tidak terdaftar");
+      }
+
+      await tx.s_email_verification.updateMany({
+        where: {
+          email: email,
+          type: 'FORGOT_PASSWORD',
+          verified: false
+        },
+        data: {
+          verified: true
+        }
+      });
+
+      const otpCode = generateOTP();
+      const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await tx.s_email_verification.create({
+        data: {
+          user_id: user.user_id,
+          email: email,
+          code: otpCode,
+          expires_at: otpExpiresAt,
+          type: 'FORGOT_PASSWORD'
+        }
+      });
+
+      try {
+        await emailService.sendForgotPasswordOtp(email, otpCode, user.user_full_name || user.user_name);
+      } catch (emailError) {
+        console.error('Failed to send forgot password OTP email:', emailError);
+      }
+
+      return {
+        message: 'Kode OTP telah dikirim ke email Anda',
+        email: email,
+        expiresAt: otpExpiresAt
+      };
+    });
+  }
+
+  static async verifyForgotPasswordOTP(email, otpCode) {
+    return await prisma.$transaction(async (tx) => {
+      const user = await tx.m_user.findFirst({
+        where: {
+          user_email: email,
+          deleted_at: null
+        }
+      });
+
+      if (!user) {
+        throw new Error("Email tidak terdaftar");
+      }
+
+      const emailVerification = await tx.s_email_verification.findFirst({
+        where: {
+          email: email,
+          code: otpCode,
+          verified: false,
+          expires_at: { gt: new Date() },
+          type: 'FORGOT_PASSWORD'
+        },
+        orderBy: { created_at: 'desc' }
+      });
+
+      if (!emailVerification) {
+        throw new Error("Kode OTP tidak valid atau sudah kadaluarsa");
+      }
+
+      await tx.s_email_verification.update({
+        where: { id: emailVerification.id },
+        data: {
+          verified: true,
+          verified_at: new Date()
+        }
+      });
+
+      return {
+        message: 'Kode OTP berhasil diverifikasi',
+        email: email
+      };
+    });
+  }
+
+  static async resetPassword(email, otpCode, newPassword, confirmPassword) {
+    return await prisma.$transaction(async (tx) => {
+      const user = await tx.m_user.findFirst({
+        where: {
+          user_email: email,
+          deleted_at: null
+        }
+      });
+
+      if (!user) {
+        throw new Error("Email tidak terdaftar");
+      }
+
+      const emailVerification = await tx.s_email_verification.findFirst({
+        where: {
+          email: email,
+          code: otpCode,
+          verified: true,
+          expires_at: { gt: new Date() },
+          type: 'FORGOT_PASSWORD'
+        },
+        orderBy: { verified_at: 'desc' }
+      });
+
+      if (!emailVerification) {
+        throw new Error("Kode OTP tidak valid atau sudah kadaluarsa");
+      }
+
+      if (newPassword !== confirmPassword) {
+        throw new Error("Password baru dan konfirmasi password tidak sama");
+      }
+
+      if (newPassword.length < 8) {
+        throw new Error("Password minimal 8 karakter");
+      }
+
+      const hashedPassword = await PasswordService.hashPassword(newPassword);
+
+      await tx.m_user.update({
+        where: { user_id: user.user_id },
+        data: {
+          user_password: hashedPassword,
+          user_login_attempts: 0,
+          user_locked_until: null,
+          updated_at: new Date()
+        }
+      });
+
+      await tx.s_email_verification.updateMany({
+        where: {
+          email: email,
+          type: 'FORGOT_PASSWORD'
+        },
+        data: {
+          verified: true
+        }
+      });
+
+      return {
+        message: 'Password berhasil direset'
+      };
+    });
   }
 }
 

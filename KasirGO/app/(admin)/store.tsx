@@ -30,7 +30,7 @@ export default function StoreManagement() {
   const pagerRef = useRef<PagerView>(null);
   const triggerHaptic = () => {
     try {
-      console.log('Tab switched');
+      // Tab switched
     } catch (error) {
       // Silent fail
     }
@@ -164,7 +164,7 @@ export default function StoreManagement() {
           <StoreInfoForm
             store={null}
             onStoreUpdate={() => {
-              console.log('Store data updated');
+              // Store data updated
             }}
           />
         </View>

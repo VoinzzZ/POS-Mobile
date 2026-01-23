@@ -16,8 +16,10 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
   const [loading, setLoading] = useState(true);
   const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(null);
 
   useEffect(() => {
+    setSelectedPointIndex(null);
     fetchRevenueData();
   }, [viewMode]);
 
@@ -25,7 +27,38 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
     try {
       setLoading(true);
       const groupBy = viewMode === "weekly" ? "day" : "month";
-      const response = await getRevenueReport({ group_by: groupBy });
+
+      const now = new Date();
+      let startDate: Date;
+
+      if (viewMode === "weekly") {
+        const dayOfWeek = now.getDay();
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() + mondayOffset);
+      } else {
+        startDate = new Date(now.getFullYear(), 0, 1);
+      }
+
+      const formatLocalDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const params: {
+        group_by: 'day' | 'month';
+        start_date: string;
+        end_date: string;
+      } = {
+        group_by: groupBy,
+        start_date: formatLocalDate(startDate),
+        end_date: formatLocalDate(now),
+      };
+
+      console.log('Fetching revenue with params:', params);
+      const response = await getRevenueReport(params);
 
       console.log('Revenue report response:', response);
       console.log('Revenue data:', response.data);
@@ -133,11 +166,28 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.card }, containerStyle]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Memuat data chart...
-          </Text>
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <View style={[styles.skeletonIcon, { backgroundColor: colors.background }]} />
+            <View style={[styles.skeletonText, styles.skeletonTitle, { backgroundColor: colors.background }]} />
+          </View>
+          <View style={[styles.toggleContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.toggleButton, styles.skeletonToggle, { backgroundColor: colors.background }]} />
+            <View style={[styles.toggleButton, styles.skeletonToggle, { backgroundColor: colors.background }]} />
+          </View>
+        </View>
+
+        <View style={styles.chartContainer}>
+          <View style={[styles.skeletonChart, { backgroundColor: colors.background }]}>
+            {[60, 80, 50, 90, 70].map((height, index) => (
+              <View key={index} style={[styles.skeletonBar, { backgroundColor: colors.border, height: height }]} />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.legendContainer}>
+          <View style={[styles.skeletonIcon, { backgroundColor: colors.background, width: 14, height: 14 }]} />
+          <View style={[styles.skeletonText, styles.skeletonSmall, { backgroundColor: colors.background, width: 150 }]} />
         </View>
       </View>
     );
@@ -200,6 +250,17 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
     return `Rp ${amount.toLocaleString('id-ID')}`;
   };
 
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })
+      .format(amount)
+      .replace("IDR", "Rp");
+  };
+
   const totalRevenue = chartData.reduce((sum, item) => sum + item.value, 0);
   const averageRevenue = chartData.length > 0 ? totalRevenue / chartData.length : 0;
 
@@ -209,7 +270,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <TrendingUp size={20} color={colors.primary} />
-          <Text style={[styles.title, { color: colors.text }]}>Ikhtisar Pendapatan</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Pendapatan</Text>
         </View>
         <View style={[styles.toggleContainer, { backgroundColor: colors.background }]}>
           <TouchableOpacity
@@ -244,28 +305,6 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
               Tahun
             </Text>
           </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Summary Stats */}
-      <View
-        style={[
-          styles.summaryContainer,
-          { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1 },
-        ]}
-      >
-        <View style={styles.summaryItem}>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total</Text>
-          <Text style={[styles.summaryValue, { color: colors.text }]}>
-            {formatCurrencyCompact(totalRevenue)}
-          </Text>
-        </View>
-        <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.summaryItem}>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Rata-rata</Text>
-          <Text style={[styles.summaryValue, { color: colors.text }]}>
-            {formatCurrencyCompact(averageRevenue)}
-          </Text>
         </View>
       </View>
 
@@ -340,18 +379,19 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
           {chartData.map((point, index) => {
             const x = getX(index);
             const y = getY(point.value);
+            const isSelected = selectedPointIndex === index;
 
             return (
               <React.Fragment key={`point-${index}`}>
                 <Circle
                   cx={x}
                   cy={y}
-                  r="6"
+                  r={isSelected ? "8" : "6"}
                   fill={colors.background}
                   stroke={colors.primary}
-                  strokeWidth="3"
+                  strokeWidth={isSelected ? "4" : "3"}
                 />
-                <Circle cx={x} cy={y} r="3" fill={colors.primary} />
+                <Circle cx={x} cy={y} r={isSelected ? "4" : "3"} fill={colors.primary} />
               </React.Fragment>
             );
           })}
@@ -376,6 +416,51 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ containerStyle }) => {
             );
           })}
         </Svg>
+
+        {/* Touchable Overlay for Data Points */}
+        {chartData.map((point, index) => {
+          const x = getX(index);
+          const y = getY(point.value);
+
+          return (
+            <TouchableOpacity
+              key={`touch-${index}`}
+              style={[
+                styles.touchablePoint,
+                {
+                  left: x - 20,
+                  top: y - 20,
+                },
+              ]}
+              onPress={() => {
+                setSelectedPointIndex(selectedPointIndex === index ? null : index);
+              }}
+              activeOpacity={0.7}
+            />
+          );
+        })}
+
+        {/* Tooltip for Selected Point */}
+        {selectedPointIndex !== null && chartData[selectedPointIndex] && (
+          <View
+            style={[
+              styles.tooltip,
+              {
+                left: getX(selectedPointIndex) - 70,
+                top: getY(chartData[selectedPointIndex].value) - 60,
+                backgroundColor: colors.primary,
+              },
+            ]}
+          >
+            <Text style={[styles.tooltipLabel, { color: '#ffffff' }]}>
+              {chartData[selectedPointIndex].label}
+            </Text>
+            <Text style={[styles.tooltipValue, { color: '#ffffff' }]}>
+              {formatCurrency(chartData[selectedPointIndex].value)}
+            </Text>
+            <View style={[styles.tooltipArrow, { borderTopColor: colors.primary }]} />
+          </View>
+        )}
       </View>
 
       {/* Legend */}
@@ -476,6 +561,87 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 11,
+  },
+  skeletonIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    opacity: 0.3,
+  },
+  skeletonText: {
+    height: 12,
+    borderRadius: 4,
+    opacity: 0.3,
+  },
+  skeletonTitle: {
+    width: 80,
+  },
+  skeletonSmall: {
+    width: 60,
+    height: 10,
+  },
+  skeletonMedium: {
+    width: 100,
+    height: 14,
+  },
+  skeletonToggle: {
+    width: 50,
+    height: 28,
+    opacity: 0.3,
+  },
+  skeletonChart: {
+    width: Dimensions.get("window").width - 80,
+    height: 200,
+    borderRadius: 8,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-around',
+  },
+  skeletonBar: {
+    width: 30,
+    borderRadius: 4,
+    opacity: 0.3,
+  },
+  touchablePoint: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    zIndex: 10,
+  },
+  tooltip: {
+    position: 'absolute',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 140,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 100,
+  },
+  tooltipLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  tooltipValue: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    bottom: -6,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
 });
 

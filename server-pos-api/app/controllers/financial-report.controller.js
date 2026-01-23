@@ -39,6 +39,13 @@ class FinancialReportController {
 
             const report = await FinancialReportService.getRevenueReport(tenantId, filters);
 
+            // Prevent caching to ensure fresh data
+            res.set({
+                'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            });
+
             res.status(200).json({
                 success: true,
                 message: 'Revenue report retrieved successfully',

@@ -257,7 +257,7 @@ class TransactionService {
 
             const change_amount = payment_amount - transaction.transaction_total;
 
-            return await tx.t_transaction.update({
+            const completedTransaction = await tx.t_transaction.update({
                 where: { transaction_id: parseInt(transaction_id) },
                 data: {
                     transaction_status: 'COMPLETED',
@@ -275,6 +275,48 @@ class TransactionService {
                     m_user: true
                 }
             });
+
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+
+            const lastCashTransaction = await tx.t_cash_transaction.findFirst({
+                where: {
+                    tenant_id: parseInt(tenant_id),
+                    transaction_number: {
+                        startsWith: `CSH-${year}${month}${day}`
+                    }
+                },
+                orderBy: {
+                    transaction_number: 'desc'
+                }
+            });
+
+            let sequence = 1;
+            if (lastCashTransaction) {
+                const lastSequence = parseInt(lastCashTransaction.transaction_number.split('-')[2]);
+                sequence = lastSequence + 1;
+            }
+
+            const cashTransactionNumber = `CSH-${year}${month}${day}-${String(sequence).padStart(4, '0')}`;
+
+            await tx.t_cash_transaction.create({
+                data: {
+                    transaction_number: cashTransactionNumber,
+                    tenant_id: parseInt(tenant_id),
+                    transaction_type: 'INCOME',
+                    amount: parseFloat(transaction.transaction_total),
+                    payment_method: payment_method || 'CASH',
+                    category_type: 'SALES',
+                    sale_transaction_id: transaction.transaction_id,
+                    description: `Penjualan #${transaction.transaction_number}`,
+                    transaction_date: new Date(),
+                    created_by: transaction.transaction_cashier_id
+                }
+            });
+
+            return completedTransaction;
         }, {
             maxWait: 10000,
             timeout: 15000

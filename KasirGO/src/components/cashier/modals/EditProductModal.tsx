@@ -13,7 +13,7 @@ import {
   Switch,
 } from "react-native";
 import { X, Camera, Upload, RefreshCw } from "lucide-react-native";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../../context/ThemeContext";
 import * as ImagePicker from "expo-image-picker";
 import {
   updateProduct,
@@ -23,7 +23,7 @@ import {
   Product,
   Category,
   Brand,
-} from "../../api/product";
+} from "../../../api/product";
 
 interface EditProductModalProps {
   visible: boolean;

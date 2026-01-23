@@ -4,7 +4,7 @@ import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight, Moon, Sun, ArrowLef
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter } from "expo-router";
-import EditProfileModal from "../../src/components/modals/EditProfileModal";
+import EditProfileModal from "../../src/components/cashier/modals/EditProfileModal";
 
 export default function OwnerSettingsScreen() {
   const { user, logout, refreshProfile } = useAuth();
@@ -47,7 +47,7 @@ export default function OwnerSettingsScreen() {
       icon: Lock,
       title: "Keamanan",
       subtitle: "Password dan pengaturan keamanan",
-      onPress: () => { },
+      onPress: () => router.push("/(owner)/security"),
     },
     {
       icon: HelpCircle,

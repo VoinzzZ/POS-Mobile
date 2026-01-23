@@ -286,8 +286,18 @@ export const updateProduct = async (
 export const deleteProduct = async (
   id: number
 ): Promise<ApiResponse> => {
-  const res = await api.delete(`/products/${id}`);
-  return res.data;
+  try {
+    const res = await api.delete(`/products/${id}`);
+    return res.data;
+  } catch (error: any) {
+    if (error.response?.data?.message) {
+      return {
+        success: false,
+        message: error.response.data.message,
+      };
+    }
+    throw error;
+  }
 };
 
 /**

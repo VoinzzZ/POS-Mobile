@@ -39,11 +39,11 @@ export default function OwnerDashboard() {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <FinancialSummaryCard />
+
         <View style={styles.chartSection}>
           <RevenueChart />
         </View>
-
-        <FinancialSummaryCard />
 
         {/* Business Insights */}
         <View style={styles.section}>

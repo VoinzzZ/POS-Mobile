@@ -434,7 +434,11 @@ const getExpenseByCategory = async (tenant_id, start_date, end_date) => {
         if (start_date || end_date) {
             where.transaction_date = {};
             if (start_date) where.transaction_date.gte = new Date(start_date);
-            if (end_date) where.transaction_date.lte = new Date(end_date);
+            if (end_date) {
+                const endDateTime = new Date(end_date);
+                endDateTime.setHours(23, 59, 59, 999);
+                where.transaction_date.lte = endDateTime;
+            }
         }
 
         const expenses = await prisma.t_cash_transaction.findMany({
@@ -452,7 +456,18 @@ const getExpenseByCategory = async (tenant_id, start_date, end_date) => {
 
         const categoryMap = {};
 
+        console.log('===== GET EXPENSE BY CATEGORY DEBUG =====');
+        console.log('Total expenses found:', expenses.length);
+
         expenses.forEach(expense => {
+            console.log('Processing expense:', {
+                id: expense.cash_transaction_id,
+                amount: expense.amount.toString(),
+                category_id: expense.category_id,
+                has_category: !!expense.t_expense_category,
+                category_code: expense.t_expense_category?.category_code || 'NULL'
+            });
+
             const category = expense.t_expense_category;
             const categoryKey = category ? category.category_code : 'UNCATEGORIZED';
             const categoryName = category ? category.category_name : 'Tidak Berkategori';
@@ -470,12 +485,17 @@ const getExpenseByCategory = async (tenant_id, start_date, end_date) => {
             categoryMap[categoryKey].transaction_count += 1;
         });
 
+        console.log('Category map:', categoryMap);
+
         const categories = Object.values(categoryMap).map(cat => ({
             ...cat,
             total_amount: parseFloat(cat.total_amount.toFixed(2))
         })).sort((a, b) => b.total_amount - a.total_amount);
 
         const totalExpense = categories.reduce((sum, cat) => sum + cat.total_amount, 0);
+
+        console.log('Final categories:', categories);
+        console.log('===========================================');
 
         return {
             total_expense: parseFloat(totalExpense.toFixed(2)),

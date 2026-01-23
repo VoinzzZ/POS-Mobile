@@ -51,7 +51,7 @@ export default function SettingsScreen() {
       icon: Lock,
       title: "Keamanan",
       subtitle: "Password dan pengaturan keamanan",
-      onPress: () => { },
+      onPress: () => router.push("/(cashier)/security"),
     },
     {
       icon: HelpCircle,

@@ -30,12 +30,12 @@ import {
 import useProducts from "../../src/hooks/useProducts";
 import { formatPrice, getStockStatus, getStockStatusColor, calculateProfitMargin } from "../../src/utils/product.helpers";
 import { STOCK_STATUS } from "../../src/constants/product.constants";
-import AddProductModal from "../../src/components/modals/AddProductModal";
-import AddCategoryModal from "../../src/components/modals/AddCategoryModal";
-import AddBrandModal from "../../src/components/modals/AddBrandModal";
-import EditCategoryModal from "../../src/components/modals/EditCategoryModal";
-import EditBrandModal from "../../src/components/modals/EditBrandModal";
-import EditProductModal from "../../src/components/modals/EditProductModal";
+import AddProductModal from "../../src/components/cashier/modals/AddProductModal";
+import AddCategoryModal from "../../src/components/cashier/modals/AddCategoryModal";
+import AddBrandModal from "../../src/components/cashier/modals/AddBrandModal";
+import EditCategoryModal from "../../src/components/cashier/modals/EditCategoryModal";
+import EditBrandModal from "../../src/components/cashier/modals/EditBrandModal";
+import EditProductModal from "../../src/components/cashier/modals/EditProductModal";
 import ProductErrorBoundary from "../../src/components/errors/ProductErrorBoundary";
 
 type TabType = "products" | "categories" | "brands";
@@ -172,10 +172,13 @@ export default function AdminProducts() {
           text: "Hapus",
           style: "destructive",
           onPress: async () => {
-            await deleteExistingProduct(id);
-            // Close the edit modal after successful delete
-            setShowEditProductModal(false);
-            setSelectedProduct(null);
+            try {
+              await deleteExistingProduct(id);
+              setShowEditProductModal(false);
+              setSelectedProduct(null);
+            } catch (error: any) {
+              Alert.alert("Gagal Menghapus", error.message || "Terjadi kesalahan saat menghapus produk");
+            }
           },
         },
       ]

@@ -70,3 +70,5 @@ export const seedDefaultExpenseCategories = async (): Promise<ApiResponse> => {
     const res = await api.post("/expense-categories/seed");
     return res.data;
 };
+
+export const getExpenseCategories = getAllExpenseCategories;

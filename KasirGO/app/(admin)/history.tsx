@@ -14,7 +14,7 @@ import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter, useFocusEffect } from "expo-router";
 import { transactionService, Transaction } from "../../src/api/transaction";
-import TransactionFilterModal from "../../src/components/modals/TransactionFilterModal";
+import TransactionFilterModal from "../../src/components/cashier/modals/TransactionFilterModal";
 
 export default function HistoryScreen() {
   const { colors } = useTheme();

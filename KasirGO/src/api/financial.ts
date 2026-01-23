@@ -7,6 +7,7 @@ export interface FinancialSummary {
         grossProfit: number;
         netProfit: number;
         profitMargin: number;
+        netProfitMargin: number;
     };
     transactions: {
         total: number;
@@ -18,7 +19,6 @@ export interface FinancialSummary {
     };
     expenses: {
         total: number;
-        netProfit: number;
     } | null;
     inventory: {
         totalValue: number;

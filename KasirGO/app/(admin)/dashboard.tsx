@@ -8,6 +8,8 @@ import { useRouter } from "expo-router";
 import { useTheme } from "../../src/context/ThemeContext";
 import { getFinancialSummary } from "../../src/api/financial";
 import { getAllProducts } from "../../src/api/product";
+import { getStockMovementStatistics } from "../../src/api/stock";
+
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -22,6 +24,12 @@ export default function AdminDashboard() {
     totalProducts: "0",
     totalTransactions: "0",
     growth: "0%",
+  });
+  const [stockMovementStats, setStockMovementStats] = useState({
+    incomingTotal: "0",
+    returnTotal: "0",
+    outgoingTransactionTotal: "0",
+    outgoingNonTransactionTotal: "0",
   });
 
   useEffect(() => {
@@ -58,7 +66,7 @@ export default function AdminDashboard() {
       const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
       // Fetch data in parallel
-      const [currentMonthData, lastMonthData, productsData] = await Promise.all([
+      const [currentMonthData, lastMonthData, productsData, stockMovementData] = await Promise.all([
         getFinancialSummary({
           start_date: currentMonthStart.toISOString().split('T')[0],
           end_date: currentMonthEnd.toISOString().split('T')[0],
@@ -68,6 +76,10 @@ export default function AdminDashboard() {
           end_date: lastMonthEnd.toISOString().split('T')[0],
         }),
         getAllProducts(),
+        getStockMovementStatistics({
+          start_date: currentMonthStart.toISOString().split('T')[0],
+          end_date: currentMonthEnd.toISOString().split('T')[0],
+        }),
       ]);
 
       // Extract data
@@ -96,6 +108,14 @@ export default function AdminDashboard() {
         totalProducts: totalProducts.toString(),
         totalTransactions: totalTransactions.toString(),
         growth: `${growthPercentage >= 0 ? '+' : ''}${growthPercentage.toFixed(1)}%`,
+      });
+
+      // Set stock movement statistics
+      setStockMovementStats({
+        incomingTotal: (stockMovementData.data?.incoming_total || 0).toString(),
+        returnTotal: (stockMovementData.data?.return_total || 0).toString(),
+        outgoingTransactionTotal: (stockMovementData.data?.outgoing_transaction_total || 0).toString(),
+        outgoingNonTransactionTotal: (stockMovementData.data?.outgoing_nontransaction_total || 0).toString(),
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -128,6 +148,34 @@ export default function AdminDashboard() {
       icon: Users,
       color: "#f59e0b",
       bgColor: "#78350f",
+    },
+    {
+      title: "Barang Masuk",
+      value: stockMovementStats.incomingTotal,
+      icon: TrendingUp,
+      color: "#10b981",
+      bgColor: "#065f46",
+    },
+    {
+      title: "Barang Retur",
+      value: stockMovementStats.returnTotal,
+      icon: Package,
+      color: "#06b6d4",
+      bgColor: "#164e63",
+    },
+    {
+      title: "Keluar (Transaksi)",
+      value: stockMovementStats.outgoingTransactionTotal,
+      icon: DollarSign,
+      color: "#8b5cf6",
+      bgColor: "#5b21b6",
+    },
+    {
+      title: "Keluar (Lainnya)",
+      value: stockMovementStats.outgoingNonTransactionTotal,
+      icon: Package,
+      color: "#ef4444",
+      bgColor: "#991b1b",
     },
   ];
 

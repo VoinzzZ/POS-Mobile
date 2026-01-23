@@ -177,11 +177,11 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     methodsContainer: {
-        gap: 16,
-        minHeight: 234, // Fixed height for 3 methods (similar to top products)
+        gap: 14,
+        minHeight: 236,
     },
     methodRow: {
-        gap: 10,
+        gap: 8,
     },
     methodHeader: {
         flexDirection: "row",
@@ -196,14 +196,14 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     iconBadge: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         alignItems: "center",
         justifyContent: "center",
     },
     methodLabel: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: "600",
         letterSpacing: -0.2,
     },
@@ -211,13 +211,13 @@ const styles = StyleSheet.create({
         alignItems: "flex-end",
     },
     methodTotal: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: "700",
         letterSpacing: -0.3,
         marginBottom: 2,
     },
     methodCount: {
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: "500",
     },
     barSection: {
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     },
     barBackground: {
         flex: 1,
-        height: 8,
+        height: 7,
         borderRadius: 4,
         overflow: "hidden",
     },

@@ -11,8 +11,8 @@ import {
   ScrollView,
 } from "react-native";
 import { X, ChevronDown } from "lucide-react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { createBrand } from "../../api/product";
+import { useTheme } from "../../../context/ThemeContext";
+import { createBrand } from "../../../api/product";
 
 interface AddBrandModalProps {
   visible: boolean;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from "react-native";
 import { BanknoteArrowUp, BanknoteArrowDown, DollarSign, TrendingUp, TrendingDown, ShoppingBag, Wallet, CreditCard, Receipt, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react-native";
 import { getFinancialSummary, FinancialSummary } from "../../api/financial";
+import { getExpenseByCategory } from "../../api/cashTransaction";
 import { formatCurrency, formatPercentage, getDateRange, formatDateRangeLabel, ChangeIndicator, getChangeIndicator } from "../../utils/financial.helpers";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -11,6 +12,7 @@ export default function FinancialSummaryCard() {
     const { colors } = useTheme();
     const [period, setPeriod] = useState<PeriodType>('today');
     const [summary, setSummary] = useState<FinancialSummary | null>(null);
+    const [expenseByCategory, setExpenseByCategory] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -23,11 +25,24 @@ export default function FinancialSummaryCard() {
             setLoading(true);
             setError(null);
             const dateRange = getDateRange(period);
-            const response = await getFinancialSummary(dateRange);
-            if (response.success && response.data) {
-                setSummary(response.data);
+            const [summaryRes, expenseCategoryRes] = await Promise.all([
+                getFinancialSummary(dateRange),
+                getExpenseByCategory(dateRange.start_date, dateRange.end_date)
+            ]);
+            if (summaryRes.success && summaryRes.data) {
+                setSummary(summaryRes.data);
             } else {
                 setError("Gagal memuat data keuangan");
+            }
+            if (expenseCategoryRes.success && expenseCategoryRes.data) {
+                const filteredCategories = expenseCategoryRes.data.categories.filter(cat =>
+                    cat.category_code !== 'PURCHASE_INVENTORY' && cat.category_code !== 'RETURN_REFUND'
+                );
+                const filteredTotal = filteredCategories.reduce((sum, cat) => sum + cat.total_amount, 0);
+                setExpenseByCategory({
+                    total_expense: filteredTotal,
+                    categories: filteredCategories
+                });
             }
         } catch (err: any) {
             setError(err.message || "Terjadi kesalahan");
@@ -70,22 +85,16 @@ export default function FinancialSummaryCard() {
         value: string,
         icon: any,
         color: string,
-        bgColor: string,
-        subtitle?: string
+        bgColor: string
     ) => {
         const Icon = icon;
         return (
             <View style={[styles.metricCard, { backgroundColor: colors.card }]}>
                 <View style={[styles.metricIconContainer, { backgroundColor: bgColor }]}>
-                    <Icon size={20} color={color} />
+                    <Icon size={18} color={color} />
                 </View>
                 <Text style={[styles.metricValue, { color: colors.text }]}>{value}</Text>
                 <Text style={[styles.metricTitle, { color: colors.textSecondary }]}>{title}</Text>
-                {subtitle && (
-                    <Text style={[styles.metricSubtitle, { color: colors.textSecondary }]}>
-                        {subtitle}
-                    </Text>
-                )}
             </View>
         );
     };
@@ -101,12 +110,9 @@ export default function FinancialSummaryCard() {
 
         return (
             <View style={[styles.paymentBreakdown, { backgroundColor: colors.card }]}>
-                <View style={styles.paymentHeader}>
-                    <CreditCard size={18} color={colors.text} />
-                    <Text style={[styles.paymentTitle, { color: colors.text }]}>
-                        Pendapatan per Metode Pembayaran
-                    </Text>
-                </View>
+                <Text style={[styles.paymentTitle, { color: colors.text }]}>
+                    Pendapatan per Metode Pembayaran
+                </Text>
                 <View style={styles.paymentMethods}>
                     {paymentMethods.map((method, index) => (
                         <View key={index} style={styles.paymentMethod}>
@@ -211,13 +217,10 @@ export default function FinancialSummaryCard() {
             >
                 <View style={[styles.profitCard, { backgroundColor: colors.card }]}>
                     <Text style={[styles.profitLabel, { color: colors.textSecondary }]}>
-                        Untung Bersih
+                        Total Pendapatan
                     </Text>
                     <Text style={[styles.profitValue, { color: '#10b981' }]}>
-                        {formatCurrency(summary.revenue.netProfit)}
-                    </Text>
-                    <Text style={[styles.profitSubtext, { color: colors.textSecondary }]}>
-                        Dari total pendapatan {formatCurrency(summary.revenue.total)}
+                        {formatCurrency(summary.revenue.total)}
                     </Text>
                 </View>
 
@@ -227,24 +230,21 @@ export default function FinancialSummaryCard() {
                         summary.transactions.total.toLocaleString('id-ID'),
                         ShoppingBag,
                         '#3b82f6',
-                        '#1e3a8a',
-                        `${summary.transactions.total} transaksi`
+                        '#1e3a8a'
                     )}
                     {renderMetricCard(
-                        'Rata-rata Transaksi',
-                        formatCurrency(averageTransaction),
+                        'Rata-rata Margin',
+                        formatPercentage(summary.revenue.profitMargin),
                         TrendingUp,
-                        '#f59e0b',
-                        '#78350f',
-                        'Per transaksi'
+                        '#10b981',
+                        '#064e3b'
                     )}
                     {renderMetricCard(
-                        'Nilai Barang di Toko',
-                        formatCurrency(summary.inventory.totalValue),
-                        Wallet,
-                        '#ec4899',
-                        '#831843',
-                        'Total inventory'
+                        'Total Pengeluaran',
+                        formatCurrency(expenseByCategory?.total_expense || 0),
+                        BanknoteArrowDown,
+                        '#ef4444',
+                        '#7f1d1d'
                     )}
                 </View>
 
@@ -257,7 +257,7 @@ export default function FinancialSummaryCard() {
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 20,
-        marginBottom: 24,
+        marginBottom: 16,
     },
     centerContent: {
         paddingVertical: 60,
@@ -285,32 +285,32 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     header: {
-        marginBottom: 16,
+        marginBottom: 12,
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '700',
         marginBottom: 4,
     },
     headerSubtitle: {
-        fontSize: 13,
+        fontSize: 12,
     },
     periodSelector: {
         flexDirection: 'row',
-        padding: 4,
-        borderRadius: 10,
-        marginBottom: 20,
+        padding: 3,
+        borderRadius: 8,
+        marginBottom: 16,
         gap: 4,
     },
     periodButton: {
         flex: 1,
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 8,
+        paddingVertical: 6,
+        paddingHorizontal: 8,
+        borderRadius: 6,
         alignItems: 'center',
     },
     periodButtonText: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '600',
     },
     scrollContent: {
@@ -323,24 +323,25 @@ const styles = StyleSheet.create({
     },
     metricCard: {
         flex: 1,
-        padding: 16,
-        borderRadius: 12,
+        minWidth: '30%',
+        padding: 12,
+        borderRadius: 10,
     },
     metricIconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
+        width: 36,
+        height: 36,
+        borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 12,
+        marginBottom: 10,
     },
     metricValue: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '700',
         marginBottom: 4,
     },
     metricTitle: {
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: '500',
     },
     metricSubtitle: {
@@ -353,19 +354,19 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     profitCard: {
-        padding: 20,
-        borderRadius: 12,
+        padding: 16,
+        borderRadius: 10,
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 12,
     },
     profitLabel: {
-        fontSize: 13,
-        marginBottom: 8,
+        fontSize: 12,
+        marginBottom: 6,
     },
     profitValue: {
-        fontSize: 24,
+        fontSize: 26,
         fontWeight: '700',
-        marginBottom: 4,
+        marginBottom: 0,
     },
     profitSubtext: {
         fontSize: 11,
@@ -373,12 +374,12 @@ const styles = StyleSheet.create({
     metricsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
-        marginBottom: 16,
+        gap: 10,
+        marginBottom: 12,
     },
     paymentBreakdown: {
-        padding: 16,
-        borderRadius: 12,
+        padding: 14,
+        borderRadius: 10,
     },
     paymentHeader: {
         flexDirection: 'row',
@@ -387,11 +388,12 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     paymentTitle: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
+        marginBottom: 12,
     },
     paymentMethods: {
-        gap: 12,
+        gap: 10,
     },
     paymentMethod: {
         flexDirection: 'row',
@@ -409,10 +411,10 @@ const styles = StyleSheet.create({
         borderRadius: 5,
     },
     paymentLabel: {
-        fontSize: 13,
+        fontSize: 12,
     },
     paymentValue: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '600',
     },
     skeleton: {

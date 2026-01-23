@@ -336,6 +336,90 @@ const updateProductCostWAC = async (product_id, new_cost, new_qty) => {
     }
 };
 
+const getStockMovementStatistics = async (tenant_id, start_date, end_date) => {
+    try {
+        const where = {
+            tenant_id: parseInt(tenant_id)
+        };
+
+        if (start_date || end_date) {
+            where.created_at = {};
+            if (start_date) where.created_at.gte = new Date(start_date);
+            if (end_date) where.created_at.lte = new Date(end_date);
+        }
+
+        const [incomingMovements, returnMovements, outgoingTransactionMovements, outgoingNonTransactionMovements, adjustmentMovements] = await Promise.all([
+            prisma.t_stock_movement.aggregate({
+                where: {
+                    ...where,
+                    movement_type: 'IN'
+                },
+                _sum: {
+                    quantity: true
+                }
+            }),
+            prisma.t_stock_movement.aggregate({
+                where: {
+                    ...where,
+                    movement_type: 'RETURN'
+                },
+                _sum: {
+                    quantity: true
+                }
+            }),
+            prisma.t_stock_movement.aggregate({
+                where: {
+                    ...where,
+                    movement_type: 'OUT',
+                    reference_type: 'SALE'
+                },
+                _sum: {
+                    quantity: true
+                }
+            }),
+            prisma.t_stock_movement.aggregate({
+                where: {
+                    ...where,
+                    movement_type: 'OUT',
+                    reference_type: {
+                        not: 'SALE'
+                    }
+                },
+                _sum: {
+                    quantity: true
+                }
+            }),
+            prisma.t_stock_movement.findMany({
+                where: {
+                    ...where,
+                    movement_type: 'ADJUSTMENT'
+                },
+                select: {
+                    before_qty: true,
+                    after_qty: true
+                }
+            })
+        ]);
+
+        let adjustmentTotal = 0;
+        for (const adj of adjustmentMovements) {
+            const delta = adj.after_qty - adj.before_qty;
+            if (delta < 0) {
+                adjustmentTotal += Math.abs(delta);
+            }
+        }
+
+        return {
+            incoming_total: incomingMovements._sum.quantity || 0,
+            return_total: returnMovements._sum.quantity || 0,
+            outgoing_transaction_total: outgoingTransactionMovements._sum.quantity || 0,
+            outgoing_nontransaction_total: (outgoingNonTransactionMovements._sum.quantity || 0) + adjustmentTotal
+        };
+    } catch (error) {
+        throw error;
+    }
+};
+
 module.exports = {
     createStockMovement,
     getStockMovements,
@@ -343,5 +427,6 @@ module.exports = {
     calculateInventoryValuation,
     getLowStockProducts,
     getDeadStockProducts,
-    updateProductCostWAC
+    updateProductCostWAC,
+    getStockMovementStatistics
 };

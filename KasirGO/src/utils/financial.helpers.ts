@@ -65,9 +65,16 @@ export const getDateRange = (range: 'today' | 'week' | 'month' | 'year'): { star
             startDate = new Date(now);
     }
 
+    const formatLocalDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     return {
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: new Date().toISOString().split('T')[0],
+        start_date: formatLocalDate(startDate),
+        end_date: formatLocalDate(new Date()),
     };
 };
 

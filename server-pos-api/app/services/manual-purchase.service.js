@@ -14,6 +14,30 @@ const recordManualPurchase = async (purchaseData) => {
             purchase_date
         } = purchaseData;
 
+        let purchaseCategory = await prisma.t_expense_category.findFirst({
+            where: {
+                category_code: 'PURCHASE_INVENTORY',
+                OR: [
+                    { tenant_id: parseInt(tenant_id) },
+                    { tenant_id: null, is_system: true }
+                ]
+            }
+        });
+
+        if (!purchaseCategory) {
+            purchaseCategory = await prisma.t_expense_category.create({
+                data: {
+                    category_code: 'PURCHASE_INVENTORY',
+                    category_name: 'Pembelian Barang',
+                    category_description: 'Pembelian barang dagangan dan stok inventory',
+                    tenant_id: parseInt(tenant_id),
+                    is_system: false,
+                    is_active: true,
+                    created_by: created_by ? parseInt(created_by) : null
+                }
+            });
+        }
+
         return await prisma.$transaction(async (tx) => {
             const product = await tx.m_product.findUnique({
                 where: { product_id: parseInt(product_id) },
@@ -29,7 +53,6 @@ const recordManualPurchase = async (purchaseData) => {
                 throw new Error('Product not found');
             }
 
-            // Calculate cost per unit from total price
             const cost_per_unit = parseFloat(total_price) / parseInt(quantity);
 
             await stockService.updateProductCostWAC(
@@ -56,7 +79,8 @@ const recordManualPurchase = async (purchaseData) => {
                 tenant_id: parseInt(tenant_id),
                 transaction_type: 'EXPENSE',
                 amount: totalAmount,
-                payment_method: 'CASH', // Default to CASH since payment method not required
+                payment_method: 'CASH',
+                category_id: purchaseCategory.category_id,
                 category_type: 'PURCHASE',
                 description: `Pembelian ${product.product_name} (${quantity} unit @ ${cost_per_unit.toFixed(2)})`,
                 notes: notes || null,

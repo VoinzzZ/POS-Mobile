@@ -1,7 +1,7 @@
 import React from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
-import { LayoutDashboard, History, TrendingUp, Package, Store } from "lucide-react-native";
+import { LayoutDashboard, History, TrendingUp, Package, Store, Activity } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
 
 export default function OwnerBottomNav() {
@@ -11,14 +11,19 @@ export default function OwnerBottomNav() {
 
   const tabs = [
     {
+      icon: LayoutDashboard,
+      route: "/(owner)/dashboard",
+      path: "/dashboard",
+    },
+    {
       icon: TrendingUp,
       route: "/(owner)/analytics",
       path: "/analytics",
     },
     {
-      icon: LayoutDashboard,
-      route: "/(owner)/dashboard",
-      path: "/dashboard",
+      icon: Activity,
+      route: "/(owner)/trafik",
+      path: "/trafik",
     },
     {
       icon: Store,

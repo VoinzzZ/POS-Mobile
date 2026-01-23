@@ -23,7 +23,8 @@ api.interceptors.request.use(
         config.url?.includes('/auth/register') ||
         config.url?.includes('/auth/set-password') ||
         config.url?.includes('/auth/refresh-token') ||
-        config.url?.includes('/registration/employee/validate-pin')) {
+        config.url?.includes('/auth/forgot-password/') ||
+        config.url?.includes('/registration/')) {
         return config;
       }
 
@@ -69,7 +70,8 @@ api.interceptors.response.use(
       originalRequest.url?.includes('/auth/register') ||
       originalRequest.url?.includes('/auth/set-password') ||
       originalRequest.url?.includes('/auth/refresh-token') ||
-      originalRequest.url?.includes('/registration/employee/validate-pin');
+      originalRequest.url?.includes('/auth/forgot-password/') ||
+      originalRequest.url?.includes('/registration/');
 
     // Handle 401 errors (token expired) with retry mechanism, but skip for auth endpoints
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
