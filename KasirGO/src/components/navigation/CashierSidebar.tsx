@@ -8,13 +8,10 @@ import {
     Package,
     BarChart3,
     Settings,
-    LogOut,
-    User,
     LaptopMinimal,
     RotateCcw
 } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
 
 interface CashierSidebarProps {
     currentRoute?: string;
@@ -24,7 +21,6 @@ export default function CashierSidebar({ currentRoute }: CashierSidebarProps) {
     const router = useRouter();
     const pathname = usePathname();
     const { colors } = useTheme();
-    const { user, logout } = useAuth();
 
     const tabs = [
         {
@@ -67,16 +63,12 @@ export default function CashierSidebar({ currentRoute }: CashierSidebarProps) {
 
     const isActive = (path: string) => pathname.includes(path);
 
-    const handleLogout = async () => {
-        await logout();
-    };
-
     return (
         <View style={[styles.container, { backgroundColor: colors.surface, borderRightColor: colors.border }]}>
             {/* Brand/Logo Section */}
             <View style={styles.brandSection}>
                 <View style={[styles.brandIcon, { backgroundColor: colors.primary + "20" }]}>
-                    <LaptopMinimal size={24} color={colors.primary} />
+                    <LaptopMinimal size={20} color={colors.primary} />
                 </View>
                 <Text style={[styles.brandText, { color: colors.text }]}>POS</Text>
             </View>
@@ -101,7 +93,7 @@ export default function CashierSidebar({ currentRoute }: CashierSidebarProps) {
                                 <View style={[styles.indicator, { backgroundColor: colors.primary }]} />
                             )}
                             <Icon
-                                size={24}
+                                size={20}
                                 color={active ? colors.primary : colors.textSecondary}
                                 strokeWidth={active ? 2.5 : 2}
                             />
@@ -121,111 +113,66 @@ export default function CashierSidebar({ currentRoute }: CashierSidebarProps) {
                     );
                 })}
             </View>
-
-            {/* User Section */}
-            <View style={styles.userSection}>
-                <View style={[styles.userAvatar, { backgroundColor: colors.primary + "20" }]}>
-                    <User size={20} color={colors.primary} />
-                </View>
-                <Text
-                    style={[styles.userName, { color: colors.text }]}
-                    numberOfLines={1}
-                >
-                    {user?.user_name || "Cashier"}
-                </Text>
-
-                <TouchableOpacity
-                    style={[styles.logoutButton, { backgroundColor: colors.error + "15" }]}
-                    onPress={handleLogout}
-                    activeOpacity={0.7}
-                >
-                    <LogOut size={18} color={colors.error} />
-                </TouchableOpacity>
-            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        width: 90,
+        width: 70,
+        minWidth: 70,
+        maxWidth: 70,
         borderRightWidth: 1,
-        paddingTop: 24,
-        paddingBottom: 16,
+        paddingTop: 18,
+        paddingBottom: 12,
         flexDirection: "column",
+        flexShrink: 0,
     },
     brandSection: {
         alignItems: "center",
-        paddingTop: 12,
-        paddingBottom: 20,
+        paddingTop: 8,
+        paddingBottom: 14,
         borderBottomWidth: 1,
         borderBottomColor: "#e5e7eb",
-        marginBottom: 16,
-        marginHorizontal: 12,
+        marginBottom: 12,
+        marginHorizontal: 8,
     },
     brandIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 12,
+        width: 38,
+        height: 38,
+        borderRadius: 10,
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: 8,
+        marginBottom: 6,
     },
     brandText: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: "700",
         letterSpacing: 0.5,
     },
     navSection: {
         flex: 1,
-        paddingHorizontal: 8,
-        gap: 8,
+        paddingHorizontal: 6,
+        gap: 6,
     },
     navItem: {
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: 12,
-        paddingHorizontal: 8,
-        borderRadius: 12,
-        gap: 4,
+        paddingVertical: 10,
+        paddingHorizontal: 6,
+        borderRadius: 10,
+        gap: 3,
         position: "relative",
     },
     indicator: {
         position: "absolute",
         left: 0,
         width: 3,
-        height: 40,
+        height: 34,
         borderRadius: 2,
     },
     navLabel: {
-        fontSize: 11,
+        fontSize: 9,
         textAlign: "center",
-    },
-    userSection: {
-        alignItems: "center",
-        paddingTop: 16,
-        paddingHorizontal: 12,
-        borderTopWidth: 1,
-        borderTopColor: "#e5e7eb",
-        marginTop: 16,
-        gap: 8,
-    },
-    userAvatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    userName: {
-        fontSize: 11,
-        fontWeight: "600",
-        textAlign: "center",
-    },
-    logoutButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-        marginTop: 4,
     },
 });

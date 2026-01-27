@@ -9,7 +9,7 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { History, Settings, ReceiptText, ChevronRight, Trash2 } from "lucide-react-native";
+import { History, Settings, ReceiptText, ChevronRight, Trash2, Plus } from "lucide-react-native";
 import CashierSidebar from "../../src/components/navigation/CashierSidebar";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -23,7 +23,6 @@ export default function HistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Auto-refresh when screen comes into focus (e.g., after returning from edit screen)
   useFocusEffect(
     useCallback(() => {
       fetchTransactions();
@@ -32,7 +31,6 @@ export default function HistoryScreen() {
 
   const fetchTransactions = async () => {
     try {
-      // Fetch only today's transactions with COMPLETED status (belum LOCKED)
       const today = new Date();
       const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0).toISOString();
       const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999).toISOString();
@@ -262,6 +260,14 @@ export default function HistoryScreen() {
           )}
 
 
+          <TouchableOpacity
+            style={[styles.fab, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/(cashier)/workspace')}
+            activeOpacity={0.8}
+          >
+            <Plus size={28} color="#FFFFFF" strokeWidth={2.5} />
+            <Text style={styles.fabText}>Buat Transaksi</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -408,5 +414,27 @@ const styles = StyleSheet.create({
   landscapeContent: {
     flex: 1,
     flexDirection: 'column',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });

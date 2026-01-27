@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, FlatList } from "react-native";
+import { Plus } from "lucide-react-native";
 import { useAuth } from "../../src/context/AuthContext";
 
 import CashierSidebar from "../../src/components/navigation/CashierSidebar";
@@ -190,6 +191,15 @@ export default function ProductCatalog() {
                 <CashierSidebar />
                 <View style={styles.landscapeContent}>
                     {renderContent()}
+
+                    <TouchableOpacity
+                        style={[styles.fab, { backgroundColor: colors.primary }]}
+                        onPress={() => router.push('/(cashier)/workspace')}
+                        activeOpacity={0.8}
+                    >
+                        <Plus size={28} color="#FFFFFF" strokeWidth={2.5} />
+                        <Text style={styles.fabText}>Buat Transaksi</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         </View>
@@ -261,5 +271,27 @@ const styles = StyleSheet.create({
     landscapeContent: {
         flex: 1,
         flexDirection: "column",
+    },
+    fab: {
+        position: 'absolute',
+        bottom: 30,
+        right: 30,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderRadius: 30,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    fabText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
+        letterSpacing: 0.3,
     },
 });

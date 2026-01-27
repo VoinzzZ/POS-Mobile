@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   FlatList,
   Alert,
 } from "react-native";
-import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import { TabView, TabBar } from "react-native-tab-view";
 import { useAuth } from "../../src/context/AuthContext";
 import { Package, TrendingUp, AlertTriangle, DollarSign, Settings, Search, Filter, X, ShoppingCart, Plus, BanknoteArrowDown, Wallet } from "lucide-react-native";
 import AdminBottomNav from "../../src/components/navigation/AdminBottomNav";
@@ -276,8 +276,12 @@ export default function StockScreen() {
   const [opnameFilter, setOpnameFilter] = useState<'all' | 'pending' | 'processed'>('pending');
   const [opnameModalVisible, setOpnameModalVisible] = useState(false);
 
+  const flatListRef = useRef<FlatList>(null);
+
   const loadMovements = async (page = 1, refresh = false, loadMore = false) => {
     try {
+      console.log('[MOVEMENTS] Loading page:', page, 'loadMore:', loadMore, 'current movements:', movements.length);
+
       if (refresh) {
         setMovementsRefreshing(true);
       } else if (loadMore) {
@@ -297,14 +301,23 @@ export default function StockScreen() {
       const response = await getStockMovements(filters);
 
       if (response.success && response.data) {
+        console.log('[MOVEMENTS] Data received:', response.data.length, 'items');
+
         if (loadMore) {
-          setMovements(prev => [...prev, ...(response.data || [])]);
+          console.log('[MOVEMENTS] Appending to existing', movements.length, 'items');
+          setMovements(prev => {
+            const newData = [...prev, ...(response.data || [])];
+            console.log('[MOVEMENTS] New total:', newData.length);
+            return newData;
+          });
         } else {
+          console.log('[MOVEMENTS] Replacing with new data');
           setMovements(response.data);
         }
         if (response.pagination) {
           setCurrentPage(response.pagination.currentPage);
           setTotalPages(response.pagination.totalPages);
+          console.log('[MOVEMENTS] Page:', response.pagination.currentPage, '/', response.pagination.totalPages);
         }
       }
     } catch (error) {
@@ -332,20 +345,16 @@ export default function StockScreen() {
     }
   };
 
-  const handleResetFilters = () => {
-    setSelectedMovementType(null);
-    setSelectedReferenceType(null);
-  };
 
-  const filteredMovements = movements.filter((movement) => {
-    if (!searchQuery) return true;
+  const filteredMovements = useMemo(() => {
+    if (!searchQuery) return movements;
     const query = searchQuery.toLowerCase();
-    return (
+    return movements.filter((movement) =>
       movement.m_product?.product_name.toLowerCase().includes(query) ||
       movement.m_product?.product_sku?.toLowerCase().includes(query) ||
       movement.notes?.toLowerCase().includes(query)
     );
-  });
+  }, [movements, searchQuery]);
 
   const hasActiveFilters = selectedMovementType !== null || selectedReferenceType !== null;
 
@@ -481,42 +490,47 @@ export default function StockScreen() {
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={filteredMovements}
-          renderItem={({ item }) => <StockMovementCard movement={item} />}
-          keyExtractor={(item) => item.movement_id.toString()}
-          contentContainerStyle={styles.movementsList}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={movementsRefreshing}
-              onRefresh={onMovementsRefresh}
-              tintColor={colors.primary}
-            />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.3}
-          ListFooterComponent={() => (
-            movementsLoadingMore ? (
-              <View style={styles.loadingMoreContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
+        <View style={styles.listWrapper}>
+          <FlatList
+            ref={flatListRef}
+            data={filteredMovements}
+            renderItem={({ item }) => <StockMovementCard movement={item} />}
+            keyExtractor={(item, index) => `movement-${item.movement_id}-${index}`}
+            contentContainerStyle={styles.movementsList}
+            refreshControl={
+              <RefreshControl
+                refreshing={movementsRefreshing}
+                onRefresh={onMovementsRefresh}
+                tintColor={colors.primary}
+              />
+            }
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              movementsLoadingMore ? (
+                <View style={styles.loadingMoreContainer}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[styles.loadingText, { color: colors.textSecondary, marginTop: 8 }]}>
+                    Memuat data...
+                  </Text>
+                </View>
+              ) : null
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Package size={48} color={colors.textSecondary} />
+                <Text style={[styles.emptyText, { color: colors.text }]}>
+                  {searchQuery ? "Tidak ada hasil" : "Belum ada pergerakan"}
+                </Text>
+                <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+                  {searchQuery
+                    ? "Coba kata kunci lain"
+                    : "Pergerakan stok akan muncul di sini"}
+                </Text>
               </View>
-            ) : null
-          )}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Package size={48} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.text }]}>
-                {searchQuery ? "Tidak ada hasil" : "Belum ada pergerakan"}
-              </Text>
-              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-                {searchQuery
-                  ? "Coba kata kunci lain"
-                  : "Pergerakan stok akan muncul di sini"}
-              </Text>
-            </View>
-          )}
-        />
+            }
+          />
+        </View>
       )}
 
       <MovementFilters
@@ -526,7 +540,6 @@ export default function StockScreen() {
         selectedReference={selectedReferenceType}
         onTypeChange={setSelectedMovementType}
         onReferenceChange={setSelectedReferenceType}
-        onReset={handleResetFilters}
       />
     </View>
   );
@@ -552,8 +565,7 @@ export default function StockScreen() {
               style={[
                 styles.filterTabText,
                 opnameFilter === 'pending' && styles.filterTabTextActive,
-                opnameFilter === 'pending' && { color: '#fff' },
-                { color: colors.text },
+                { color: opnameFilter === 'pending' ? '#fff' : colors.text },
               ]}
             >
               Pending
@@ -572,8 +584,7 @@ export default function StockScreen() {
               style={[
                 styles.filterTabText,
                 opnameFilter === 'processed' && styles.filterTabTextActive,
-                opnameFilter === 'processed' && { color: '#fff' },
-                { color: colors.text },
+                { color: opnameFilter === 'processed' ? '#fff' : colors.text },
               ]}
             >
               Diproses
@@ -592,8 +603,7 @@ export default function StockScreen() {
               style={[
                 styles.filterTabText,
                 opnameFilter === 'all' && styles.filterTabTextActive,
-                opnameFilter === 'all' && { color: '#fff' },
-                { color: colors.text },
+                { color: opnameFilter === 'all' ? '#fff' : colors.text },
               ]}
             >
               Semua
@@ -656,11 +666,19 @@ export default function StockScreen() {
     </View>
   );
 
-  const renderScene = SceneMap({
-    dashboard: DashboardRoute,
-    movements: MovementsRoute,
-    opname: OpnameRoute,
-  });
+
+  const renderScene = ({ route }: any) => {
+    switch (route.key) {
+      case 'dashboard':
+        return DashboardRoute();
+      case 'movements':
+        return MovementsRoute();
+      case 'opname':
+        return OpnameRoute();
+      default:
+        return null;
+    }
+  };
 
   const renderTabBar = (props: any) => (
     <TabBar
@@ -699,6 +717,8 @@ export default function StockScreen() {
         renderTabBar={renderTabBar}
         onIndexChange={setIndex}
         initialLayout={{ width: layout.width }}
+        lazy
+        lazyPreloadDistance={1}
       />
 
       <AdminBottomNav />
@@ -901,9 +921,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-  movementsList: {
+  listWrapper: {
+    flex: 1,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+  },
+  movementsList: {
+    paddingBottom: 100,
   },
   purchaseCard: {
     padding: 16,
@@ -973,6 +996,24 @@ const styles = StyleSheet.create({
   loadingMoreContainer: {
     paddingVertical: 16,
     alignItems: "center",
+  },
+  loadMoreButton: {
+    marginHorizontal: 20,
+    marginVertical: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  loadMoreText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   addButton: {
     width: 44,

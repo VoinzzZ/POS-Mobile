@@ -47,11 +47,20 @@ export const refreshTokenApi = async (refresh_token: string): Promise<TokenRefre
 
     return res.data;
   } catch (error: any) {
-    console.log('❌ Refresh token API error:', {
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message,
-      url: error.config?.url
-    });
+    const errorDetails: any = {
+      message: error.message || 'Unknown error'
+    };
+
+    if (error.response) {
+      errorDetails.status = error.response.status;
+      errorDetails.data = error.response.data?.message;
+    }
+
+    if (error.config) {
+      errorDetails.url = error.config.url;
+    }
+
+    console.log('Refresh token API error:', errorDetails);
     throw error;
   }
 };

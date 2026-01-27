@@ -18,14 +18,7 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
 
   // Sample transaction data for preview
   const sampleTransaction = {
-    id: "TRX-001",
-    date: new Date().toLocaleDateString("id-ID", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
+    dailyNumber: 1,
     cashier: "Admin",
     items: [
       { name: "Item 1", qty: 3, price: 3500, subtotal: 10500 },
@@ -199,30 +192,34 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
 
             <View style={[styles.divider, { backgroundColor: "#e5e7eb" }]} />
 
+            {/* Receipt Title - Centered */}
+            <View style={styles.receiptTitleSection}>
+              <Text style={[styles.receiptTitle, { color: "#000000" }]}>
+                Transaksi
+              </Text>
+              <Text style={[styles.receiptId, { color: "#666666" }]}>
+                #{sampleTransaction.dailyNumber.toString().padStart(3, '0')}
+              </Text>
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: "#e5e7eb" }]} />
+
             {/* Transaction Info */}
             <View style={styles.transactionInfo}>
               <View style={styles.infoRow}>
                 <Text style={[styles.infoLabel, { color: "#666666" }]}>
-                  No. Transaksi
-                </Text>
-                <Text style={[styles.infoValue, { color: "#000000" }]}>
-                  {sampleTransaction.id}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: "#666666" }]}>
-                  Tanggal
-                </Text>
-                <Text style={[styles.infoValue, { color: "#000000" }]}>
-                  {sampleTransaction.date}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, { color: "#666666" }]}>
-                  Kasir
+                  Kasir:
                 </Text>
                 <Text style={[styles.infoValue, { color: "#000000" }]}>
                   {sampleTransaction.cashier}
+                </Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoLabel, { color: "#666666" }]}>
+                  Total Item:
+                </Text>
+                <Text style={[styles.infoValue, { color: "#000000" }]}>
+                  {sampleTransaction.items.length} item
                 </Text>
               </View>
             </View>
@@ -281,7 +278,7 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
                 </Text>
               </View>
               <View style={styles.totalRow}>
-                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Kembali:</Text>
+                <Text style={[styles.paymentLabel, { color: "#666666" }]}>Kembalian:</Text>
                 <Text style={[styles.paymentValue, { color: "#000000" }]}>
                   {formatCurrency(sampleTransaction.change)}
                 </Text>
@@ -296,7 +293,7 @@ export default function ReceiptPreview({ store: externalStore }: ReceiptPreviewP
                 Terima kasih atas kunjungan Anda!
               </Text>
               <Text style={[styles.footerText, { color: "#666666" }]}>
-                Dibuat oleh KasirGo - @VoinzzZ
+                Made by KasirGo - @VoinzzZ
               </Text>
             </View>
           </View>
@@ -411,6 +408,19 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     marginVertical: 8,
+  },
+  receiptTitleSection: {
+    alignItems: "center",
+    gap: 4,
+  },
+  receiptTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  receiptId: {
+    fontSize: 14,
+    textAlign: "center",
   },
   transactionInfo: {
     gap: 6,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
-import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight } from "lucide-react-native";
+import { User, Bell, Lock, HelpCircle, LogOut, ChevronRight, Printer } from "lucide-react-native";
 import CashierSidebar from "../../src/components/navigation/CashierSidebar";
 import { useAuth } from "../../src/context/AuthContext";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -8,12 +8,14 @@ import { useRouter } from "expo-router";
 import ProfileCard from "../../src/components/settings/ProfileCard";
 import ThemeToggleCard from "../../src/components/settings/ThemeToggleCard";
 import EditProfilePanel from "../../src/components/settings/EditProfilePanel";
+import PrinterSettingsModal from "../../src/components/cashier/PrinterSettingsModal";
 
 export default function SettingsScreen() {
   const { logout, user, refreshProfile } = useAuth();
   const { colors } = useTheme();
   const router = useRouter();
   const [editProfileVisible, setEditProfileVisible] = useState(false);
+  const [printerSettingsVisible, setPrinterSettingsVisible] = useState(false);
 
   useEffect(() => {
     console.log("🔍 Settings Screen - Current user data:", user);
@@ -52,6 +54,12 @@ export default function SettingsScreen() {
       title: "Keamanan",
       subtitle: "Password dan pengaturan keamanan",
       onPress: () => router.push("/(cashier)/security"),
+    },
+    {
+      icon: Printer,
+      title: "Printer Thermal",
+      subtitle: "Pengaturan printer Bluetooth",
+      onPress: () => setPrinterSettingsVisible(true),
     },
     {
       icon: HelpCircle,
@@ -115,6 +123,7 @@ export default function SettingsScreen() {
         <View style={styles.landscapeContent}>{renderContent()}</View>
       </View>
       <EditProfilePanel visible={editProfileVisible} onClose={() => setEditProfileVisible(false)} />
+      <PrinterSettingsModal visible={printerSettingsVisible} onClose={() => setPrinterSettingsVisible(false)} />
     </View>
   );
 }

@@ -189,7 +189,6 @@ export default function HistoryScreen() {
       `${item.product.name} (${item.quantity}x) - ${formatCurrency(item.subtotal)}`
     ).join('\n') || '';
 
-    // Admin dapat melakukan berbagai aksi pada transaksi
     const actions: {
       text: string;
       style?: 'default' | 'cancel' | 'destructive';
@@ -201,21 +200,11 @@ export default function HistoryScreen() {
         },
       ];
 
-    // Tambah opsi cetak struk untuk transaksi COMPLETED/LOCKED
-    if (transaction.status === 'COMPLETED' || transaction.status === 'LOCKED') {
-      actions.push({
-        text: 'Cetak Struk',
-        onPress: () => router.push(`/(admin)/receipt/${transaction.id}` as any),
-      });
-    }
-
-    // Admin bisa edit semua transaksi, termasuk yang LOCKED
     actions.push({
       text: 'Edit Transaksi',
       onPress: () => router.push(`/(admin)/edit-transaction/${transaction.id}` as any),
     });
 
-    // Tambah opsi delete (admin bisa delete semua)
     actions.push({
       text: 'Hapus Transaksi',
       onPress: () => handleDeleteTransaction(transaction.id, transaction.status),
@@ -289,19 +278,8 @@ export default function HistoryScreen() {
         </View>
       </View>
 
-      {/* Admin action buttons - same as cashier but for all transactions */}
+      {/* Admin action buttons */}
       <View style={styles.actionButtons}>
-        {/* Cetak Struk - hanya untuk COMPLETED/LOCKED */}
-        {(transaction.status === 'COMPLETED' || transaction.status === 'LOCKED') && (
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: `${colors.primary}15` }]}
-            onPress={() => router.push(`/(admin)/receipt/${transaction.id}` as any)}
-          >
-            <ReceiptText size={16} color={colors.primary} />
-            <Text style={[styles.actionButtonText, { color: colors.primary }]}>Cetak</Text>
-          </TouchableOpacity>
-        )}
-
         {/* Edit Transaksi - Admin bisa edit semua, termasuk LOCKED */}
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: '#10b98115' }]}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
 import { useAuth } from "../../src/context/AuthContext";
-import { ShoppingCart, DollarSign, TrendingUp, Settings, Clock, BanknoteArrowUp, Wallet } from "lucide-react-native";
+import { ShoppingCart, DollarSign, TrendingUp, Settings, Clock, BanknoteArrowUp, Wallet, Plus } from "lucide-react-native";
 import CashierSidebar from "../../src/components/navigation/CashierSidebar";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -29,26 +29,26 @@ const getTimeBasedGreeting = (): string => {
 const getPaymentMethodColor = (method: string): string => {
   switch (method?.toUpperCase()) {
     case 'CASH':
-      return '#10b981'; // Green
+      return '#10b981';
     case 'QRIS':
-      return '#3b82f6'; // Blue
+      return '#3b82f6';
     case 'DEBIT':
-      return '#8b5cf6'; // Purple
+      return '#8b5cf6';
     default:
-      return '#6b7280'; // Gray
+      return '#6b7280';
   }
 };
 
 const getPaymentMethodBg = (method: string): string => {
   switch (method?.toUpperCase()) {
     case 'CASH':
-      return '#d1fae5'; // Light green
+      return '#d1fae5';
     case 'QRIS':
-      return '#dbeafe'; // Light blue
+      return '#dbeafe';
     case 'DEBIT':
-      return '#ede9fe'; // Light purple
+      return '#ede9fe';
     default:
-      return '#f3f4f6'; // Light gray
+      return '#f3f4f6';
   }
 };
 
@@ -69,7 +69,6 @@ export default function CashierDashboard() {
 
   useEffect(() => {
     fetchDashboardStats();
-    // Update greeting every minute
     const interval = setInterval(() => {
       setGreeting(getTimeBasedGreeting());
     }, 60000);
@@ -97,7 +96,7 @@ export default function CashierDashboard() {
     {
       title: "Penjualan Hari Ini",
       value: formatCurrency(todaySales),
-      icon: BanknoteArrowUp,
+      icon: Wallet,
       color: "#10b981",
       gradient: ["#10b981", "#059669"],
     },
@@ -143,6 +142,38 @@ export default function CashierDashboard() {
                   <View style={styles.statsContainer}>
                     {stats.map((stat, index) => {
                       const Icon = stat.icon;
+                      const isTransactionCard = stat.title === "Total Transaksi";
+
+                      if (isTransactionCard) {
+                        return (
+                          <TouchableOpacity
+                            key={index}
+                            onPress={() => router.push('/(cashier)/history')}
+                            activeOpacity={0.7}
+                          >
+                            <View
+                              style={[
+                                styles.statCard,
+                                {
+                                  backgroundColor: colors.card,
+                                  shadowColor: stat.color,
+                                }
+                              ]}
+                            >
+                              <View style={styles.statCardHeader}>
+                                <View style={[styles.iconContainer, { backgroundColor: stat.color + '20' }]}>
+                                  <Icon size={28} color={stat.color} strokeWidth={2.5} />
+                                </View>
+                                <Text style={[styles.statTitle, { color: colors.textSecondary }]}>
+                                  {stat.title}
+                                </Text>
+                              </View>
+                              <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      }
+
                       return (
                         <View
                           key={index}
@@ -253,6 +284,15 @@ export default function CashierDashboard() {
 
             <View style={{ height: 20 }} />
           </ScrollView>
+
+          <TouchableOpacity
+            style={[styles.fab, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/(cashier)/workspace')}
+            activeOpacity={0.8}
+          >
+            <Plus size={28} color="#FFFFFF" strokeWidth={2.5} />
+            <Text style={styles.fabText}>Buat Transaksi</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -336,7 +376,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 5,
-    minHeight: 130,
+    height: 150,
   },
   statCardHeader: {
     flexDirection: "row",
@@ -398,7 +438,8 @@ const styles = StyleSheet.create({
   },
   transactionsContainer: {
     gap: 10,
-    minHeight: 240,
+    height: 260,
+    overflow: 'hidden',
   },
   transactionCard: {
     padding: 16,
@@ -490,5 +531,27 @@ const styles = StyleSheet.create({
   landscapeContent: {
     flex: 1,
     flexDirection: 'column',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });

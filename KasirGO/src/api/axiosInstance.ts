@@ -52,20 +52,29 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    console.log('Axios Error:', {
-      message: error.message,
-      code: error.code,
-      response: error.response?.status,
-      data: error.response?.data,
-      url: error.config?.url,
-      baseURL: error.config?.baseURL
-    });
+    // Safely log error details
+    const errorDetails: any = {
+      message: error.message || 'Unknown error',
+      code: error.code || 'UNKNOWN',
+    };
+
+    // Only add these if they exist
+    if (error.response) {
+      errorDetails.status = error.response.status;
+      errorDetails.data = error.response.data;
+    }
+
+    if (error.config) {
+      errorDetails.url = error.config.url;
+      errorDetails.baseURL = error.config.baseURL;
+    }
+
+    console.log('Axios Error:', errorDetails);
 
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
 
-    // Skip token refresh for auth and registration validation endpoints to avoid infinite loops
     const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
       originalRequest.url?.includes('/auth/register') ||
       originalRequest.url?.includes('/auth/set-password') ||
@@ -73,20 +82,16 @@ api.interceptors.response.use(
       originalRequest.url?.includes('/auth/forgot-password/') ||
       originalRequest.url?.includes('/registration/');
 
-    // Handle 401 errors (token expired) with retry mechanism, but skip for auth endpoints
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
       try {
         console.log('Attempting to refresh token using TokenService...');
 
-        // Use TokenService to refresh token
         const newTokens = await TokenService.refreshAccessToken();
 
         if (newTokens && newTokens.access_token) {
           console.log('Token refreshed successfully via TokenService');
-
-          // Update original request with new access token
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newTokens.access_token}`;
           }
@@ -97,21 +102,27 @@ api.interceptors.response.use(
           throw new Error('Failed to refresh token');
         }
       } catch (refreshError: any) {
-        console.log('Token refresh failed:', {
-          message: refreshError.message,
-          response: refreshError.response?.data,
-          status: refreshError.response?.status
-        });
+        const refreshErrorDetails: any = {
+          message: refreshError.message || 'Unknown refresh error',
+        };
 
-        // Clear auth data using TokenService
+        if (refreshError.response) {
+          refreshErrorDetails.data = refreshError.response.data;
+          refreshErrorDetails.status = refreshError.response.status;
+        }
+
+        if (refreshError.code) {
+          refreshErrorDetails.code = refreshError.code;
+        }
+
+        console.log('Token refresh failed:', refreshErrorDetails);
+
         await TokenService.clearTokens();
 
-        // Return a descriptive error
         return Promise.reject(new Error('Session expired. Please login again.'));
       }
     }
 
-    // For login endpoint specifically, if it returns 401, don't try to refresh token
     if (error.response?.status === 401 && isAuthEndpoint && originalRequest.url?.includes('/auth/login')) {
       console.log('Login failed with 401 - clearing tokens and returning error');
       await TokenService.clearTokens();

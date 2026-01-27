@@ -136,16 +136,10 @@ const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({
             if (response.success) {
                 setStep(3);
                 setOtpTimer(600);
-                Alert.alert(
-                    "OTP Terkirim",
-                    `Kode OTP telah dikirim ke ${newEmail}. Kode berlaku selama 10 menit.`
-                );
             }
         } catch (error: any) {
-            Alert.alert(
-                "Kesalahan",
-                error.response?.data?.message || "Gagal mengirim kode OTP"
-            );
+            const errorMsg = error.response?.data?.message || "Gagal mengirim kode OTP";
+            setErrors({ newEmail: errorMsg });
         } finally {
             setLoading(false);
         }
@@ -166,13 +160,10 @@ const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({
             if (response.success) {
                 setOtpTimer(600);
                 setOtpCode("");
-                Alert.alert("OTP Terkirim", "Kode OTP baru telah dikirim ke email Anda");
             }
         } catch (error: any) {
-            Alert.alert(
-                "Kesalahan",
-                error.response?.data?.message || "Gagal mengirim ulang kode OTP"
-            );
+            const errorMsg = error.response?.data?.message || "Gagal mengirim ulang kode OTP";
+            setErrors({ otpCode: errorMsg });
         } finally {
             setLoading(false);
         }
@@ -217,10 +208,8 @@ const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({
                 );
             }
         } catch (error: any) {
-            Alert.alert(
-                "Kesalahan",
-                error.response?.data?.message || "Gagal memverifikasi kode OTP"
-            );
+            const errorMsg = error.response?.data?.message || "Kode OTP salah atau sudah kadaluarsa";
+            setErrors({ otpCode: errorMsg });
         } finally {
             setLoading(false);
         }

@@ -8,46 +8,47 @@ datasource db {
 }
 
 model m_tenant {
-  tenant_id             Int                    @id @default(autoincrement())
-  tenant_name           String                 @unique
-  tenant_phone          String?
-  tenant_email          String?
-  tenant_description    String?                @db.Text
-  tenant_address        String?                @db.Text
-  store_logo_url        String?
-  store_business_hours  String?
-  store_description     String?
-  tenant_status         tenant_status          @default(PENDING)
-  is_active             Boolean                @default(false)
-  approved_by           Int?
-  approved_at           DateTime?
-  rejected_by           Int?
-  rejected_at           DateTime?
-  rejection_reason      String?                @db.Text
-  max_users             Int                    @default(7)
-  created_by            Int?
-  updated_by            Int?
-  deleted_by            Int?
-  created_at            DateTime               @default(now())
-  updated_at            DateTime               @updatedAt
-  deleted_at            DateTime?
-  m_user_approved_by    m_user?                @relation("TenantApprovedBy", fields: [approved_by], references: [user_id])
-  m_user_rejected_by    m_user?                @relation("TenantRejectedBy", fields: [rejected_by], references: [user_id])
-  m_user_created_by     m_user?                @relation("TenantCreatedBy", fields: [created_by], references: [user_id])
-  m_user_updated_by     m_user?                @relation("TenantUpdatedBy", fields: [updated_by], references: [user_id])
-  m_user_deleted_by     m_user?                @relation("TenantDeletedBy", fields: [deleted_by], references: [user_id])
-  m_brand               m_brand[]
-  m_category            m_category[]
-  m_product             m_product[]
-  m_user                m_user[]
-  s_registration_pin    s_registration_pin[]
-  s_registration_tenant s_registration_tenant?
-  t_stock_movement      t_stock_movement[]
-  t_stock_opname        t_stock_opname[]
-  t_transaction         t_transaction[]
-  t_cash_transaction    t_cash_transaction[]
-  t_return              t_return[]
-  t_expense_category    t_expense_category[]
+  tenant_id                Int                        @id @default(autoincrement())
+  tenant_name              String                     @unique
+  tenant_phone             String?
+  tenant_email             String?
+  tenant_description       String?                    @db.Text
+  tenant_address           String?                    @db.Text
+  store_logo_url           String?
+  store_business_hours     String?
+  store_description        String?
+  tenant_status            tenant_status              @default(PENDING)
+  is_active                Boolean                    @default(false)
+  approved_by              Int?
+  approved_at              DateTime?
+  rejected_by              Int?
+  rejected_at              DateTime?
+  rejection_reason         String?                    @db.Text
+  max_users                Int                        @default(7)
+  created_by               Int?
+  updated_by               Int?
+  deleted_by               Int?
+  created_at               DateTime                   @default(now())
+  updated_at               DateTime                   @updatedAt
+  deleted_at               DateTime?
+  m_user_approved_by       m_user?                    @relation("TenantApprovedBy", fields: [approved_by], references: [user_id])
+  m_user_rejected_by       m_user?                    @relation("TenantRejectedBy", fields: [rejected_by], references: [user_id])
+  m_user_created_by        m_user?                    @relation("TenantCreatedBy", fields: [created_by], references: [user_id])
+  m_user_updated_by        m_user?                    @relation("TenantUpdatedBy", fields: [updated_by], references: [user_id])
+  m_user_deleted_by        m_user?                    @relation("TenantDeletedBy", fields: [deleted_by], references: [user_id])
+  m_brand                  m_brand[]
+  m_category               m_category[]
+  m_product                m_product[]
+  m_user                   m_user[]
+  s_registration_pin       s_registration_pin[]
+  s_registration_tenant    s_registration_tenant?
+  t_stock_movement         t_stock_movement[]
+  t_stock_opname           t_stock_opname[]
+  t_transaction            t_transaction[]
+  t_cash_transaction       t_cash_transaction[]
+  t_return                 t_return[]
+  t_expense_category       t_expense_category[]
+  t_low_stock_notification t_low_stock_notification[]
 
   @@index([approved_by])
   @@index([rejected_by])
@@ -76,16 +77,14 @@ model m_user {
   rejection_reason                  String?                @db.Text
   registration_step                 Int                    @default(1)
   registration_type                 registration_type?
-  approved_by_owner                 Int?
-  approved_at_owner                 DateTime?
+  push_token                        String?                @db.VarChar(255)
+  push_token_updated_at             DateTime?
   created_by                        Int?
   updated_by                        Int?
   deleted_by                        Int?
   created_at                        DateTime               @default(now())
   updated_at                        DateTime               @updatedAt
   deleted_at                        DateTime?
-  user_approved_by_owner            m_user?                @relation("EmployeeApprovedBy", fields: [approved_by_owner], references: [user_id])
-  user_approved_employees           m_user[]               @relation("EmployeeApprovedBy")
   m_user_approved_by                m_user?                @relation("UserApprovedBy", fields: [approved_by], references: [user_id])
   m_user_rejected_by                m_user?                @relation("UserRejectedBy", fields: [rejected_by], references: [user_id])
   m_user_created_by                 m_user?                @relation("UserCreatedBy", fields: [created_by], references: [user_id])
@@ -121,7 +120,6 @@ model m_user {
   @@index([role_id])
   @@index([tenant_id])
   @@index([is_active])
-  @@index([approved_by_owner])
   @@map("m_user")
 }
 
@@ -149,7 +147,6 @@ model m_brand {
   brand_id          Int         @id @default(autoincrement())
   brand_name        String      @unique
   brand_description String?     @db.Text
-  brand_logo_url    String?
   tenant_id         Int
   is_active         Boolean     @default(true)
   created_by        Int?
@@ -187,34 +184,35 @@ model m_category {
 }
 
 model m_product {
-  product_id          Int                  @id @default(autoincrement())
-  product_name        String
-  product_description String?              @db.Text
-  product_sku         String?              @unique
-  product_image_url   String?
-  brand_id            Int?
-  category_id         Int?
-  tenant_id           Int
-  product_price       Decimal              @db.Decimal(10, 2)
-  product_cost        Decimal?             @db.Decimal(10, 2)
-  product_qty         Int                  @default(0)
-  product_min_stock   Int?                 @default(5)
-  is_active           Boolean              @default(true)
-  is_track_stock      Boolean              @default(true)
-  is_sellable         Boolean              @default(true)
-  created_by          Int?
-  updated_by          Int?
-  deleted_by          Int?
-  created_at          DateTime             @default(now())
-  updated_at          DateTime             @updatedAt
-  deleted_at          DateTime?
-  m_brand             m_brand?             @relation(fields: [brand_id], references: [brand_id])
-  m_category          m_category?          @relation(fields: [category_id], references: [category_id])
-  m_tenant            m_tenant             @relation(fields: [tenant_id], references: [tenant_id])
-  t_stock_movement    t_stock_movement[]
-  t_stock_opname      t_stock_opname[]
-  t_transaction_item  t_transaction_item[]
-  t_return_item       t_return_item[]
+  product_id               Int                        @id @default(autoincrement())
+  product_name             String
+  product_description      String?                    @db.Text
+  product_sku              String?                    @unique
+  product_image_url        String?
+  brand_id                 Int?
+  category_id              Int?
+  tenant_id                Int
+  product_price            Decimal                    @db.Decimal(10, 2)
+  product_cost             Decimal?                   @db.Decimal(10, 2)
+  product_qty              Int                        @default(0)
+  product_min_stock        Int?                       @default(5)
+  is_active                Boolean                    @default(true)
+  is_track_stock           Boolean                    @default(true)
+  is_sellable              Boolean                    @default(true)
+  created_by               Int?
+  updated_by               Int?
+  deleted_by               Int?
+  created_at               DateTime                   @default(now())
+  updated_at               DateTime                   @updatedAt
+  deleted_at               DateTime?
+  m_brand                  m_brand?                   @relation(fields: [brand_id], references: [brand_id])
+  m_category               m_category?                @relation(fields: [category_id], references: [category_id])
+  m_tenant                 m_tenant                   @relation(fields: [tenant_id], references: [tenant_id])
+  t_stock_movement         t_stock_movement[]
+  t_stock_opname           t_stock_opname[]
+  t_transaction_item       t_transaction_item[]
+  t_return_item            t_return_item[]
+  t_low_stock_notification t_low_stock_notification[]
 
   @@index([brand_id])
   @@index([category_id])
@@ -560,4 +558,22 @@ model t_return_item {
   @@index([return_id])
   @@index([product_id])
   @@map("t_return_item")
+}
+
+model t_low_stock_notification {
+  notification_id Int       @id @default(autoincrement())
+  product_id      Int
+  tenant_id       Int
+  notified_at     DateTime  @default(now())
+  is_active       Boolean   @default(true)
+  resolved_at     DateTime?
+
+  m_product m_product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  m_tenant  m_tenant  @relation(fields: [tenant_id], references: [tenant_id], onDelete: Cascade)
+
+  @@unique([product_id, tenant_id, is_active])
+  @@index([product_id])
+  @@index([tenant_id])
+  @@index([is_active])
+  @@map("t_low_stock_notification")
 }

@@ -10,7 +10,6 @@ interface MovementFiltersProps {
     selectedReference: string | null;
     onTypeChange: (type: string | null) => void;
     onReferenceChange: (reference: string | null) => void;
-    onReset: () => void;
 }
 
 export default function MovementFilters({
@@ -20,7 +19,6 @@ export default function MovementFilters({
     selectedReference,
     onTypeChange,
     onReferenceChange,
-    onReset
 }: MovementFiltersProps) {
     const { colors } = useTheme();
 
@@ -146,30 +144,6 @@ export default function MovementFilters({
                             </View>
                         </View>
                     </ScrollView>
-
-                    <View style={[styles.footer, { borderTopColor: colors.border }]}>
-                        {hasFilters && (
-                            <TouchableOpacity
-                                style={[styles.resetButton, { backgroundColor: colors.card }]}
-                                onPress={onReset}
-                            >
-                                <Text style={[styles.resetText, { color: colors.textSecondary }]}>
-                                    Reset
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                        <TouchableOpacity
-                            style={[
-                                styles.applyButton,
-                                { backgroundColor: colors.primary, flex: hasFilters ? 1 : undefined }
-                            ]}
-                            onPress={onClose}
-                        >
-                            <Text style={styles.applyText}>
-                                Terapkan Filter
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
                 </View>
             </View>
         </Modal>
@@ -234,32 +208,5 @@ const styles = StyleSheet.create({
     },
     optionText: {
         fontSize: 13,
-    },
-    footer: {
-        flexDirection: "row",
-        padding: 20,
-        gap: 12,
-        borderTopWidth: 1,
-    },
-    resetButton: {
-        flex: 1,
-        paddingVertical: 14,
-        borderRadius: 12,
-        alignItems: "center",
-    },
-    resetText: {
-        fontSize: 15,
-        fontWeight: "600",
-    },
-    applyButton: {
-        paddingVertical: 14,
-        paddingHorizontal: 32,
-        borderRadius: 12,
-        alignItems: "center",
-    },
-    applyText: {
-        color: "#fff",
-        fontSize: 15,
-        fontWeight: "700",
     },
 });

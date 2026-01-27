@@ -95,7 +95,6 @@ async function main() {
   console.log('  • OWNER (Level 1) - Pemilik toko');
   console.log('  • ADMIN (Level 2) - Admin toko');
   console.log('  • CASHIER (Level 3) - Kasir');
-  console.log('  • INVENTORY (Level 4) - Staf inventory');
   console.log('═════════════════════════════════════');
 }
 

@@ -19,6 +19,7 @@ const cashTransactionRoutes = require('./cash-transaction.routes');
 const expenseCategoryRoutes = require('./expense-category.routes');
 const manualPurchaseRoutes = require('./manual-purchase.routes');
 const returnRoutes = require('./return.routes');
+const notificationRoutes = require('./notification.routes');
 
 const router = express.Router();
 
@@ -42,5 +43,6 @@ router.use('/cash-transactions', cashTransactionRoutes);
 router.use('/expense-categories', expenseCategoryRoutes);
 router.use('/manual-purchases', manualPurchaseRoutes);
 router.use('/returns', returnRoutes);
+router.use('/notifications', notificationRoutes);
 
 module.exports = router;

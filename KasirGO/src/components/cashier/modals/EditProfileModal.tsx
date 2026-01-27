@@ -12,7 +12,7 @@ import {
     Platform,
     StatusBar,
 } from "react-native";
-import { X } from "lucide-react-native";
+import { ArrowLeft } from "lucide-react-native";
 import { useTheme } from "../../../context/ThemeContext";
 import { useAuth } from "../../../context/AuthContext";
 import SlideModal from "./SlideModal";
@@ -66,10 +66,11 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             <View style={styles.container}>
                 {/* Header */}
                 <View style={[styles.header, { borderBottomColor: colors.border }]}>
-                    <Text style={[styles.title, { color: colors.text }]}>Edit Profil</Text>
-                    <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                        <X size={24} color={colors.text} />
+                    <TouchableOpacity onPress={onClose} style={styles.backButton}>
+                        <ArrowLeft size={24} color={colors.text} />
                     </TouchableOpacity>
+                    <Text style={[styles.title, { color: colors.text }]}>Edit Profil</Text>
+                    <View style={styles.headerSpacer} />
                 </View>
 
                 {/* Body */}
@@ -138,16 +139,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 {/* Footer */}
                 <View style={[styles.footer, { borderTopColor: colors.border }]}>
                     <TouchableOpacity
-                        onPress={onClose}
-                        style={[styles.button, styles.cancelButton]}
-                        disabled={loading}
-                    >
-                        <Text style={styles.cancelText}>Batal</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
                         onPress={handleSubmit}
                         style={[
-                            styles.button,
                             styles.saveButton,
                             { backgroundColor: colors.primary },
                         ]}
@@ -156,7 +149,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                         {loading ? (
                             <ActivityIndicator size="small" color="#fff" />
                         ) : (
-                            <Text style={styles.saveText}>Simpan Perubahan</Text>
+                            <Text style={styles.saveText}>Simpan</Text>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -181,9 +174,14 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 20,
         fontWeight: "700",
+        flex: 1,
+        textAlign: "center",
     },
-    closeButton: {
+    backButton: {
         padding: 4,
+    },
+    headerSpacer: {
+        width: 32,
     },
     body: {
         flex: 1,
@@ -216,29 +214,15 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     footer: {
-        flexDirection: "row",
         padding: 20,
         paddingBottom: Platform.OS === "ios" ? 40 : 20,
-        gap: 12,
         borderTopWidth: 1,
     },
-    button: {
-        flex: 1,
+    saveButton: {
         height: 50,
         borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
-    },
-    cancelButton: {
-        backgroundColor: "#334155",
-    },
-    cancelText: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "600",
-    },
-    saveButton: {
-        flex: 2,
     },
     saveText: {
         color: "#fff",

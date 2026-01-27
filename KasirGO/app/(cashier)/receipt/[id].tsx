@@ -21,6 +21,8 @@ import { getStoreSettings, Store } from "../../../src/api/store";
 import * as Sharing from "expo-sharing";
 import { captureRef } from "react-native-view-shot";
 import CashierSidebar from "../../../src/components/navigation/CashierSidebar";
+import thermalPrinterService from "../../../src/services/thermalPrinterService";
+import ThermalReceiptFormatter from "../../../src/utils/thermalReceiptFormatter";
 
 export default function ReceiptPreviewScreen() {
   const { id } = useLocalSearchParams();
@@ -32,6 +34,7 @@ export default function ReceiptPreviewScreen() {
   const [storeData, setStoreData] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [isViewReady, setIsViewReady] = useState(false);
   const receiptRef = useRef<View>(null);
@@ -156,6 +159,66 @@ export default function ReceiptPreviewScreen() {
     }
   };
 
+  const handleThermalPrint = async () => {
+    if (!transaction || !storeData) {
+      Alert.alert("Error", "Data transaksi belum siap");
+      return;
+    }
+
+    try {
+      setPrinting(true);
+
+      const isConnected = await thermalPrinterService.isConnected();
+
+      if (!isConnected) {
+        Alert.alert(
+          "Printer Tidak Terhubung",
+          "Tidak ada printer thermal yang terhubung. Apakah Anda ingin membagikan struk dalam bentuk PDF?",
+          [
+            { text: "Batal", style: "cancel" },
+            {
+              text: "Share PDF",
+              onPress: async () => {
+                await handleShareReceipt();
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      const config = thermalPrinterService.getConfig();
+      const formatter = new ThermalReceiptFormatter(config.paperWidth);
+
+      await formatter.printReceipt({
+        transaction,
+        companyName: storeData.name || 'KasirGO',
+        companyDescription: storeData.description || '',
+        companyAddress: storeData.address || '',
+        companyPhone: storeData.phone || '',
+        companyEmail: storeData.email || '',
+        paperWidth: config.paperWidth,
+      });
+    } catch (error: any) {
+      console.error("Error printing receipt:", error);
+      Alert.alert(
+        "Gagal Cetak",
+        "Gagal mencetak ke printer thermal. Apakah Anda ingin membagikan struk dalam bentuk PDF?",
+        [
+          { text: "Batal", style: "cancel" },
+          {
+            text: "Share PDF",
+            onPress: async () => {
+              await handleShareReceipt();
+            },
+          },
+        ]
+      );
+    } finally {
+      setPrinting(false);
+    }
+  };
+
 
 
   const formatCurrency = (amount: number) => {
@@ -225,7 +288,7 @@ export default function ReceiptPreviewScreen() {
 
       <View style={styles.receiptHeader}>
         <Text style={[styles.receiptTitle, { color: '#1f2937' }]}>
-          Struk Transaksi
+          Transaksi
         </Text>
         <Text style={[styles.receiptId, { color: '#6b7280' }]}>
           #{transaction.dailyNumber || transaction.id}
@@ -504,10 +567,10 @@ export default function ReceiptPreviewScreen() {
           {/* Floating Print Button - Bottom Right */}
           <TouchableOpacity
             style={[styles.floatingPrintButton, { backgroundColor: colors.primary }]}
-            onPress={handleShareReceipt}
-            disabled={generating}
+            onPress={handleThermalPrint}
+            disabled={printing || generating}
           >
-            {generating ? (
+            {printing || generating ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
@@ -550,14 +613,14 @@ export default function ReceiptPreviewScreen() {
 
         <TouchableOpacity
           style={[styles.actionButton, styles.printButton, { backgroundColor: colors.primary }]}
-          onPress={handleShareReceipt}
-          disabled={generating}
+          onPress={handleThermalPrint}
+          disabled={printing || generating}
         >
-          {generating ? (
+          {printing || generating ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <>
-              <ReceiptText size={22} color="#fff" />
+              <Printer size={22} color="#fff" />
               <Text style={[styles.buttonText, { color: "#fff" }]}>Cetak Struk</Text>
             </>
           )}

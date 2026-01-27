@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
         padding: 32,
         alignItems: "center",
         gap: 8,
-        minHeight: 200,
+        height: 260,
         justifyContent: "center",
     },
     emptyIconContainer: {
@@ -178,7 +178,8 @@ const styles = StyleSheet.create({
     },
     methodsContainer: {
         gap: 14,
-        minHeight: 236,
+        height: 270,
+        overflow: "hidden",
     },
     methodRow: {
         gap: 8,

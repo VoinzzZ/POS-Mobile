@@ -9,6 +9,7 @@ import { useTheme } from "../../src/context/ThemeContext";
 import { getFinancialSummary } from "../../src/api/financial";
 import { getAllProducts } from "../../src/api/product";
 import { getStockMovementStatistics } from "../../src/api/stock";
+import NotificationIcon from "../../src/components/admin/NotificationIcon";
 
 
 export default function AdminDashboard() {
@@ -90,7 +91,10 @@ export default function AdminDashboard() {
 
       // Filter low stock products (stock <= 5)
       const lowStock = (productsData.data || []).filter(
-        (product: any) => product.product_qty <= 5 && product.is_active
+        (product: any) =>
+          product.is_active &&
+          product.product_min_stock !== null &&
+          product.product_qty < product.product_min_stock
       );
       setLowStockProducts(lowStock);
 
@@ -188,12 +192,15 @@ export default function AdminDashboard() {
           <Text style={[styles.userName, { color: colors.text }]}>{user?.user_name || "Admin"}</Text>
           <Text style={[styles.dateText, { color: colors.textSecondary }]}>{getCurrentDate()}</Text>
         </View>
-        <TouchableOpacity
-          onPress={() => router.push("/(admin)/settings")}
-          style={styles.settingsBtn}
-        >
-          <Settings size={24} color={colors.textSecondary} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <NotificationIcon />
+          <TouchableOpacity
+            onPress={() => router.push("/(admin)/settings")}
+            style={styles.settingsBtn}
+          >
+            <Settings size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -358,6 +365,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     marginTop: 4,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   settingsBtn: {
     padding: 8,

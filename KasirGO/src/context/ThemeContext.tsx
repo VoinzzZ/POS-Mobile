@@ -96,6 +96,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (!isReady) return;
 
     StatusBar.setBarStyle(theme === "light" ? "dark-content" : "light-content");
+    StatusBar.setBackgroundColor("transparent");
     StatusBar.setTranslucent(true);
   }, [theme, isReady]);
 

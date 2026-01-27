@@ -12,9 +12,9 @@ export const useOrientation = () => {
       setOrientation(width > height ? 'landscape' : 'portrait');
       setDimensions(result.window);
 
-      const adjustedWidth = Math.min(width, height);
-      const adjustedWidthInDP = adjustedWidth * PixelRatio.get() / 160;
-      setIsTab(adjustedWidthInDP >= 500);
+      const smallestDimension = Math.min(width, height);
+      const smallestDimensionDP = smallestDimension / PixelRatio.get() * 160;
+      setIsTab(smallestDimensionDP >= 600);
     };
 
     const subscription = Dimensions.addEventListener('change', onChange);
@@ -24,9 +24,9 @@ export const useOrientation = () => {
 
     const initialWidth = initialDimensions.width;
     const initialHeight = initialDimensions.height;
-    const adjustedWidth = Math.min(initialWidth, initialHeight);
-    const adjustedWidthInDP = adjustedWidth * PixelRatio.get() / 160;
-    setIsTab(adjustedWidthInDP >= 500);
+    const smallestDimension = Math.min(initialWidth, initialHeight);
+    const smallestDimensionDP = smallestDimension / PixelRatio.get() * 160;
+    setIsTab(smallestDimensionDP >= 600);
 
     return () => {
       subscription?.remove();

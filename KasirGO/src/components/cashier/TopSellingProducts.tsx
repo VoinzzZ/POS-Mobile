@@ -153,7 +153,6 @@ const styles = StyleSheet.create({
     container: {
         borderRadius: 16,
         padding: 20,
-        marginBottom: 20,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
@@ -198,7 +197,8 @@ const styles = StyleSheet.create({
     },
     productsContainer: {
         gap: 14,
-        minHeight: 236,
+        height: 249,
+        overflow: "hidden",
     },
     productRow: {
         gap: 8,

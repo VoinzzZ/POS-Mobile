@@ -10,6 +10,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { SplashScreen } from "expo-router";
 import { useEffect } from "react";
+import { useNotifications } from "../src/hooks/useNotifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -20,6 +21,8 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+
+  useNotifications();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

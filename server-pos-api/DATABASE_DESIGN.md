@@ -30,7 +30,6 @@ erDiagram
     m_user ||--|| s_registration_tenant : "owner registration"
     m_user ||--|| s_registration_user : "employee registration"
     m_user ||--o{ t_transaction : "processes transactions"
-    m_user ||--o{ m_user : "approves employees"
     
     m_brand ||--o{ m_product : "belongs to"
     m_category ||--o{ m_product : "belongs to"
@@ -87,12 +86,10 @@ erDiagram
 - `user_locked_until`: Waktu lockout akun
 - `registration_type`: OWNER atau EMPLOYEE
 - `registration_step`: Step terakhir proses registrasi (1-4)
-- `approved_by_owner`: Foreign key ke user yang approve employee
 
 **Relasi:**
 - **Many-to-One** dengan `m_tenant`
 - **Many-to-One** dengan `m_role`
-- **Self-Referencing** untuk approval employee (`approved_by_owner`)
 - **One-to-Many** dengan `t_transaction`, `t_cash_drawer`, `t_expense`
 - **One-to-Many** dengan session & security tables
 
